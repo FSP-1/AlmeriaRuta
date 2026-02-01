@@ -7,9 +7,11 @@ Aplicación móvil Flutter para consultar el transporte público de Almería con
 - **Líneas urbanas reales**: 16 líneas de autobús urbano (L1-L31) con datos oficiales
 - **Mapa interactivo**: Visualización de paradas con filtros por línea y zona
 - **Geolocalización**: GPS integrado con cálculo de distancias
+- **Navegación real**: Rutas caminando usando OSRM que siguen calles reales
 - **Datos en tiempo real**: API Flask procesando GTFS de ALSA
-- **Filtros avanzados**: Por línea específica y zona geográfica
+- **Filtros avanzados**: Por línea específica y navegación por zonas
 - **Interfaz nativa**: Diseño con colores municipales de Almería
+- **Modo navegación**: Vista enfocada durante "Cómo llegar"
 
 ## Arquitectura MVVM
 
@@ -26,9 +28,10 @@ lib/
 │   │   ├── viewmodels/ # Lógica de negocio
 │   │   └── views/      # Interfaces de usuario
 │   └── map/            # Funcionalidad del mapa
-│       ├── models/     # LocationModel
+│       ├── models/     # LocationModel, ZoneModel
 │       ├── viewmodels/ # MapViewModel
-│       └── views/      # OptimizedMapView
+│       ├── views/      # OptimizedMapView
+│       └── widgets/    # SearchWidget
 └── shared/
     └── services/       # API y modelos compartidos
 ```
@@ -40,17 +43,19 @@ lib/
 - `LineModel`: Información de líneas de autobús
 - `StopModel`: Datos de paradas con relaciones línea-parada
 - `LocationModel`: Coordenadas y direcciones
+- `ZoneModel`: Polígonos geográficos de Almería
 
 **View**: Interfaz de usuario
 
 - `HomeView`: Lista de líneas con información
-- `OptimizedMapView`: Mapa interactivo con filtros
+- `OptimizedMapView`: Mapa interactivo con filtros y navegación
+- `SearchWidget`: Búsqueda de direcciones con Nominatim
 - Widgets reutilizables y responsive
 
 **ViewModel**: Gestión de estado
 
 - `HomeViewModel`: Estado de líneas y paradas
-- `MapViewModel`: Estado del mapa y ubicación
+- `MapViewModel`: Estado del mapa, ubicación y rutas
 - `ChangeNotifier` + `Provider` para reactividad
 
 ## Sistema de Mapas
@@ -60,16 +65,27 @@ lib/
 - **flutter_map**: Mapas OpenStreetMap sin dependencias de Google
 - **geolocator**: GPS y cálculo de distancias
 - **latlong2**: Manejo de coordenadas geográficas
+- **OSRM**: Routing real para navegación peatonal
 
 ### Características del mapa
 
-- **Zoom inteligente**: Paradas visibles solo con zoom ≥ 14
+- **Zoom inteligente**: Paradas visibles solo con zoom ≥ 12
 - **Marcadores diferenciados**:
   - 🔴 Rojo: Parada de una línea
   - 🟣 Púrpura: Parada multimodal (varias líneas)
   - 🔵 Azul: Ubicación del usuario
-- **Filtros en tiempo real**: Por línea y zona geográfica
-- **Información contextual**: Distancia, líneas que pasan, coordenadas
+- **Filtros en tiempo real**: Por línea específica
+- **Navegación por zonas**: Tap o dropdown para ir a zonas de Almería
+- **Modo navegación**: Vista enfocada con solo parada destino
+- **Rutas reales**: Navegación siguiendo calles usando OSRM
+- **Información contextual**: Distancia, tiempo caminando, líneas
+
+### Sistema de navegación
+
+- **Routing real**: Usa OSRM para rutas que siguen calles
+- **Fallback seguro**: Línea recta si falla la API
+- **Modo enfocado**: Solo muestra parada destino durante navegación
+- **Controles intuitivos**: Botón rojo para salir del modo navegación
 
 ## Datos GTFS
 
@@ -116,6 +132,33 @@ class StopModel {
   final Set<String> lineIds; // 🔑 Clave: múltiples líneas por parada
 }
 ```
+
+## Navegación y Rutas
+
+### OSRM Integration
+
+```dart
+Future<List<LatLng>> _getRoute(LatLng from, LatLng to) async {
+  final url = Uri.parse(
+    'https://router.project-osrm.org/route/v1/walking/'
+    '${from.longitude},${from.latitude};${to.longitude},${to.latitude}'
+    '?overview=full&geometries=geojson'
+  );
+  
+  final response = await http.get(url);
+  final data = json.decode(response.body);
+  final coords = data['routes'][0]['geometry']['coordinates'] as List;
+  
+  return coords.map((c) => LatLng(c[1], c[0])).toList();
+}
+```
+
+### Características de navegación
+
+- **Rutas reales**: Siguen calles y caminos peatonales
+- **Cálculo de tiempo**: Estimación basada en velocidad promedio (5 km/h)
+- **Vista enfocada**: Solo muestra parada destino durante navegación
+- **Controles intuitivos**: Botones flotantes para gestionar rutas
 
 ## 🚀 Instalación y uso
 
@@ -167,6 +210,7 @@ class AppTheme {
 - Modales deslizables para paradas
 - Filtros dropdown integrados
 - Indicadores de carga y estado
+- Botones flotantes para navegación
 
 ## 🔧 Configuración
 
@@ -176,6 +220,7 @@ class AppTheme {
 <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
 <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
 <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION"/>
+<uses-permission android:name="android.permission.INTERNET"/>
 ```
 
 ### Dependencias principales
@@ -186,6 +231,7 @@ dependencies:
   geolocator: ^14.0.2
   provider: ^6.1.2
   http: ^1.2.2
+  latlong2: ^0.9.1
 ```
 
 ## Rendimiento
@@ -194,15 +240,31 @@ dependencies:
 
 - **Carga lazy**: Paradas visibles solo con zoom alto
 - **Deduplicación**: Paradas únicas con múltiples líneas
-- **Cache local**: Datos persistentes entre sesiones
 - **Filtrado eficiente**: Algoritmos O(n) para filtros
+- **Routing asíncrono**: Navegación no bloquea la UI
+- **Vista enfocada**: Reduce marcadores durante navegación
 
 ### Métricas
 
 - Tiempo de carga inicial: ~2s
 - Paradas procesadas: ~200 únicas
 - Líneas urbanas: 16 activas
-- Zoom óptimo: 14-18
+- Zoom óptimo: 12-18
+- Routing: <1s para rutas locales
+
+## Funcionalidades Avanzadas
+
+### Búsqueda de direcciones
+
+- **Nominatim OSM**: Geocoding gratuito
+- **Búsqueda local**: Limitada a Almería
+- **Autocompletado**: Sugerencias en tiempo real
+
+### Gestión de estado
+
+- **Provider pattern**: Gestión reactiva del estado
+- **Context correcto**: Solución a problemas de Provider + BottomSheet
+- **Estado persistente**: Rutas y selecciones sobreviven a overlays
 
 ## Contribución
 
@@ -220,4 +282,5 @@ Este proyecto está bajo la Licencia MIT - ver [LICENSE](LICENSE) para detalles.
 
 - **ALSA**: Por proporcionar datos GTFS oficiales
 - **OpenStreetMap**: Mapas libres y colaborativos
+- **OSRM**: Routing engine gratuito y potente
 - **Flutter Community**: Paquetes y documentación
