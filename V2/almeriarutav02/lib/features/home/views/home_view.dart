@@ -70,7 +70,7 @@ class _HomeViewState extends State<HomeView> {
                         Text(
                           'Consulta horarios, rutas y paradas en tiempo real',
                           style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                            color: AppTheme.darkRed.withOpacity(0.8),
+                            color: AppTheme.darkRed.withValues(alpha: 0.8),
                           ),
                           textAlign: TextAlign.center,
                         ),
@@ -196,7 +196,7 @@ class _HomeViewState extends State<HomeView> {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
+                  color: color.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(

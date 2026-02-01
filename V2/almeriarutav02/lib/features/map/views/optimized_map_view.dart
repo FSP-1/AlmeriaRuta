@@ -3,7 +3,11 @@ import 'package:provider/provider.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 import '../viewmodels/map_viewmodel.dart';
+import '../models/zone_model.dart';
+import '../widgets/search_widget.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../shared/services/line_models.dart';
 import '../../../shared/services/bus_api_service.dart';
@@ -21,9 +25,9 @@ class _OptimizedMapViewState extends State<OptimizedMapView> {
   List<StopModel> _stops = [];
   List<LineModel> _lines = [];
   String? _selectedLineId;
-  String _selectedZone = 'Todas';
   bool _isLoadingStops = false;
   LatLng? _userLocation;
+  bool _showSearch = false;
 
   @override
   void initState() {
@@ -42,7 +46,9 @@ class _OptimizedMapViewState extends State<OptimizedMapView> {
       if (permission == LocationPermission.whileInUse || 
           permission == LocationPermission.always) {
         final position = await Geolocator.getCurrentPosition(
-          desiredAccuracy: LocationAccuracy.high,
+          locationSettings: const LocationSettings(
+            accuracy: LocationAccuracy.high,
+          ),
         );
         
         setState(() {
@@ -90,18 +96,9 @@ class _OptimizedMapViewState extends State<OptimizedMapView> {
   }
 
   List<StopModel> get _filteredStops {
-    var stops = _stops;
-    
-    // Filtro de desarrollo: solo L11 y L18
-    const devLines = {'L11', 'L18'};
-    stops = stops.where((stop) => 
-      stop.lineIds.any((lineId) => devLines.contains(lineId))
-    ).toList();
-    
-    return stops.where((stop) {
-      final matchesZone = _selectedZone == 'Todas' || stop.zone == _selectedZone;
+    return _stops.where((stop) {
       final matchesLine = _selectedLineId == null || stop.lineIds.contains(_selectedLineId);
-      return matchesZone && matchesLine;
+      return matchesLine;
     }).toList();
   }
 
@@ -114,144 +111,230 @@ class _OptimizedMapViewState extends State<OptimizedMapView> {
           title: const Text('Mapa de Almería'),
           backgroundColor: AppTheme.primaryRed,
           foregroundColor: Colors.white,
-        ),
-        body: Column(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              color: Colors.grey[100],
-              child: Row(
-                children: [
-                  Expanded(
-                    child: DropdownButton<String>(
-                      value: _selectedLineId,
-                      hint: const Text('Todas las líneas'),
-                      isExpanded: true,
-                      items: [
-                        const DropdownMenuItem(value: null, child: Text('Todas')),
-                        // Solo mostrar L11 y L18 en desarrollo
-                        ..._lines.where((line) => ['L11', 'L18'].contains(line.id))
-                            .map((line) => DropdownMenuItem(
-                              value: line.id,
-                              child: Text(line.name),
-                            )),
-                      ],
-                      onChanged: (value) => setState(() => _selectedLineId = value),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: DropdownButton<String>(
-                      value: _selectedZone,
-                      isExpanded: true,
-                      items: ['Todas', 'Centro', 'Norte', 'Este', 'Oeste', 'A']
-                          .map((zone) => DropdownMenuItem(
-                                value: zone,
-                                child: Text('Zona $zone'),
-                              ))
-                          .toList(),
-                      onChanged: (value) => setState(() => _selectedZone = value!),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Expanded(
-              child: FlutterMap(
-                mapController: _mapController,
-                options: MapOptions(
-                  initialCenter: const LatLng(36.8381, -2.4597),
-                  initialZoom: 13.0,
-                  minZoom: 10.0,
-                  maxZoom: 18.0,
-                  onPositionChanged: (position, hasGesture) {
-                    setState(() {
-                      _currentZoom = position.zoom;
-                    });
-                  },
-                ),
-                children: [
-                  TileLayer(
-                    urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                    userAgentPackageName: 'com.example.almeriarutav02',
-                  ),
-                  if (_currentZoom >= 14 && !_isLoadingStops)
-                    MarkerLayer(
-                      markers: [
-                        ..._filteredStops.map((stop) => Marker(
-                          point: LatLng(stop.lat, stop.lon),
-                          width: 30,
-                          height: 30,
-                          child: GestureDetector(
-                            onTap: () => _showStopInfo(stop),
-                            child: Container(
-                              decoration: BoxDecoration(
-                                color: stop.lineIds.length > 1
-                                    ? Colors.purple
-                                    : AppTheme.primaryRed,
-                                shape: BoxShape.circle,
-                                border: Border.all(color: Colors.white, width: 2),
-                              ),
-                              child: const Icon(
-                                Icons.directions_bus,
-                                color: Colors.white,
-                                size: 16,
-                              ),
-                            ),
-                          ),
-                        )),
-                        if (_userLocation != null)
-                          Marker(
-                            point: _userLocation!,
-                            width: 40,
-                            height: 40,
-                            child: Container(
-                              decoration: BoxDecoration(
-                                color: Colors.blue,
-                                shape: BoxShape.circle,
-                                border: Border.all(color: Colors.white, width: 3),
-                              ),
-                              child: const Icon(
-                                Icons.person,
-                                color: Colors.white,
-                                size: 20,
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
-                  RichAttributionWidget(
-                    attributions: [
-                      TextSourceAttribution(
-                        '© OpenStreetMap contributors',
-                        onTap: () {},
-                      ),
-                    ],
-                  ),
-                ],
-              ),
+          actions: [
+            IconButton(
+              icon: Icon(_showSearch ? Icons.close : Icons.search),
+              onPressed: () => setState(() => _showSearch = !_showSearch),
             ),
           ],
         ),
-        floatingActionButton: FloatingActionButton(
-          onPressed: () {
-            if (_userLocation != null) {
-              _mapController.move(_userLocation!, 15.0);
-            } else {
-              _mapController.move(const LatLng(36.8381, -2.4597), 13.0);
-            }
+        body: Consumer<MapViewModel>(
+          builder: (context, mapViewModel, child) {
+            return Stack(
+              children: [
+                Column(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      color: Colors.grey[100],
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: DropdownButton<String>(
+                              value: _selectedLineId,
+                              hint: const Text('Líneas'),
+                              isExpanded: true,
+                              items: [
+                                const DropdownMenuItem(value: null, child: Text('Todas')),
+                                ..._lines.map((line) => DropdownMenuItem(
+                                      value: line.id,
+                                      child: Text(line.name),
+                                    )),
+                              ],
+                              onChanged: (value) => setState(() => _selectedLineId = value),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: DropdownButton<ZoneModel?>(
+                              value: null,
+                              hint: const Text('Zonas'),
+                              isExpanded: true,
+                              items: [
+                                const DropdownMenuItem(value: null, child: Text('Todas')),
+                                ...AlmeriaZones.zones.map((zone) => DropdownMenuItem(
+                                  value: zone,
+                                  child: Text(zone.name),
+                                )),
+                              ],
+                              onChanged: (zone) {
+                                if (zone != null) {
+                                  _mapController.move(zone.center, 15.0);
+                                }
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Expanded(
+                      child: FlutterMap(
+                        mapController: _mapController,
+                        options: MapOptions(
+                          initialCenter: const LatLng(36.8381, -2.4597),
+                          initialZoom: 13.0,
+                          minZoom: 10.0,
+                          maxZoom: 18.0,
+                          onPositionChanged: (position, hasGesture) {
+                            setState(() {
+                              _currentZoom = position.zoom;
+                            });
+                          },
+                          onTap: (tapPosition, latLng) {
+                            final zone = AlmeriaZones.findZoneByLatLng(latLng);
+                            if (zone != null) {
+                              _mapController.move(zone.center, 15.0);
+                            }
+                          },
+                        ),
+                        children: [
+                          TileLayer(
+                            urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                            userAgentPackageName: 'com.example.almeriarutav02',
+                          ),
+                          // Polígonos de zonas (invisibles)
+                          PolygonLayer(
+                            polygons: AlmeriaZones.zones.map((zone) => Polygon(
+                              points: zone.polygon,
+                              color: Colors.transparent,
+                              borderColor: Colors.transparent,
+                              borderStrokeWidth: 0,
+                            )).toList(),
+                          ),
+                          // Ruta activa
+                          if (mapViewModel.activeRoute.isNotEmpty)
+                            PolylineLayer(
+                              polylines: [
+                                Polyline(
+                                  points: mapViewModel.activeRoute,
+                                  strokeWidth: 4,
+                                  color: Colors.blue,
+                                ),
+                              ],
+                            ),
+                          // Marcadores de paradas
+                          if (_currentZoom >= 12 && !_isLoadingStops)
+                            MarkerLayer(
+                              markers: [
+                                // Paradas filtradas
+                                ...(mapViewModel.activeRoute.isNotEmpty && mapViewModel.targetStop != null
+                                    ? [mapViewModel.targetStop!]
+                                    : _filteredStops).map((stop) => Marker(
+                                  point: LatLng(stop.lat, stop.lon),
+                                  width: 30,
+                                  height: 30,
+                                  child: GestureDetector(
+                                    onTap: () => _showStopInfo(context, stop),
+                                    child: Container(
+                                      decoration: BoxDecoration(
+                                        color: stop.lineIds.length > 1
+                                            ? Colors.purple
+                                            : AppTheme.primaryRed,
+                                        shape: BoxShape.circle,
+                                        border: Border.all(color: Colors.white, width: 2),
+                                      ),
+                                      child: const Icon(
+                                        Icons.directions_bus,
+                                        color: Colors.white,
+                                        size: 16,
+                                      ),
+                                    ),
+                                  ),
+                                )),
+                                // Usuario
+                                if (_userLocation != null)
+                                  Marker(
+                                    point: _userLocation!,
+                                    width: 40,
+                                    height: 40,
+                                    child: Container(
+                                      decoration: BoxDecoration(
+                                        color: Colors.blue,
+                                        shape: BoxShape.circle,
+                                        border: Border.all(color: Colors.white, width: 3),
+                                      ),
+                                      child: const Icon(
+                                        Icons.person,
+                                        color: Colors.white,
+                                        size: 20,
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          RichAttributionWidget(
+                            attributions: [
+                              TextSourceAttribution(
+                                '© OpenStreetMap contributors',
+                                onTap: () {},
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                // Widget de búsqueda
+                if (_showSearch)
+                  Positioned(
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    child: SearchWidget(
+                      onLocationSelected: (location) {
+                        _mapController.move(
+                          LatLng(location.latitude, location.longitude),
+                          15.0,
+                        );
+                        setState(() => _showSearch = false);
+                      },
+                    ),
+                  ),
+              ],
+            );
           },
-          backgroundColor: AppTheme.primaryRed,
-          child: const Icon(Icons.my_location, color: Colors.white),
+        ),
+        floatingActionButton: Consumer<MapViewModel>(
+          builder: (context, mapViewModel, child) {
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (mapViewModel.activeRoute.isNotEmpty)
+                  FloatingActionButton(
+                    heroTag: "clear_route",
+                    onPressed: () => mapViewModel.clearRoute(),
+                    backgroundColor: Colors.red,
+                    child: const Icon(Icons.close, color: Colors.white),
+                  ),
+                if (mapViewModel.activeRoute.isNotEmpty)
+                  const SizedBox(height: 8),
+                FloatingActionButton(
+                  heroTag: "my_location",
+                  onPressed: () {
+                    if (_userLocation != null) {
+                      _mapController.move(_userLocation!, 15.0);
+                    } else {
+                      _mapController.move(const LatLng(36.8381, -2.4597), 13.0);
+                    }
+                  },
+                  backgroundColor: AppTheme.primaryRed,
+                  child: const Icon(Icons.my_location, color: Colors.white),
+                ),
+              ],
+            );
+          },
         ),
       ),
     );
   }
 
-  void _showStopInfo(StopModel stop) {
+  void _showStopInfo(BuildContext parentContext, StopModel stop) {
+    final mapViewModel = parentContext.read<MapViewModel>();
+    
     showModalBottomSheet(
-      context: context,
-      builder: (context) => Container(
+      context: parentContext,
+      builder: (_) => Container(
         padding: const EdgeInsets.all(16),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -273,17 +356,78 @@ class _OptimizedMapViewState extends State<OptimizedMapView> {
               ],
             ),
             const SizedBox(height: 8),
-            Text('Zona: ${stop.zone}'),
             Text('Líneas: ${stop.lineIds.join(", ")}'),
-            Text('Coordenadas: ${stop.lat.toStringAsFixed(4)}, ${stop.lon.toStringAsFixed(4)}'),
             if (_userLocation != null) ...[
               const SizedBox(height: 8),
               Text('Distancia: ${_calculateDistance(stop)} m'),
+              Text('Tiempo caminando: ${_calculateWalkingTime(stop)} min'),
+              const SizedBox(height: 8),
+              ElevatedButton.icon(
+                onPressed: () {
+                  _openDirections(mapViewModel, stop);
+                  Navigator.pop(parentContext);
+                },
+                icon: const Icon(Icons.directions),
+                label: const Text('Cómo llegar'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.primaryRed,
+                  foregroundColor: Colors.white,
+                ),
+              ),
             ],
           ],
         ),
       ),
     );
+  }
+
+  void _openDirections(MapViewModel mapViewModel, StopModel stop) async {
+    if (_userLocation == null) return;
+    
+    try {
+      final route = await _getRoute(_userLocation!, LatLng(stop.lat, stop.lon));
+      mapViewModel.setRoute(stop, route);
+    } catch (e) {
+      // Si falla el routing, usar línea recta como fallback
+      final route = [_userLocation!, LatLng(stop.lat, stop.lon)];
+      mapViewModel.setRoute(stop, route);
+    }
+  }
+
+  Future<List<LatLng>> _getRoute(LatLng from, LatLng to) async {
+    final url = Uri.parse(
+      'https://router.project-osrm.org/route/v1/walking/'
+      '${from.longitude},${from.latitude};${to.longitude},${to.latitude}'
+      '?overview=full&geometries=geojson'
+    );
+
+    final response = await http.get(url);
+
+    if (response.statusCode != 200) {
+      throw Exception('Error getting route');
+    }
+
+    final data = json.decode(response.body);
+    final coords = data['routes'][0]['geometry']['coordinates'] as List;
+
+    return coords.map((c) => LatLng(c[1], c[0])).toList();
+  }
+
+  String _calculateWalkingTime(StopModel stop) {
+    if (_userLocation == null) return '---';
+    
+    final distance = Geolocator.distanceBetween(
+      _userLocation!.latitude,
+      _userLocation!.longitude,
+      stop.lat,
+      stop.lon,
+    );
+    
+    // Velocidad promedio caminando: 5 km/h = 1.39 m/s
+    final timeInSeconds = distance / 1.39;
+    final timeInMinutes = (timeInSeconds / 60).round();
+    
+    return timeInMinutes.toString();
   }
 
   String _calculateDistance(StopModel stop) {
