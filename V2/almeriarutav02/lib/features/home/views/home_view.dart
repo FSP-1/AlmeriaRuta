@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../viewmodels/home_viewmodel.dart';
 import '../../map/views/optimized_map_view.dart';
+import '../../tickets/views/buy_ticket_view.dart';
+import '../../recharge/views/recharge_view.dart';
 import 'lines_view.dart';
 import '../../../core/theme/app_theme.dart';
 
@@ -91,6 +93,32 @@ class _HomeViewState extends State<HomeView> {
                     description: 'Consulta todas las líneas urbanas, horarios y paradas',
                     onTap: () => _navigateToLines(context),
                     color: AppTheme.primaryRed,
+                  ),
+                  
+                  const SizedBox(height: 16),
+                  
+                  // Sección Tickets
+                  _buildSectionCard(
+                    context,
+                    icon: Icons.credit_card,
+                    title: 'Comprar Tickets',
+                    subtitle: 'Tickets y tarjeta virtual',
+                    description: 'Compra tickets individuales, múltiples o tarjeta recargable',
+                    onTap: () => _navigateToTickets(context),
+                    color: Colors.green,
+                  ),
+                  
+                  const SizedBox(height: 16),
+                  
+                  // Sección Recargar
+                  _buildSectionCard(
+                    context,
+                    icon: Icons.account_balance_wallet,
+                    title: 'Recargar Tarjetas',
+                    subtitle: 'Gestiona tus títulos de transporte',
+                    description: 'Recarga bonobús, tarjetas mensuales y títulos especiales',
+                    onTap: () => _navigateToRecharge(context),
+                    color: Colors.orange,
                   ),
                   
                   const SizedBox(height: 16),
@@ -258,6 +286,20 @@ class _HomeViewState extends State<HomeView> {
     Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => const OptimizedMapView()),
+    );
+  }
+
+  void _navigateToTickets(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const BuyTicketView()),
+    );
+  }
+
+  void _navigateToRecharge(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const RechargeView()),
     );
   }
 }
