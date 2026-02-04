@@ -12,6 +12,8 @@ Aplicación móvil Flutter para consultar el transporte público de Almería con
 - **Filtros avanzados**: Por línea específica y navegación por zonas
 - **Interfaz nativa**: Diseño con colores municipales de Almería
 - **Modo navegación**: Vista enfocada durante "Cómo llegar"
+- **Sistema de tickets**: Compra de billetes individuales, múltiples y tarjetas virtuales
+- **Gestión de tarjetas**: Recarga de títulos de transporte con normativa oficial SURBUS
 
 ## Arquitectura MVVM
 
@@ -27,11 +29,19 @@ lib/
 │   │   ├── models/     # Modelos de datos
 │   │   ├── viewmodels/ # Lógica de negocio
 │   │   └── views/      # Interfaces de usuario
-│   └── map/            # Funcionalidad del mapa
-│       ├── models/     # LocationModel, ZoneModel
-│       ├── viewmodels/ # MapViewModel
-│       ├── views/      # OptimizedMapView
-│       └── widgets/    # SearchWidget
+│   ├── map/            # Funcionalidad del mapa
+│   │   ├── models/     # LocationModel, ZoneModel
+│   │   ├── viewmodels/ # MapViewModel
+│   │   ├── views/      # OptimizedMapView
+│   │   └── widgets/    # SearchWidget
+│   ├── tickets/        # Sistema de compra de tickets
+│   │   ├── models/     # TicketModel
+│   │   ├── viewmodels/ # TicketViewModel
+│   │   └── views/      # BuyTicketView
+│   └── recharge/       # Gestión de tarjetas de transporte
+│       ├── models/     # TransportCardModel, RechargeHistory
+│       ├── viewmodels/ # RechargeViewModel
+│       └── views/      # RechargeView
 └── shared/
     └── services/       # API y modelos compartidos
 ```
@@ -44,19 +54,57 @@ lib/
 - `StopModel`: Datos de paradas con relaciones línea-parada
 - `LocationModel`: Coordenadas y direcciones
 - `ZoneModel`: Polígonos geográficos de Almería
+- `TicketModel`: Datos de tickets y compras
+- `TransportCardModel`: Tarjetas de transporte con caducidad e historial
 
 **View**: Interfaz de usuario
 
-- `HomeView`: Lista de líneas con información
+- `HomeView`: Lista de líneas con información y navegación a secciones
 - `OptimizedMapView`: Mapa interactivo con filtros y navegación
 - `SearchWidget`: Búsqueda de direcciones con Nominatim
+- `BuyTicketView`: Interfaz de compra de tickets
+- `RechargeView`: Gestión y recarga de tarjetas de transporte
 - Widgets reutilizables y responsive
 
 **ViewModel**: Gestión de estado
 
 - `HomeViewModel`: Estado de líneas y paradas
 - `MapViewModel`: Estado del mapa, ubicación y rutas
+- `TicketViewModel`: Lógica de compra y validación
+- `RechargeViewModel`: Gestión de tarjetas, caducidad e historial
 - `ChangeNotifier` + `Provider` para reactividad
+
+## Sistema de Tickets y Tarjetas
+
+### Compra de Tickets
+
+- **Tickets individuales**: 1.05€ por viaje
+- **Tickets múltiples**: 1.05€ × cantidad seleccionada
+- **Tarjeta virtual**: 10.00€ con saldo recargable
+- **Métodos de pago**: Google Pay, Apple Pay, Visa
+- **Validación**: Control de errores y confirmación de compra
+
+### Gestión de Tarjetas de Transporte
+
+**Tipos de tarjetas soportadas:**
+- **Tarjeta Saldo Virtual**: Recarga libre de cualquier importe
+- **Mensual Ordinaria**: 19.55€ - Renovación mensual
+- **Bonobús Universidad**: 3.35€ - Caduca curso escolar (30/09)
+- **Mensual Estudiante**: 16.55€ - Renovación mensual
+- **Bonobús Ordinario**: 4.45€ - 10 viajes con transbordo
+- **Bonobús Pensionista**: 1.75€ - 10 viajes con transbordo
+- **Tarjeta Estudiante 10**: 7.15€ - Viajes ilimitados mensuales
+- **Tarjeta +65**: Gratuita - Sin caducidad
+- **Tarjeta Discapacidad 65%**: Gratuita - Sin caducidad
+- **Tarjeta Infantil**: Gratuita - Caduca en cumpleaños
+
+**Funcionalidades:**
+- **Restricciones de recarga**: Solo 1 día antes o después de caducar
+- **Importes fijos**: Según normativa oficial SURBUS
+- **Historial de recargas**: Registro completo de transacciones
+- **Avisos de caducidad**: Banner superior para tarjetas próximas a vencer
+- **Renovación automática**: Extensión de fechas al recargar tarjetas mensuales
+- **Estados visuales**: Tarjetas caducadas en gris, botones deshabilitados
 
 ## Sistema de Mapas
 
@@ -254,6 +302,21 @@ dependencies:
 
 ## Funcionalidades Avanzadas
 
+### Sistema de Tickets
+
+- **Compra integrada**: Tickets individuales, múltiples y tarjetas virtuales
+- **Validación de pagos**: Simulación de métodos de pago modernos
+- **Control de cantidad**: Selector inteligente solo para tickets múltiples
+- **Cálculo automático**: Precios dinámicos según selección
+
+### Gestión de Tarjetas
+
+- **Normativa oficial**: Cumple regulaciones SURBUS Almería
+- **Control de caducidad**: Sistema automático de vencimientos
+- **Tipos diferenciados**: Saldo libre vs. importes fijos
+- **Historial completo**: Registro de todas las recargas
+- **Avisos proactivos**: Notificaciones de próximos vencimientos
+
 ### Búsqueda de direcciones
 
 - **Nominatim OSM**: Geocoding gratuito
@@ -281,6 +344,7 @@ Este proyecto está bajo la Licencia MIT - ver [LICENSE](LICENSE) para detalles.
 ## Agradecimientos
 
 - **ALSA**: Por proporcionar datos GTFS oficiales
+- **SURBUS**: Normativa oficial de tarifas y títulos de transporte
 - **OpenStreetMap**: Mapas libres y colaborativos
 - **OSRM**: Routing engine gratuito y potente
 - **Flutter Community**: Paquetes y documentación
