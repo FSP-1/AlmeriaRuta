@@ -18,14 +18,14 @@ class BuyTicketView extends StatelessWidget {
         ),
         body: Consumer<TicketViewModel>(
           builder: (context, vm, child) {
-            return Padding(
+            return SingleChildScrollView(
               padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Tipo de título
+                  // Seleccionar billete
                   const Text(
-                    'Tipo de título',
+                    'Seleccionar billete',
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 8),
@@ -58,16 +58,6 @@ class BuyTicketView extends StatelessWidget {
                               Icon(Icons.group, color: AppTheme.primaryRed),
                               SizedBox(width: 8),
                               Text('Ticket múltiple - 1.05€'),
-                            ],
-                          ),
-                        ),
-                        DropdownMenuItem(
-                          value: 'Tarjeta',
-                          child: Row(
-                            children: [
-                              Icon(Icons.credit_card, color: AppTheme.primaryRed),
-                              SizedBox(width: 8),
-                              Text('Tarjeta virtual - 10.00€'),
                             ],
                           ),
                         ),
@@ -128,6 +118,14 @@ class BuyTicketView extends StatelessWidget {
                   Column(
                     children: [
                       _PaymentOption(
+                        value: 'Saldo',
+                        groupValue: vm.paymentMethod,
+                        onChanged: vm.setPaymentMethod,
+                        icon: Icons.account_balance_wallet,
+                        title: 'Saldo: ${vm.balance.toStringAsFixed(2)} €',
+                        subtitle: vm.hasInsufficientBalance ? 'Saldo insuficiente' : null,
+                      ),
+                      _PaymentOption(
                         value: 'Google Pay',
                         groupValue: vm.paymentMethod,
                         onChanged: vm.setPaymentMethod,
@@ -151,6 +149,32 @@ class BuyTicketView extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 24),
+
+                  // Error de saldo insuficiente
+                  if (vm.paymentMethod == 'Saldo' && vm.hasInsufficientBalance) ...[
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.orange.shade50,
+                        border: Border.all(color: Colors.orange),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.warning, color: Colors.orange),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'Saldo insuficiente. Recarga tu tarjeta o selecciona otro método de pago.',
+                              style: TextStyle(color: Colors.orange[700]),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
 
                   // Error message
                   if (vm.errorMessage != null) ...[
@@ -181,8 +205,6 @@ class BuyTicketView extends StatelessWidget {
                     ),
                     const SizedBox(height: 16),
                   ],
-
-                  const Spacer(),
 
                   // Precio total
                   Container(
@@ -262,6 +284,7 @@ class _PaymentOption extends StatelessWidget {
   final Function(String) onChanged;
   final IconData icon;
   final String title;
+  final String? subtitle;
 
   const _PaymentOption({
     required this.value,
@@ -269,6 +292,7 @@ class _PaymentOption extends StatelessWidget {
     required this.onChanged,
     required this.icon,
     required this.title,
+    this.subtitle,
   });
 
   @override
@@ -290,7 +314,22 @@ class _PaymentOption extends StatelessWidget {
           children: [
             Icon(icon, color: AppTheme.primaryRed),
             const SizedBox(width: 8),
-            Text(title),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title),
+                  if (subtitle != null)
+                    Text(
+                      subtitle!,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Colors.orange,
+                      ),
+                    ),
+                ],
+              ),
+            ),
           ],
         ),
       ),

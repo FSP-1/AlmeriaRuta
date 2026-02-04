@@ -8,6 +8,7 @@ class TicketViewModel extends ChangeNotifier {
   String _paymentMethod = 'Google Pay';
   bool _isLoading = false;
   String? _errorMessage;
+  double _balance = 15.50; // Saldo simulado
 
   final List<TicketModel> _tickets = [];
 
@@ -18,6 +19,7 @@ class TicketViewModel extends ChangeNotifier {
   List<TicketModel> get tickets => _tickets;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
+  double get balance => _balance;
 
   double get totalPrice {
     switch (_selectedType) {
@@ -31,6 +33,8 @@ class TicketViewModel extends ChangeNotifier {
         return 0;
     }
   }
+
+  bool get hasInsufficientBalance => _balance < totalPrice;
 
   // Setters
   void setType(String type) {
@@ -65,12 +69,22 @@ class TicketViewModel extends ChangeNotifier {
     notifyListeners();
 
     try {
+      // Verificar saldo si se paga con saldo
+      if (_paymentMethod == 'Saldo' && hasInsufficientBalance) {
+        throw Exception('Saldo insuficiente para realizar la compra');
+      }
+
       // Simular delay de pago
       await Future.delayed(const Duration(seconds: 2));
 
       // Simular fallo ocasional (10% probabilidad)
       if (Random().nextInt(10) == 0) {
         throw Exception('Error en el procesamiento del pago');
+      }
+
+      // Descontar del saldo si se paga con saldo
+      if (_paymentMethod == 'Saldo') {
+        _balance -= totalPrice;
       }
 
       final ticket = TicketModel(
