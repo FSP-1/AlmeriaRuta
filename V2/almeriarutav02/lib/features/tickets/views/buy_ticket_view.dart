@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../viewmodels/ticket_viewmodel.dart';
+import '../../validation/views/validate_trip_view.dart';
 import '../../../core/theme/app_theme.dart';
 
 class BuyTicketView extends StatelessWidget {
@@ -267,13 +268,16 @@ class BuyTicketView extends StatelessWidget {
     final success = await vm.buyTicket();
     
     if (success && context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('✅ Compra realizada con éxito'),
-          backgroundColor: Colors.green,
+      final ticket = vm.tickets.last;
+      
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => ValidateTripView(
+            ticket: ticket,
+          ),
         ),
       );
-      Navigator.pop(context);
     }
   }
 }

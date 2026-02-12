@@ -12,8 +12,9 @@ Aplicación móvil Flutter para consultar el transporte público de Almería con
 - **Filtros avanzados**: Por línea específica y navegación por zonas
 - **Interfaz nativa**: Diseño con colores municipales de Almería
 - **Modo navegación**: Vista enfocada durante "Cómo llegar"
-- **Sistema de tickets**: Compra de billetes individuales, múltiples y tarjetas virtuales
+- **Sistema de tickets**: Compra de billetes individuales y múltiples
 - **Gestión de tarjetas**: Recarga de títulos de transporte con normativa oficial SURBUS
+- **Validación de viajes**: Sistema QR para validar tickets al subir al autobús
 
 ## Arquitectura MVVM
 
@@ -38,10 +39,15 @@ lib/
 │   │   ├── models/     # TicketModel
 │   │   ├── viewmodels/ # TicketViewModel
 │   │   └── views/      # BuyTicketView
-│   └── recharge/       # Gestión de tarjetas de transporte
-│       ├── models/     # TransportCardModel, RechargeHistory
-│       ├── viewmodels/ # RechargeViewModel
-│       └── views/      # RechargeView
+│   ├── recharge/       # Gestión de tarjetas de transporte
+│   │   ├── models/     # TransportCardModel, RechargeHistory
+│   │   ├── viewmodels/ # RechargeViewModel
+│   │   └── views/      # RechargeView
+│   └── validation/     # Validación de viajes
+│       ├── models/     # ValidationModel
+│       ├── services/   # ValidationService
+│       ├── viewmodels/ # ValidationViewModel
+│       └── views/      # ValidateTripView
 └── shared/
     └── services/       # API y modelos compartidos
 ```
@@ -54,8 +60,9 @@ lib/
 - `StopModel`: Datos de paradas con relaciones línea-parada
 - `LocationModel`: Coordenadas y direcciones
 - `ZoneModel`: Polígonos geográficos de Almería
-- `TicketModel`: Datos de tickets y compras
+- `TicketModel`: Datos de tickets y compras con usos restantes
 - `TransportCardModel`: Tarjetas de transporte con caducidad e historial
+- `ValidationModel`: Registro de validaciones de viaje
 
 **View**: Interfaz de usuario
 
@@ -64,6 +71,7 @@ lib/
 - `SearchWidget`: Búsqueda de direcciones con Nominatim
 - `BuyTicketView`: Interfaz de compra de tickets
 - `RechargeView`: Gestión y recarga de tarjetas de transporte
+- `ValidateTripView`: Validación de viajes con código QR
 - Widgets reutilizables y responsive
 
 **ViewModel**: Gestión de estado
@@ -72,6 +80,7 @@ lib/
 - `MapViewModel`: Estado del mapa, ubicación y rutas
 - `TicketViewModel`: Lógica de compra y validación
 - `RechargeViewModel`: Gestión de tarjetas, caducidad e historial
+- `ValidationViewModel`: Control de validaciones y usos restantes
 - `ChangeNotifier` + `Provider` para reactividad
 
 ## Sistema de Tickets y Tarjetas
@@ -80,9 +89,29 @@ lib/
 
 - **Tickets individuales**: 1.05€ por viaje
 - **Tickets múltiples**: 1.05€ × cantidad seleccionada
-- **Tarjeta virtual**: 10.00€ con saldo recargable
-- **Métodos de pago**: Google Pay, Apple Pay, Visa
-- **Validación**: Control de errores y confirmación de compra
+- **Métodos de pago**: Saldo, Google Pay, Apple Pay, Visa
+- **Validación de saldo**: Control de saldo insuficiente
+- **Redirección automática**: Tras compra exitosa, redirige a validación
+
+### Validación de Viajes
+
+**Funcionalidades:**
+- **Código QR**: Generación automática con ID del ticket
+- **Contador de usos**: Muestra viajes restantes en tickets múltiples
+- **Validación simulada**: Sistema de validación con resultado aleatorio
+- **Control de usos**: Decremento automático al validar
+- **Bloqueo inteligente**: Deshabilita validación cuando no hay viajes disponibles
+- **Registro de validación**: Información de línea, bus y fecha/hora
+- **Estados visuales**: Confirmación verde o rechazo rojo
+
+**Flujo de validación:**
+1. Usuario compra ticket (individual o múltiple)
+2. Sistema redirige automáticamente a pantalla de validación
+3. Muestra código QR y viajes restantes (si aplica)
+4. Usuario presiona "Validar ahora"
+5. Sistema procesa validación (2 segundos)
+6. Muestra resultado con detalles del viaje
+7. Decrementa contador de usos automáticamente
 
 ### Gestión de Tarjetas de Transporte
 
@@ -280,6 +309,7 @@ dependencies:
   provider: ^6.1.2
   http: ^1.2.2
   latlong2: ^0.9.1
+  qr_flutter: ^4.1.0
 ```
 
 ## Rendimiento
@@ -304,10 +334,19 @@ dependencies:
 
 ### Sistema de Tickets
 
-- **Compra integrada**: Tickets individuales, múltiples y tarjetas virtuales
+- **Compra integrada**: Tickets individuales y múltiples
 - **Validación de pagos**: Simulación de métodos de pago modernos
 - **Control de cantidad**: Selector inteligente solo para tickets múltiples
 - **Cálculo automático**: Precios dinámicos según selección
+- **Gestión de saldo**: Control de saldo disponible en tarjeta virtual
+
+### Validación de Viajes
+
+- **Códigos QR**: Generación automática para cada ticket
+- **Control de usos múltiples**: Contador de viajes restantes
+- **Validación en tiempo real**: Simulación de validación con resultado
+- **Registro automático**: Historial de validaciones con fecha y hora
+- **Bloqueo de reutilización**: Prevención de uso fraudulento
 
 ### Gestión de Tarjetas
 
@@ -347,4 +386,5 @@ Este proyecto está bajo la Licencia MIT - ver [LICENSE](LICENSE) para detalles.
 - **SURBUS**: Normativa oficial de tarifas y títulos de transporte
 - **OpenStreetMap**: Mapas libres y colaborativos
 - **OSRM**: Routing engine gratuito y potente
+- **QR Flutter**: Generación de códigos QR
 - **Flutter Community**: Paquetes y documentación
