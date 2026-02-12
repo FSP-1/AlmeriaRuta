@@ -21,7 +21,7 @@ class RechargeView extends StatelessWidget {
           builder: (_, vm, __) {
             return Column(
               children: [
-                if (vm.expiringSoon.isNotEmpty) _ExpirationWarning(vm),
+                if (vm.expiringSoon.isNotEmpty) _buildExpirationWarning(vm),
                 Expanded(
                   child: ListView.builder(
                     padding: const EdgeInsets.all(12),
@@ -79,7 +79,7 @@ class RechargeView extends StatelessWidget {
     );
   }
 
-  Widget _ExpirationWarning(RechargeViewModel vm) {
+  Widget _buildExpirationWarning(RechargeViewModel vm) {
     return Container(
       margin: const EdgeInsets.all(12),
       padding: const EdgeInsets.all(16),

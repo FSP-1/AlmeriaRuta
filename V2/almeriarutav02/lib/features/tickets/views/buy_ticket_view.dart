@@ -301,19 +301,40 @@ class _PaymentOption extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isSelected = value == groupValue;
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
         border: Border.all(
-          color: value == groupValue ? AppTheme.primaryRed : Colors.grey,
+          color: isSelected ? AppTheme.primaryRed : Colors.grey,
         ),
         borderRadius: BorderRadius.circular(8),
       ),
-      child: RadioListTile<String>(
-        value: value,
-        groupValue: groupValue,
-        onChanged: (v) => onChanged(v!),
-        activeColor: AppTheme.primaryRed,
+      child: ListTile(
+        onTap: () => onChanged(value),
+        leading: Container(
+          width: 24,
+          height: 24,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: isSelected ? AppTheme.primaryRed : Colors.grey,
+              width: 2,
+            ),
+          ),
+          child: isSelected
+              ? Center(
+                  child: Container(
+                    width: 12,
+                    height: 12,
+                    decoration: const BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: AppTheme.primaryRed,
+                    ),
+                  ),
+                )
+              : null,
+        ),
         title: Row(
           children: [
             Icon(icon, color: AppTheme.primaryRed),
