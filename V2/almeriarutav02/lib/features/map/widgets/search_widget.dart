@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../models/location_model.dart';
+import '../models/zone_model.dart';
+import '../data/zone_aliases.dart';
 import '../../../core/theme/app_theme.dart';
 
 class SearchWidget extends StatefulWidget {
@@ -106,6 +108,28 @@ class _SearchWidgetState extends State<SearchWidget> {
 
   void _onSearchChanged(String query) async {
     if (query.length < 3) {
+      setState(() => _suggestions = []);
+      return;
+    }
+
+    // Check for zone aliases first
+    final normalized = query.toLowerCase().trim();
+    if (ZoneAliases.aliases.containsKey(normalized)) {
+      final zoneName = ZoneAliases.aliases[normalized]!;
+      final zone = AlmeriaZones.zones.firstWhere(
+        (z) => z.name == zoneName,
+        orElse: () => AlmeriaZones.zones.first,
+      );
+
+      widget.onLocationSelected(
+        LocationModel(
+          latitude: zone.center.latitude,
+          longitude: zone.center.longitude,
+          address: zone.description,
+          name: zone.name,
+        ),
+      );
+      _controller.text = zone.name;
       setState(() => _suggestions = []);
       return;
     }

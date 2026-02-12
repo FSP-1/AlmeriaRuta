@@ -6,8 +6,11 @@ import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../viewmodels/map_viewmodel.dart';
+import '../viewmodels/favorites_viewmodel.dart';
+import '../models/favorite_model.dart';
 import '../models/zone_model.dart';
 import '../widgets/search_widget.dart';
+import '../widgets/favorites_sheet.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../shared/services/line_models.dart';
 import '../../../shared/services/bus_api_service.dart';
@@ -291,6 +294,29 @@ class _OptimizedMapViewState extends State<OptimizedMapView> {
                       },
                     ),
                   ),
+                // Botón favoritos
+                Positioned(
+                  top: 16,
+                  right: 16,
+                  child: FloatingActionButton(
+                    heroTag: "favorites",
+                    mini: true,
+                    backgroundColor: Colors.amber,
+                    child: const Icon(Icons.star, color: Colors.white),
+                    onPressed: () {
+                      showModalBottomSheet(
+                        context: context,
+                        builder: (_) => FavoritesSheet(
+                          mapController: _mapController,
+                          allStops: _stops,
+                          onLineSelected: (lineId) {
+                            setState(() => _selectedLineId = lineId);
+                          },
+                        ),
+                      );
+                    },
+                  ),
+                ),
               ],
             );
           },
@@ -334,48 +360,77 @@ class _OptimizedMapViewState extends State<OptimizedMapView> {
     
     showModalBottomSheet(
       context: parentContext,
-      builder: (_) => Container(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                const Icon(Icons.location_on, color: AppTheme.primaryRed),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    stop.name,
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
+      builder: (context) => ChangeNotifierProvider(
+        create: (_) => FavoritesViewModel()..load(),
+        child: Consumer<FavoritesViewModel>(
+          builder: (context, favVM, _) {
+            final isFav = favVM.isFavorite(stop.id, FavoriteType.stop);
+            
+            return Container(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.location_on, color: AppTheme.primaryRed),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          stop.name,
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        icon: Icon(
+                          isFav ? Icons.star : Icons.star_border,
+                          color: Colors.amber,
+                          size: 28,
+                        ),
+                        onPressed: () {
+                          if (isFav) {
+                            favVM.remove(stop.id, FavoriteType.stop);
+                          } else {
+                            favVM.add(
+                              FavoriteModel(
+                                id: stop.id,
+                                name: stop.name,
+                                type: FavoriteType.stop,
+                              ),
+                            );
+                          }
+                        },
+                      ),
+                    ],
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Text('Líneas: ${stop.lineIds.join(", ")}'),
-            if (_userLocation != null) ...[
-              const SizedBox(height: 8),
-              Text('Distancia: ${_calculateDistance(stop)} m'),
-              Text('Tiempo caminando: ${_calculateWalkingTime(stop)} min'),
-              const SizedBox(height: 8),
-              ElevatedButton.icon(
-                onPressed: () {
-                  _openDirections(mapViewModel, stop);
-                  Navigator.pop(parentContext);
-                },
-                icon: const Icon(Icons.directions),
-                label: const Text('Cómo llegar'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.primaryRed,
-                  foregroundColor: Colors.white,
-                ),
+                  const SizedBox(height: 8),
+                  Text('Líneas: ${stop.lineIds.join(", ")}'),
+                  if (_userLocation != null) ...[
+                    const SizedBox(height: 8),
+                    Text('Distancia: ${_calculateDistance(stop)} m'),
+                    Text('Tiempo caminando: ${_calculateWalkingTime(stop)} min'),
+                    const SizedBox(height: 8),
+                    ElevatedButton.icon(
+                      onPressed: () {
+                        _openDirections(mapViewModel, stop);
+                        Navigator.pop(context);
+                      },
+                      icon: const Icon(Icons.directions),
+                      label: const Text('Cómo llegar'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.primaryRed,
+                        foregroundColor: Colors.white,
+                      ),
+                    ),
+                  ],
+                ],
               ),
-            ],
-          ],
+            );
+          },
         ),
       ),
     );
