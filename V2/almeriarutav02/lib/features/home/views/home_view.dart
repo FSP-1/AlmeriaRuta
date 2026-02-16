@@ -62,7 +62,7 @@ class _HomeViewState extends State<HomeView> {
                         ),
                         const SizedBox(height: 16),
                         Text(
-                          'Transporte Público de Almería',
+                          'Movilidad Municipal de Almería',
                           style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                             color: AppTheme.darkRed,
                             fontWeight: FontWeight.bold,
@@ -71,7 +71,7 @@ class _HomeViewState extends State<HomeView> {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          'Consulta horarios, rutas y paradas en tiempo real',
+                          'Transporte, estacionamiento, bicicletas y mucho más',
                           style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                             color: AppTheme.darkRed.withValues(alpha: 0.8),
                           ),
@@ -172,38 +172,7 @@ class _HomeViewState extends State<HomeView> {
                   
                   // Información adicional
                   if (!viewModel.isLoading && viewModel.error == null)
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Colors.grey[100],
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Column(
-                        children: [
-                          const Icon(
-                            Icons.info_outline,
-                            color: AppTheme.darkRed,
-                            size: 32,
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Datos oficiales de ALSA',
-                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: AppTheme.darkRed,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'Información actualizada del transporte público de Almería',
-                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: Colors.grey[600],
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ],
-                      ),
-                    ),
+                    
                   
                   // Error state
                   if (viewModel.error != null)
