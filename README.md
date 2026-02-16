@@ -1,20 +1,32 @@
-# AlmeriaRuta 
+# AlmeriaRuta
 
-Aplicación móvil Flutter para consultar el transporte público de Almería con datos GTFS oficiales de ALSA.
+Aplicación móvil Flutter para consultar servicios de **movilidad municipal** de Almería: transporte público, estacionamiento regulado, parkings, bicicletas compartidas, patinetes y mucho más. 🚌🚗🚴‍♂️🛴
 
 ## Características
 
-- **Líneas urbanas reales**: 16 líneas de autobús urbano (L1-L31) con datos oficiales
+### 🚌 Transporte Público
+
+- **Líneas urbanas reales**: 16 líneas de autobús urbano (L1-L31) con datos oficiales GTFS de ALSA
 - **Mapa interactivo**: Visualización de paradas con filtros por línea y zona
 - **Geolocalización**: GPS integrado con cálculo de distancias
 - **Navegación real**: Rutas caminando usando OSRM que siguen calles reales
 - **Datos en tiempo real**: API Flask procesando GTFS de ALSA
 - **Filtros avanzados**: Por línea específica y navegación por zonas
-- **Interfaz nativa**: Diseño con colores municipales de Almería
-- **Modo navegación**: Vista enfocada durante "Cómo llegar"
-- **Sistema de tickets**: Compra de billetes individuales y múltiples
+
+### 🏙️ Servicios de Movilidad Urbana
+
+- **Zona Azul**: Información sobre zonas de estacionamiento regulado
+- **Parkings**: Localización de parkings públicos y plazas disponibles
+- **Bicicletas**: Servicios de bicicletas públicas y carriles bici
+- **Patinetes**: Patinetes eléctricos compartidos disponibles
+- **Notificaciones de Accesibilidad**: Información sobre paradas accesibles (PRM)
+
+### 💳 Sistema de Transporte
+
+- **Compra de tickets**: Billetes individuales y múltiples
 - **Gestión de tarjetas**: Recarga de títulos de transporte con normativa oficial SURBUS
 - **Validación de viajes**: Sistema QR para validar tickets al subir al autobús
+- **Control de saldo**: Tarjeta virtual recargable
 
 ## Arquitectura MVVM
 
@@ -27,14 +39,14 @@ lib/
 │   └── constants/       # Constantes globales
 ├── features/
 │   ├── home/           # Pantalla principal
-│   │   ├── models/     # Modelos de datos
-│   │   ├── viewmodels/ # Lógica de negocio
-│   │   └── views/      # Interfaces de usuario
+│   │   ├── models/     # MobilityServiceModel, ServiceStatus
+│   │   ├── viewmodels/ # HomeViewModel con servicios
+│   │   └── views/      # HomeView con grid de servicios
 │   ├── map/            # Funcionalidad del mapa
-│   │   ├── models/     # LocationModel, ZoneModel
-│   │   ├── viewmodels/ # MapViewModel
-│   │   ├── views/      # OptimizedMapView
-│   │   └── widgets/    # SearchWidget
+│   │   ├── models/     # LocationModel, ZoneModel, FilterMode
+│   │   ├── viewmodels/ # MapViewModel (lógica centralizada)
+│   │   ├── views/      # OptimizedMapView (100% presentacional)
+│   │   └── widgets/    # SearchWidget, StopInfoSheet, etc
 │   ├── tickets/        # Sistema de compra de tickets
 │   │   ├── models/     # TicketModel
 │   │   ├── viewmodels/ # TicketViewModel
@@ -76,14 +88,59 @@ lib/
 
 **ViewModel**: Gestión de estado
 
-- `HomeViewModel`: Estado de líneas y paradas
-- `MapViewModel`: Estado del mapa, ubicación y rutas
+- `HomeViewModel`: Estado de líneas, servicios urbanos y accesibilidad
+  - `busServices`: 4 servicios principales (Líneas, Tickets, Recargas, Mapa)
+  - `urbanMobilityServices`: 4 servicios informativos (Zona Azul, Parkings, Bicicletas, Patinetes)
+  - `accessibilityService`: Notificaciones de accesibilidad PRM
+- `MapViewModel`: Estado del mapa, ubicación, rutas y filtros (MVVM compliant)
+  - Métodos centralizados: `loadStops()`, `getCurrentLocation()`, `getRoute()`, `setFilter()`
+  - Propiedades: `filteredStops`, `userLocation`, `currentFilter`, `isLoadingStops`
 - `TicketViewModel`: Lógica de compra y validación
 - `RechargeViewModel`: Gestión de tarjetas, caducidad e historial
 - `ValidationViewModel`: Control de validaciones y usos restantes
-- `ChangeNotifier` + `Provider` para reactividad
+- `ChangeNotifier` + `Provider` para reactividad global
 
-## Sistema de Tickets y Tarjetas
+## Servicios de Movilidad
+
+### MobilityServiceModel
+
+Modelo unificado para representar servicios con estado y metadata:
+
+```dart
+class MobilityServiceModel {
+  final String id;
+  final String title;          // "Zona Azul", "Parkings", etc
+  final String? subtitle;      // Información secundaria
+  final String description;    // Descripción completa
+  final IconData icon;         // Icono del servicio
+  final Color color;           // Color identificativo
+  final ServiceStatus status;  // active, comingSoon, information
+}
+
+enum ServiceStatus {
+  active,      // Total funcionalidad
+  comingSoon,  // Próximamente
+  information  // Solo información
+}
+```
+
+### HomeView - Servicios organizados
+
+```
+┌─────────────────────────────┐
+│  🚌 Servicios de Autobús    │
+├─────────────────────────────┤
+│ [Líneas][Tickets][Rec][Mapa]│ ← 4 cards actuales
+└─────────────────────────────┘
+
+┌─────────────────────────────┐
+│ 🏙️ Otros Servicios          │
+├─────────────────────────────┤
+│ [Zona A.][Parkings]         │
+│ [Bikis] [Patinetes]         │
+│ [Accesibilidad]             │
+└─────────────────────────────┘
+```
 
 ### Compra de Tickets
 
@@ -96,6 +153,7 @@ lib/
 ### Validación de Viajes
 
 **Funcionalidades:**
+
 - **Código QR**: Generación automática con ID del ticket
 - **Contador de usos**: Muestra viajes restantes en tickets múltiples
 - **Validación simulada**: Sistema de validación con resultado aleatorio
@@ -105,6 +163,7 @@ lib/
 - **Estados visuales**: Confirmación verde o rechazo rojo
 
 **Flujo de validación:**
+
 1. Usuario compra ticket (individual o múltiple)
 2. Sistema redirige automáticamente a pantalla de validación
 3. Muestra código QR y viajes restantes (si aplica)
@@ -116,6 +175,7 @@ lib/
 ### Gestión de Tarjetas de Transporte
 
 **Tipos de tarjetas soportadas:**
+
 - **Tarjeta Saldo Virtual**: Recarga libre de cualquier importe
 - **Mensual Ordinaria**: 19.55€ - Renovación mensual
 - **Bonobús Universidad**: 3.35€ - Caduca curso escolar (30/09)
@@ -128,6 +188,7 @@ lib/
 - **Tarjeta Infantil**: Gratuita - Caduca en cumpleaños
 
 **Funcionalidades:**
+
 - **Restricciones de recarga**: Solo 1 día antes o después de caducar
 - **Importes fijos**: Según normativa oficial SURBUS
 - **Historial de recargas**: Registro completo de transacciones
@@ -136,6 +197,44 @@ lib/
 - **Estados visuales**: Tarjetas caducadas en gris, botones deshabilitados
 
 ## Sistema de Mapas
+
+### Arquitectura MVVM en MapView
+
+**Refactorización completa**: Toda la lógica de negocio movida de OptimizedMapView al MapViewModel
+
+**ViewModel (mapViewModel)** - Lógica centralizada:
+
+```dart
+class MapViewModel extends ChangeNotifier {
+  // Estado centralizado
+  List<StopModel> _stops = [];
+  LatLng? _userLocation;
+  MapFilter _currentFilter;
+  
+  // Métodos de negocio (no en view)
+  Future<void> loadStops() async     // API + transformación
+  Future<void> getCurrentLocation()  // Geolocator
+  List<StopModel> get filteredStops  // Lógica de filtrado
+  Future<List<LatLng>> getRoute()    // OSRM routing
+}
+```
+
+**View (OptimizedMapView)** - 100% presentacional:
+
+```dart
+// Solo rendering UI
+Consumer<MapViewModel>(
+  builder: (context, vm, child) {
+    return FlutterMap(
+      children: [
+        // Markers basados en vm.filteredStops
+        // Polylines basados en vm.activeRoute
+        // Dropdown usando vm.currentFilter
+      ]
+    );
+  }
+)
+```
 
 ### Tecnologías utilizadas
 
@@ -238,6 +337,15 @@ Future<List<LatLng>> _getRoute(LatLng from, LatLng to) async {
 - **Controles intuitivos**: Botones flotantes para gestionar rutas
 
 ## 🚀 Instalación y uso
+
+### Descripción general
+
+AlmeriaRuta es una plataforma integral de movilidad municipal que integra:
+
+- **Transporte público**: Consultas de líneas, horarios y navegación
+- **Servicios informativos**: Zona azul, parkings, bicicletas, patinetes, accesibilidad
+- **Sistema de tickets**: Compra y validación de billetes
+- **Gestión de tarjetas**: Recarga y control de saldo
 
 ### Prerrequisitos
 
@@ -388,3 +496,30 @@ Este proyecto está bajo la Licencia MIT - ver [LICENSE](LICENSE) para detalles.
 - **OSRM**: Routing engine gratuito y potente
 - **QR Flutter**: Generación de códigos QR
 - **Flutter Community**: Paquetes y documentación
+
+## 📋 Estado del Proyecto
+
+### ✅ Implementado
+
+- [X] Arquitectura MVVM completa (HomeViewModel, MapViewModel, etc)
+- [X] Map view refactorizado con MVVM puro
+- [X] Sistema de servicios de movilidad municipal
+- [X] Interfaz UI/UX mejorada con cards de servicios
+- [X] Filtros avanzados en mapa
+- [X] Sistema de tickets y validación con QR
+- [X] Gestión de tarjetas de transporte
+- [X] Geolocalización en tiempo real
+- [X] Routing con OSRM
+- [X] Provider global de estado
+
+### 🚧 En desarrollo
+
+- [ ] Integración backend de zona azul
+- [ ] APIs de parkings y ubicación
+- [ ] Servicio de bicicletas compartidas
+- [ ] Sistema de patinetes eléctricos
+- [ ] Push notifications para accesibilidad
+
+### 📝 Última actualización
+
+- **Febrero 2026**: Refactorización MVVM completa del map view, servicios de movilidad urbana, y mejora UI home
