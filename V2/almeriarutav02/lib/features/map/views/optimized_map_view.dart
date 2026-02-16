@@ -6,14 +6,18 @@ import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../viewmodels/map_viewmodel.dart';
-import '../viewmodels/favorites_viewmodel.dart';
-import '../models/favorite_model.dart';
 import '../models/zone_model.dart';
+import '../models/filter_mode.dart';
 import '../widgets/search_widget.dart';
 import '../widgets/favorites_sheet.dart';
+import '../widgets/map_tutorial_dialog.dart';
+import '../widgets/favorite_line_selector.dart';
+import '../widgets/stop_info_sheet.dart';
+import '../widgets/map_floating_buttons.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../shared/services/line_models.dart';
 import '../../../shared/services/bus_api_service.dart';
+import '../../../shared/services/onboarding_service.dart';
 
 class OptimizedMapView extends StatefulWidget {
   const OptimizedMapView({super.key});
@@ -27,16 +31,27 @@ class _OptimizedMapViewState extends State<OptimizedMapView> {
   double _currentZoom = 13.0;
   List<StopModel> _stops = [];
   List<LineModel> _lines = [];
-  String? _selectedLineId;
+  MapFilter _currentFilter = const MapFilter.nearby();
   bool _isLoadingStops = false;
   LatLng? _userLocation;
   bool _showSearch = false;
+  static const double _nearbyRadius = 800; // metros
 
   @override
   void initState() {
     super.initState();
     _loadStops();
     _getCurrentLocation();
+    _checkOnboarding();
+  }
+
+  Future<void> _checkOnboarding() async {
+    final done = await OnboardingService.isDone();
+    if (!done && mounted) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _showMapTutorial(isFirstTime: true);
+      });
+    }
   }
 
   Future<void> _getCurrentLocation() async {
@@ -92,6 +107,10 @@ class _OptimizedMapViewState extends State<OptimizedMapView> {
         _lines = lines;
         _stops = uniqueStops.values.toList();
         _isLoadingStops = false;
+        // Asegurar que inicia con paradas cercanas si hay ubicación
+        if (_userLocation != null) {
+          _currentFilter = const MapFilter.nearby();
+        }
       });
     } catch (e) {
       setState(() => _isLoadingStops = false);
@@ -100,8 +119,27 @@ class _OptimizedMapViewState extends State<OptimizedMapView> {
 
   List<StopModel> get _filteredStops {
     return _stops.where((stop) {
-      final matchesLine = _selectedLineId == null || stop.lineIds.contains(_selectedLineId);
-      return matchesLine;
+      switch (_currentFilter.mode) {
+        case FilterMode.nearby:
+          // Solo paradas cercanas
+          if (_userLocation == null) return true; // Si no hay ubicación, mostrar todas
+          final distance = Geolocator.distanceBetween(
+            _userLocation!.latitude,
+            _userLocation!.longitude,
+            stop.lat,
+            stop.lon,
+          );
+          return distance <= _nearbyRadius;
+        
+        case FilterMode.all:
+          // Todas las paradas
+          return true;
+        
+        case FilterMode.line:
+          // Solo paradas de la línea seleccionada
+          return _currentFilter.lineId != null && 
+                 stop.lineIds.contains(_currentFilter.lineId);
+      }
     }).toList();
   }
 
@@ -115,6 +153,10 @@ class _OptimizedMapViewState extends State<OptimizedMapView> {
           backgroundColor: AppTheme.primaryRed,
           foregroundColor: Colors.white,
           actions: [
+            IconButton(
+              icon: const Icon(Icons.info_outline),
+              onPressed: () => _showMapTutorial(isFirstTime: false),
+            ),
             IconButton(
               icon: Icon(_showSearch ? Icons.close : Icons.search),
               onPressed: () => setState(() => _showSearch = !_showSearch),
@@ -130,44 +172,55 @@ class _OptimizedMapViewState extends State<OptimizedMapView> {
                     Container(
                       padding: const EdgeInsets.all(8),
                       color: Colors.grey[100],
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: DropdownButton<String>(
-                              value: _selectedLineId,
-                              hint: const Text('Líneas'),
-                              isExpanded: true,
-                              items: [
-                                const DropdownMenuItem(value: null, child: Text('Todas')),
-                                ..._lines.map((line) => DropdownMenuItem(
-                                      value: line.id,
-                                      child: Text(line.name),
-                                    )),
+                      child: DropdownButton<String>(
+                        value: _currentFilter.mode == FilterMode.line 
+                            ? _currentFilter.lineId 
+                            : _currentFilter.mode.name,
+                        hint: const Text('Filtro'),
+                        isExpanded: true,
+                        items: [
+                          const DropdownMenuItem(
+                            value: 'nearby',
+                            child: Row(
+                              children: [
+                                Icon(Icons.near_me, size: 16, color: AppTheme.primaryRed),
+                                SizedBox(width: 8),
+                                Text('Cercanas'),
                               ],
-                              onChanged: (value) => setState(() => _selectedLineId = value),
                             ),
                           ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: DropdownButton<ZoneModel?>(
-                              value: null,
-                              hint: const Text('Zonas'),
-                              isExpanded: true,
-                              items: [
-                                const DropdownMenuItem(value: null, child: Text('Todas')),
-                                ...AlmeriaZones.zones.map((zone) => DropdownMenuItem(
-                                  value: zone,
-                                  child: Text(zone.name),
-                                )),
+                          const DropdownMenuItem(
+                            value: 'all',
+                            child: Row(
+                              children: [
+                                Icon(Icons.list, size: 16, color: AppTheme.primaryRed),
+                                SizedBox(width: 8),
+                                Text('Todas'),
                               ],
-                              onChanged: (zone) {
-                                if (zone != null) {
-                                  _mapController.move(zone.center, 15.0);
-                                }
-                              },
                             ),
                           ),
+                          ..._lines.map((line) => DropdownMenuItem(
+                                value: line.id,
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.directions_bus, size: 16, color: AppTheme.primaryRed),
+                                    SizedBox(width: 8),
+                                    Text('Línea ${line.name}'),
+                                  ],
+                                ),
+                              )),
                         ],
+                        onChanged: (value) {
+                          setState(() {
+                            if (value == 'nearby') {
+                              _currentFilter = const MapFilter.nearby();
+                            } else if (value == 'all') {
+                              _currentFilter = const MapFilter.all();
+                            } else if (value != null) {
+                              _currentFilter = MapFilter.line(value);
+                            }
+                          });
+                        },
                       ),
                     ),
                     Expanded(
@@ -294,63 +347,38 @@ class _OptimizedMapViewState extends State<OptimizedMapView> {
                       },
                     ),
                   ),
-                // Botón favoritos
-                Positioned(
-                  top: 16,
-                  right: 16,
-                  child: FloatingActionButton(
-                    heroTag: "favorites",
-                    mini: true,
-                    backgroundColor: Colors.amber,
-                    child: const Icon(Icons.star, color: Colors.white),
-                    onPressed: () {
-                      showModalBottomSheet(
-                        context: context,
-                        builder: (_) => FavoritesSheet(
-                          mapController: _mapController,
-                          allStops: _stops,
-                          onLineSelected: (lineId) {
-                            setState(() => _selectedLineId = lineId);
-                          },
-                        ),
-                      );
-                    },
-                  ),
-                ),
               ],
             );
           },
         ),
         floatingActionButton: Consumer<MapViewModel>(
           builder: (context, mapViewModel, child) {
-            return Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (mapViewModel.activeRoute.isNotEmpty)
-                  FloatingActionButton(
-                    heroTag: "clear_route",
-                    onPressed: () => mapViewModel.clearRoute(),
-                    backgroundColor: Colors.red,
-                    child: const Icon(Icons.close, color: Colors.white),
+            return MapFloatingButtons(
+              hasActiveRoute: mapViewModel.activeRoute.isNotEmpty,
+              onClearRoute: () => mapViewModel.clearRoute(),
+              onMyLocation: () {
+                if (_userLocation != null) {
+                  _mapController.move(_userLocation!, 15.0);
+                } else {
+                  _mapController.move(const LatLng(36.8381, -2.4597), 13.0);
+                }
+              },
+              onFavorites: () {
+                showModalBottomSheet(
+                  context: context,
+                  builder: (_) => FavoritesSheet(
+                    mapController: _mapController,
+                    allStops: _stops,
+                    onLineSelected: (lineId) {
+                      setState(() => _currentFilter = MapFilter.line(lineId));
+                    },
                   ),
-                if (mapViewModel.activeRoute.isNotEmpty)
-                  const SizedBox(height: 8),
-                FloatingActionButton(
-                  heroTag: "my_location",
-                  onPressed: () {
-                    if (_userLocation != null) {
-                      _mapController.move(_userLocation!, 15.0);
-                    } else {
-                      _mapController.move(const LatLng(36.8381, -2.4597), 13.0);
-                    }
-                  },
-                  backgroundColor: AppTheme.primaryRed,
-                  child: const Icon(Icons.my_location, color: Colors.white),
-                ),
-              ],
+                );
+              },
             );
           },
         ),
+        floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       ),
     );
   }
@@ -360,78 +388,13 @@ class _OptimizedMapViewState extends State<OptimizedMapView> {
     
     showModalBottomSheet(
       context: parentContext,
-      builder: (context) => ChangeNotifierProvider(
-        create: (_) => FavoritesViewModel()..load(),
-        child: Consumer<FavoritesViewModel>(
-          builder: (context, favVM, _) {
-            final isFav = favVM.isFavorite(stop.id, FavoriteType.stop);
-            
-            return Container(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      const Icon(Icons.location_on, color: AppTheme.primaryRed),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          stop.name,
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                      IconButton(
-                        icon: Icon(
-                          isFav ? Icons.star : Icons.star_border,
-                          color: Colors.amber,
-                          size: 28,
-                        ),
-                        onPressed: () {
-                          if (isFav) {
-                            favVM.remove(stop.id, FavoriteType.stop);
-                          } else {
-                            favVM.add(
-                              FavoriteModel(
-                                id: stop.id,
-                                name: stop.name,
-                                type: FavoriteType.stop,
-                              ),
-                            );
-                          }
-                        },
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Text('Líneas: ${stop.lineIds.join(", ")}'),
-                  if (_userLocation != null) ...[
-                    const SizedBox(height: 8),
-                    Text('Distancia: ${_calculateDistance(stop)} m'),
-                    Text('Tiempo caminando: ${_calculateWalkingTime(stop)} min'),
-                    const SizedBox(height: 8),
-                    ElevatedButton.icon(
-                      onPressed: () {
-                        _openDirections(mapViewModel, stop);
-                        Navigator.pop(context);
-                      },
-                      icon: const Icon(Icons.directions),
-                      label: const Text('Cómo llegar'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppTheme.primaryRed,
-                        foregroundColor: Colors.white,
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            );
-          },
-        ),
+      builder: (context) => StopInfoSheet(
+        stop: stop,
+        userLocation: _userLocation,
+        onGetDirections: () {
+          _openDirections(mapViewModel, stop);
+          Navigator.pop(context);
+        },
       ),
     );
   }
@@ -468,33 +431,38 @@ class _OptimizedMapViewState extends State<OptimizedMapView> {
     return coords.map((c) => LatLng(c[1], c[0])).toList();
   }
 
-  String _calculateWalkingTime(StopModel stop) {
-    if (_userLocation == null) return '---';
-    
-    final distance = Geolocator.distanceBetween(
-      _userLocation!.latitude,
-      _userLocation!.longitude,
-      stop.lat,
-      stop.lon,
+  void _showMapTutorial({required bool isFirstTime}) {
+    showDialog(
+      context: context,
+      barrierDismissible: !isFirstTime,
+      builder: (_) => MapTutorialDialog(
+        isFirstTime: isFirstTime,
+        onComplete: () async {
+          if (isFirstTime) {
+            await OnboardingService.setDone();
+            if (mounted) {
+              Navigator.pop(context);
+              if (_lines.isNotEmpty) _showFavoriteLineSelector();
+            }
+          } else {
+            Navigator.pop(context);
+          }
+        },
+      ),
     );
-    
-    // Velocidad promedio caminando: 5 km/h = 1.39 m/s
-    final timeInSeconds = distance / 1.39;
-    final timeInMinutes = (timeInSeconds / 60).round();
-    
-    return timeInMinutes.toString();
   }
 
-  String _calculateDistance(StopModel stop) {
-    if (_userLocation == null) return '---';
-    
-    final distance = Geolocator.distanceBetween(
-      _userLocation!.latitude,
-      _userLocation!.longitude,
-      stop.lat,
-      stop.lon,
+  void _showFavoriteLineSelector() {
+    showModalBottomSheet(
+      context: context,
+      isDismissible: true,
+      builder: (_) => FavoriteLineSelector(
+        lines: _lines,
+        onLineSelected: (lineId) {
+          setState(() => _currentFilter = MapFilter.line(lineId));
+          Navigator.pop(context);
+        },
+      ),
     );
-    
-    return distance.round().toString();
   }
 }

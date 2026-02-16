@@ -87,7 +87,7 @@ instance/
 *.zip
 *.txt
 gtfs/
-data/
+
 
 # API Keys and Secrets
 api_keys.dart

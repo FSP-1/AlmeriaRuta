@@ -4,7 +4,6 @@ import '../viewmodels/favorites_viewmodel.dart';
 import '../models/favorite_model.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../shared/services/line_models.dart';
-import '../../../shared/services/bus_api_service.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 
