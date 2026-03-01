@@ -7,11 +7,11 @@ Aplicación móvil Flutter para consultar servicios de **movilidad municipal** d
 ### 🚌 Transporte Público
 
 - **Líneas urbanas reales**: 16 líneas de autobús urbano (L1-L31) con datos oficiales GTFS de ALSA
-- **Mapa interactivo**: Visualización de paradas con filtros por línea y zona
+- **Mapa interactivo**: Visualización de paradas con filtros por cercanía, favoritas y línea
 - **Geolocalización**: GPS integrado con cálculo de distancias
 - **Navegación real**: Rutas caminando usando OSRM que siguen calles reales
 - **Datos en tiempo real**: API Flask procesando GTFS de ALSA
-- **Filtros avanzados**: Por línea específica y navegación por zonas
+- **Filtros avanzados**: Cercanas, todas, favoritas y por línea con buscador
 
 ### 🏙️ Servicios de Movilidad Urbana
 
@@ -43,10 +43,10 @@ lib/
 │   │   ├── viewmodels/ # HomeViewModel con servicios
 │   │   └── views/      # HomeView con grid de servicios
 │   ├── map/            # Funcionalidad del mapa
-│   │   ├── models/     # LocationModel, ZoneModel, FilterMode
-│   │   ├── viewmodels/ # MapViewModel (lógica centralizada)
-│   │   ├── views/      # OptimizedMapView (100% presentacional)
-│   │   └── widgets/    # SearchWidget, StopInfoSheet, etc
+│   │   ├── models/     # LocationModel, ZoneModel, FilterMode, FavoriteModel
+│   │   ├── viewmodels/ # MapViewModel + FavoritesViewModel
+│   │   ├── views/      # OptimizedMapView (presentacional y modular)
+│   │   └── widgets/    # SearchWidget, MapFilterBar, LineFilterSheet, FavoritesSheet, etc
 │   ├── tickets/        # Sistema de compra de tickets
 │   │   ├── models/     # TicketModel
 │   │   ├── viewmodels/ # TicketViewModel
@@ -81,6 +81,9 @@ lib/
 - `HomeView`: Lista de líneas con información y navegación a secciones
 - `OptimizedMapView`: Mapa interactivo con filtros y navegación
 - `SearchWidget`: Búsqueda de direcciones con Nominatim
+- `MapFilterBar`: Barra de filtros modular del mapa
+- `LineFilterSheet`: Selector de línea con buscador por nombre/destino/parada
+- `FavoritesSheet`: Gestión de favoritos (selección y eliminación)
 - `BuyTicketView`: Interfaz de compra de tickets
 - `RechargeView`: Gestión y recarga de tarjetas de transporte
 - `ValidateTripView`: Validación de viajes con código QR
@@ -93,8 +96,9 @@ lib/
   - `urbanMobilityServices`: 4 servicios informativos (Zona Azul, Parkings, Bicicletas, Patinetes)
   - `accessibilityService`: Notificaciones de accesibilidad PRM
 - `MapViewModel`: Estado del mapa, ubicación, rutas y filtros (MVVM compliant)
-  - Métodos centralizados: `loadStops()`, `getCurrentLocation()`, `getRoute()`, `setFilter()`
-  - Propiedades: `filteredStops`, `userLocation`, `currentFilter`, `isLoadingStops`
+  - Métodos centralizados: `loadStops()`, `getCurrentLocation()`, `getRoute()`, `setFilter()`, `refreshFavoriteStops()`
+  - Propiedades: `filteredStops`, `userLocation`, `currentFilter`, `isLoadingStops`, `favoriteStopIds`
+- `FavoritesViewModel`: Persistencia local de paradas/líneas favoritas con `SharedPreferences`
 - `TicketViewModel`: Lógica de compra y validación
 - `RechargeViewModel`: Gestión de tarjetas, caducidad e historial
 - `ValidationViewModel`: Control de validaciones y usos restantes
@@ -251,10 +255,13 @@ Consumer<MapViewModel>(
   - 🟣 Púrpura: Parada multimodal (varias líneas)
   - 🔵 Azul: Ubicación del usuario
 - **Filtros en tiempo real**: Por línea específica
+- **Filtros en tiempo real**: Cercanas, todas, favoritas y por línea
 - **Navegación por zonas**: Tap o dropdown para ir a zonas de Almería
 - **Modo navegación**: Vista enfocada con solo parada destino
 - **Rutas reales**: Navegación siguiendo calles usando OSRM
 - **Información contextual**: Distancia, tiempo caminando, líneas
+- **Popup de líneas con buscador**: Búsqueda por nombre, destino y paradas asociadas
+- **Favoritos sincronizados**: Si se eliminan favoritos, el filtro se actualiza automáticamente
 
 ### Sistema de navegación
 
@@ -474,7 +481,7 @@ dependencies:
 
 - **Provider pattern**: Gestión reactiva del estado
 - **Context correcto**: Solución a problemas de Provider + BottomSheet
-- **Estado persistente**: Rutas y selecciones sobreviven a overlays
+- **Estado persistente**: Rutas, filtros y favoritos sobreviven a overlays
 
 ## Contribución
 
@@ -522,4 +529,4 @@ Este proyecto está bajo la Licencia MIT - ver [LICENSE](LICENSE) para detalles.
 
 ### 📝 Última actualización
 
-- **Febrero 2026**: Refactorización MVVM completa del map view, servicios de movilidad urbana, y mejora UI home
+- **Marzo 2026**: Refactor modular del mapa (`MapFilterBar` y `LineFilterSheet`), filtro de favoritas, y mejoras de búsqueda por líneas/paradas
