@@ -11,6 +11,8 @@ import '../widgets/map_tutorial_dialog.dart';
 import '../widgets/favorite_line_selector.dart';
 import '../widgets/stop_info_sheet.dart';
 import '../widgets/map_floating_buttons.dart';
+import '../widgets/line_filter_sheet.dart';
+import '../widgets/map_filter_bar.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../shared/services/line_models.dart';
 import '../../../shared/services/onboarding_service.dart';
@@ -26,7 +28,6 @@ class _OptimizedMapViewState extends State<OptimizedMapView> {
   final MapController _mapController = MapController();
   double _currentZoom = 13.0;
   bool _showSearch = false;
-  static const String _selectedLineValue = '__selected_line__';
 
   @override
   void initState() {
@@ -51,7 +52,7 @@ class _OptimizedMapViewState extends State<OptimizedMapView> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      builder: (_) => _LineFilterSheet(mapViewModel: mapViewModel),
+      builder: (_) => LineFilterSheet(mapViewModel: mapViewModel),
     );
   }
 
@@ -75,17 +76,6 @@ class _OptimizedMapViewState extends State<OptimizedMapView> {
       ),
       body: Consumer<MapViewModel>(
         builder: (context, mapViewModel, child) {
-          String? selectedLineName;
-          if (mapViewModel.currentFilter.mode == FilterMode.line &&
-              mapViewModel.currentFilter.lineId != null) {
-            for (final line in mapViewModel.lines) {
-              if (line.id == mapViewModel.currentFilter.lineId) {
-                selectedLineName = line.name;
-                break;
-              }
-            }
-          }
-
           final isFavoritesFilterEmpty =
               mapViewModel.currentFilter.mode == FilterMode.favorites &&
               !mapViewModel.isLoadingStops &&
@@ -95,81 +85,9 @@ class _OptimizedMapViewState extends State<OptimizedMapView> {
             children: [
               Column(
                 children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    color: Colors.grey[100],
-                    child: DropdownButton<String>(
-                      value: mapViewModel.currentFilter.mode == FilterMode.line
-                        ? _selectedLineValue
-                        : mapViewModel.currentFilter.mode.name,
-                      hint: const Text('Filtro'),
-                      isExpanded: true,
-                      items: [
-                        const DropdownMenuItem(
-                          value: 'nearby',
-                          child: Row(
-                            children: [
-                              Icon(Icons.near_me, size: 16, color: AppTheme.primaryRed),
-                              SizedBox(width: 8),
-                              Text('Cercanas'),
-                            ],
-                          ),
-                        ),
-                        const DropdownMenuItem(
-                          value: 'all',
-                          child: Row(
-                            children: [
-                              Icon(Icons.list, size: 16, color: AppTheme.primaryRed),
-                              SizedBox(width: 8),
-                              Text('Todas'),
-                            ],
-                          ),
-                        ),
-                        const DropdownMenuItem(
-                          value: 'favorites',
-                          child: Row(
-                            children: [
-                              Icon(Icons.star, size: 16, color: AppTheme.primaryRed),
-                              SizedBox(width: 8),
-                              Text('Favoritas'),
-                            ],
-                          ),
-                        ),
-                        const DropdownMenuItem(
-                          value: 'lines',
-                          child: Row(
-                            children: [
-                              Icon(Icons.view_list, size: 16, color: AppTheme.primaryRed),
-                              SizedBox(width: 8),
-                              Text('Líneas…'),
-                            ],
-                          ),
-                        ),
-                        if (mapViewModel.currentFilter.mode == FilterMode.line)
-                          DropdownMenuItem(
-                            value: _selectedLineValue,
-                            child: Row(
-                              children: [
-                                const Icon(Icons.filter_alt, size: 16, color: AppTheme.primaryRed),
-                                const SizedBox(width: 8),
-                                Text('Línea ${selectedLineName ?? mapViewModel.currentFilter.lineId}'),
-                              ],
-                            ),
-                          ),
-                      ],
-                      onChanged: (value) {
-                        if (value == 'nearby') {
-                          mapViewModel.setFilter(const MapFilter.nearby());
-                        } else if (value == 'all') {
-                          mapViewModel.setFilter(const MapFilter.all());
-                        } else if (value == 'favorites') {
-                          mapViewModel.refreshFavoriteStops();
-                          mapViewModel.setFilter(const MapFilter.favorites());
-                        } else if (value == 'lines') {
-                          _showLineFilterSelector(mapViewModel);
-                        }
-                      },
-                    ),
+                  MapFilterBar(
+                    mapViewModel: mapViewModel,
+                    onOpenLineSelector: () => _showLineFilterSelector(mapViewModel),
                   ),
                   Expanded(
                     child: FlutterMap(
@@ -436,124 +354,6 @@ class _OptimizedMapViewState extends State<OptimizedMapView> {
           },
         );
       },
-    );
-  }
-}
-
-class _LineFilterSheet extends StatefulWidget {
-  final MapViewModel mapViewModel;
-
-  const _LineFilterSheet({required this.mapViewModel});
-
-  @override
-  State<_LineFilterSheet> createState() => _LineFilterSheetState();
-}
-
-class _LineFilterSheetState extends State<_LineFilterSheet> {
-  final TextEditingController _searchController = TextEditingController();
-  String _query = '';
-
-  String _normalize(String text) {
-    return text
-        .toLowerCase()
-        .replaceAll('á', 'a')
-        .replaceAll('é', 'e')
-        .replaceAll('í', 'i')
-        .replaceAll('ó', 'o')
-        .replaceAll('ú', 'u');
-  }
-
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final normalizedQuery = _normalize(_query.trim());
-    final filteredLines = widget.mapViewModel.lines.where((line) {
-      if (normalizedQuery.isEmpty) return true;
-
-      final matchesLineInfo =
-          _normalize(line.name).contains(normalizedQuery) ||
-          _normalize(line.fullName).contains(normalizedQuery) ||
-          _normalize(line.description).contains(normalizedQuery);
-
-      if (matchesLineInfo) return true;
-
-      final matchesStops = widget.mapViewModel.stops.any(
-        (stop) =>
-            stop.lineIds.contains(line.id) &&
-            _normalize(stop.name).contains(normalizedQuery),
-      );
-
-      return matchesStops;
-    }).toList();
-
-    return SafeArea(
-      child: SizedBox(
-        height: MediaQuery.of(context).size.height * 0.65,
-        child: Column(
-          children: [
-            const ListTile(
-              title: Text(
-                'Filtrar por línea',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-              child: TextField(
-                controller: _searchController,
-                autofocus: true,
-                decoration: InputDecoration(
-                  hintText: 'Buscar línea por nombre o destino',
-                  prefixIcon: const Icon(Icons.search),
-                  suffixIcon: _query.isEmpty
-                      ? null
-                      : IconButton(
-                          icon: const Icon(Icons.clear),
-                          onPressed: () {
-                            _searchController.clear();
-                            setState(() => _query = '');
-                          },
-                        ),
-                  border: const OutlineInputBorder(),
-                ),
-                onChanged: (value) {
-                  setState(() => _query = value);
-                },
-                onSubmitted: (value) {
-                  setState(() => _query = value);
-                },
-              ),
-            ),
-            const Divider(height: 1),
-            Expanded(
-              child: filteredLines.isEmpty
-                  ? const Center(
-                      child: Text('No hay líneas que coincidan'),
-                    )
-                  : ListView.builder(
-                      itemCount: filteredLines.length,
-                      itemBuilder: (context, index) {
-                        final line = filteredLines[index];
-                        return ListTile(
-                          leading: const Icon(Icons.directions_bus, color: AppTheme.primaryRed),
-                          title: Text('Línea ${line.name}'),
-                          subtitle: Text(line.fullName),
-                          onTap: () {
-                            widget.mapViewModel.setFilter(MapFilter.line(line.id));
-                            Navigator.pop(context);
-                          },
-                        );
-                      },
-                    ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }
