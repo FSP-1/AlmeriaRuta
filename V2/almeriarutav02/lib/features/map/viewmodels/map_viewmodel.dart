@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import '../models/location_model.dart';
 import '../models/zone_model.dart';
 import '../models/filter_mode.dart';
+import '../models/favorite_model.dart';
 import '../../../shared/services/line_models.dart';
 import '../../../shared/services/bus_api_service.dart';
 
@@ -17,6 +19,7 @@ class MapViewModel extends ChangeNotifier {
   List<LineModel> _lines = [];
   LatLng? _userLocation;
   MapFilter _currentFilter = const MapFilter.nearby();
+  Set<String> _favoriteStopIds = <String>{};
   
   // Estado de UI
   bool _isLoadingStops = false;
@@ -38,6 +41,7 @@ class MapViewModel extends ChangeNotifier {
   LatLng? get userLocation => _userLocation;
   MapFilter get currentFilter => _currentFilter;
   bool get isLoadingStops => _isLoadingStops;
+  Set<String> get favoriteStopIds => _favoriteStopIds;
   
   // Legacy getters
   LocationModel? get selectedLocation => _selectedLocation;
@@ -53,6 +57,30 @@ class MapViewModel extends ChangeNotifier {
   Future<void> initialize() async {
     await loadStops();
     await getCurrentLocation();
+    await refreshFavoriteStops();
+  }
+
+  Future<void> refreshFavoriteStops() async {
+    final prefs = await SharedPreferences.getInstance();
+    final data = prefs.getStringList('favorites') ?? [];
+    final favoriteStops = <String>{};
+
+    for (final item in data) {
+      try {
+        final fav = FavoriteModel.fromJson(json.decode(item));
+        if (fav.type == FavoriteType.stop) {
+          favoriteStops.add(fav.id);
+        }
+      } catch (_) {}
+    }
+
+    _favoriteStopIds = favoriteStops;
+
+    if (_currentFilter.mode == FilterMode.favorites && _favoriteStopIds.isEmpty) {
+      _currentFilter = const MapFilter.nearby();
+    }
+
+    notifyListeners();
   }
 
   // Cargar paradas desde API
@@ -142,6 +170,10 @@ class MapViewModel extends ChangeNotifier {
         
       case FilterMode.all:
         return _stops;
+
+      case FilterMode.favorites:
+        if (_favoriteStopIds.isEmpty) return [];
+        return _stops.where((stop) => _favoriteStopIds.contains(stop.id)).toList();
         
       case FilterMode.line:
         if (_currentFilter.lineId == null) return _stops;

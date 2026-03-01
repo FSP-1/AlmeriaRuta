@@ -11,12 +11,16 @@ class FavoritesSheet extends StatelessWidget {
   final MapController mapController;
   final List<StopModel> allStops;
   final Function(String) onLineSelected;
+  final Function(StopModel) onStopSelected;
+  final VoidCallback onFavoritesChanged;
 
   const FavoritesSheet({
     super.key,
     required this.mapController,
     required this.allStops,
     required this.onLineSelected,
+    required this.onStopSelected,
+    required this.onFavoritesChanged,
   });
 
   @override
@@ -90,7 +94,17 @@ class FavoritesSheet extends StatelessWidget {
             color: AppTheme.primaryRed,
           ),
           title: Text(fav.name),
-          trailing: const Icon(Icons.chevron_right, color: Colors.grey),
+          trailing: IconButton(
+            icon: const Icon(Icons.delete_outline, color: Colors.grey),
+            tooltip: 'Eliminar de favoritos',
+            onPressed: () async {
+              await context.read<FavoritesViewModel>().remove(
+                    fav.id,
+                    fav.type,
+                  );
+              onFavoritesChanged();
+            },
+          ),
           onTap: () {
             Navigator.pop(context);
             if (fav.type == FavoriteType.stop) {
@@ -109,7 +123,8 @@ class FavoritesSheet extends StatelessWidget {
       (s) => s.id == stopId,
       orElse: () => allStops.first,
     );
-    
+
+    onStopSelected(stop);
     mapController.move(LatLng(stop.lat, stop.lon), 16.0);
   }
 }

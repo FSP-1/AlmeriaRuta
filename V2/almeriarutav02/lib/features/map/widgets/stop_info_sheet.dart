@@ -11,12 +11,14 @@ class StopInfoSheet extends StatelessWidget {
   final StopModel stop;
   final LatLng? userLocation;
   final VoidCallback? onGetDirections;
+  final VoidCallback? onFavoritesChanged;
 
   const StopInfoSheet({
     super.key,
     required this.stop,
     this.userLocation,
     this.onGetDirections,
+    this.onFavoritesChanged,
   });
 
   String _calculateDistance() {
@@ -82,11 +84,11 @@ class StopInfoSheet extends StatelessWidget {
                         color: Colors.amber,
                         size: 28,
                       ),
-                      onPressed: () {
+                      onPressed: () async {
                         if (isFav) {
-                          favVM.remove(stop.id, FavoriteType.stop);
+                          await favVM.remove(stop.id, FavoriteType.stop);
                         } else {
-                          favVM.add(
+                          await favVM.add(
                             FavoriteModel(
                               id: stop.id,
                               name: stop.name,
@@ -94,6 +96,8 @@ class StopInfoSheet extends StatelessWidget {
                             ),
                           );
                         }
+
+                        onFavoritesChanged?.call();
                       },
                     ),
                   ],

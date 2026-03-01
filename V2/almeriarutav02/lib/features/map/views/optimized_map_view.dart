@@ -26,6 +26,7 @@ class _OptimizedMapViewState extends State<OptimizedMapView> {
   final MapController _mapController = MapController();
   double _currentZoom = 13.0;
   bool _showSearch = false;
+  static const String _selectedLineValue = '__selected_line__';
 
   @override
   void initState() {
@@ -44,6 +45,14 @@ class _OptimizedMapViewState extends State<OptimizedMapView> {
         if (mounted) _showMapTutorial(isFirstTime: true);
       });
     }
+  }
+
+  void _showLineFilterSelector(MapViewModel mapViewModel) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (_) => _LineFilterSheet(mapViewModel: mapViewModel),
+    );
   }
 
   @override
@@ -66,6 +75,22 @@ class _OptimizedMapViewState extends State<OptimizedMapView> {
       ),
       body: Consumer<MapViewModel>(
         builder: (context, mapViewModel, child) {
+          String? selectedLineName;
+          if (mapViewModel.currentFilter.mode == FilterMode.line &&
+              mapViewModel.currentFilter.lineId != null) {
+            for (final line in mapViewModel.lines) {
+              if (line.id == mapViewModel.currentFilter.lineId) {
+                selectedLineName = line.name;
+                break;
+              }
+            }
+          }
+
+          final isFavoritesFilterEmpty =
+              mapViewModel.currentFilter.mode == FilterMode.favorites &&
+              !mapViewModel.isLoadingStops &&
+              mapViewModel.filteredStops.isEmpty;
+
           return Stack(
             children: [
               Column(
@@ -74,9 +99,9 @@ class _OptimizedMapViewState extends State<OptimizedMapView> {
                     padding: const EdgeInsets.all(8),
                     color: Colors.grey[100],
                     child: DropdownButton<String>(
-                      value: mapViewModel.currentFilter.mode == FilterMode.line 
-                          ? mapViewModel.currentFilter.lineId 
-                          : mapViewModel.currentFilter.mode.name,
+                      value: mapViewModel.currentFilter.mode == FilterMode.line
+                        ? _selectedLineValue
+                        : mapViewModel.currentFilter.mode.name,
                       hint: const Text('Filtro'),
                       isExpanded: true,
                       items: [
@@ -100,24 +125,48 @@ class _OptimizedMapViewState extends State<OptimizedMapView> {
                             ],
                           ),
                         ),
-                        ...mapViewModel.lines.map((line) => DropdownMenuItem(
-                              value: line.id,
-                              child: Row(
-                                children: [
-                                  Icon(Icons.directions_bus, size: 16, color: AppTheme.primaryRed),
-                                  SizedBox(width: 8),
-                                  Text('Línea ${line.name}'),
-                                ],
-                              ),
-                            )),
+                        const DropdownMenuItem(
+                          value: 'favorites',
+                          child: Row(
+                            children: [
+                              Icon(Icons.star, size: 16, color: AppTheme.primaryRed),
+                              SizedBox(width: 8),
+                              Text('Favoritas'),
+                            ],
+                          ),
+                        ),
+                        const DropdownMenuItem(
+                          value: 'lines',
+                          child: Row(
+                            children: [
+                              Icon(Icons.view_list, size: 16, color: AppTheme.primaryRed),
+                              SizedBox(width: 8),
+                              Text('Líneas…'),
+                            ],
+                          ),
+                        ),
+                        if (mapViewModel.currentFilter.mode == FilterMode.line)
+                          DropdownMenuItem(
+                            value: _selectedLineValue,
+                            child: Row(
+                              children: [
+                                const Icon(Icons.filter_alt, size: 16, color: AppTheme.primaryRed),
+                                const SizedBox(width: 8),
+                                Text('Línea ${selectedLineName ?? mapViewModel.currentFilter.lineId}'),
+                              ],
+                            ),
+                          ),
                       ],
                       onChanged: (value) {
                         if (value == 'nearby') {
                           mapViewModel.setFilter(const MapFilter.nearby());
                         } else if (value == 'all') {
                           mapViewModel.setFilter(const MapFilter.all());
-                        } else if (value != null) {
-                          mapViewModel.setFilter(MapFilter.line(value));
+                        } else if (value == 'favorites') {
+                          mapViewModel.refreshFavoriteStops();
+                          mapViewModel.setFilter(const MapFilter.favorites());
+                        } else if (value == 'lines') {
+                          _showLineFilterSelector(mapViewModel);
                         }
                       },
                     ),
@@ -246,6 +295,32 @@ class _OptimizedMapViewState extends State<OptimizedMapView> {
                     },
                   ),
                 ),
+              if (isFavoritesFilterEmpty)
+                Positioned(
+                  top: 72,
+                  left: 16,
+                  right: 16,
+                  child: Material(
+                    elevation: 2,
+                    borderRadius: BorderRadius.circular(12),
+                    color: Colors.white,
+                    child: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.star_border, color: AppTheme.primaryRed),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              'No tienes paradas favoritas. Añade una desde el detalle de parada.',
+                              style: Theme.of(context).textTheme.bodyMedium,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
             ],
           );
         },
@@ -263,6 +338,7 @@ class _OptimizedMapViewState extends State<OptimizedMapView> {
               }
             },
             onFavorites: () {
+              mapViewModel.refreshFavoriteStops();
               showModalBottomSheet(
                 context: context,
                 builder: (_) => FavoritesSheet(
@@ -271,8 +347,18 @@ class _OptimizedMapViewState extends State<OptimizedMapView> {
                   onLineSelected: (lineId) {
                     mapViewModel.setFilter(MapFilter.line(lineId));
                   },
+                  onStopSelected: (stop) {
+                    mapViewModel.clearRoute();
+                    mapViewModel.refreshFavoriteStops();
+                    mapViewModel.setFilter(const MapFilter.favorites());
+                  },
+                  onFavoritesChanged: () {
+                    mapViewModel.refreshFavoriteStops();
+                  },
                 ),
-              );
+              ).whenComplete(() {
+                mapViewModel.refreshFavoriteStops();
+              });
             },
           );
         },
@@ -287,6 +373,9 @@ class _OptimizedMapViewState extends State<OptimizedMapView> {
       builder: (context) => StopInfoSheet(
         stop: stop,
         userLocation: mapViewModel.userLocation,
+        onFavoritesChanged: () {
+          mapViewModel.refreshFavoriteStops();
+        },
         onGetDirections: () {
           _openDirections(mapViewModel, stop);
           Navigator.pop(context);
@@ -347,6 +436,124 @@ class _OptimizedMapViewState extends State<OptimizedMapView> {
           },
         );
       },
+    );
+  }
+}
+
+class _LineFilterSheet extends StatefulWidget {
+  final MapViewModel mapViewModel;
+
+  const _LineFilterSheet({required this.mapViewModel});
+
+  @override
+  State<_LineFilterSheet> createState() => _LineFilterSheetState();
+}
+
+class _LineFilterSheetState extends State<_LineFilterSheet> {
+  final TextEditingController _searchController = TextEditingController();
+  String _query = '';
+
+  String _normalize(String text) {
+    return text
+        .toLowerCase()
+        .replaceAll('á', 'a')
+        .replaceAll('é', 'e')
+        .replaceAll('í', 'i')
+        .replaceAll('ó', 'o')
+        .replaceAll('ú', 'u');
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final normalizedQuery = _normalize(_query.trim());
+    final filteredLines = widget.mapViewModel.lines.where((line) {
+      if (normalizedQuery.isEmpty) return true;
+
+      final matchesLineInfo =
+          _normalize(line.name).contains(normalizedQuery) ||
+          _normalize(line.fullName).contains(normalizedQuery) ||
+          _normalize(line.description).contains(normalizedQuery);
+
+      if (matchesLineInfo) return true;
+
+      final matchesStops = widget.mapViewModel.stops.any(
+        (stop) =>
+            stop.lineIds.contains(line.id) &&
+            _normalize(stop.name).contains(normalizedQuery),
+      );
+
+      return matchesStops;
+    }).toList();
+
+    return SafeArea(
+      child: SizedBox(
+        height: MediaQuery.of(context).size.height * 0.65,
+        child: Column(
+          children: [
+            const ListTile(
+              title: Text(
+                'Filtrar por línea',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+              child: TextField(
+                controller: _searchController,
+                autofocus: true,
+                decoration: InputDecoration(
+                  hintText: 'Buscar línea por nombre o destino',
+                  prefixIcon: const Icon(Icons.search),
+                  suffixIcon: _query.isEmpty
+                      ? null
+                      : IconButton(
+                          icon: const Icon(Icons.clear),
+                          onPressed: () {
+                            _searchController.clear();
+                            setState(() => _query = '');
+                          },
+                        ),
+                  border: const OutlineInputBorder(),
+                ),
+                onChanged: (value) {
+                  setState(() => _query = value);
+                },
+                onSubmitted: (value) {
+                  setState(() => _query = value);
+                },
+              ),
+            ),
+            const Divider(height: 1),
+            Expanded(
+              child: filteredLines.isEmpty
+                  ? const Center(
+                      child: Text('No hay líneas que coincidan'),
+                    )
+                  : ListView.builder(
+                      itemCount: filteredLines.length,
+                      itemBuilder: (context, index) {
+                        final line = filteredLines[index];
+                        return ListTile(
+                          leading: const Icon(Icons.directions_bus, color: AppTheme.primaryRed),
+                          title: Text('Línea ${line.name}'),
+                          subtitle: Text(line.fullName),
+                          onTap: () {
+                            widget.mapViewModel.setFilter(MapFilter.line(line.id));
+                            Navigator.pop(context);
+                          },
+                        );
+                      },
+                    ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
