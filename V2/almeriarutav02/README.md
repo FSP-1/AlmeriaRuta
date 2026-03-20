@@ -1,16 +1,42 @@
-# almeriarutav02
+# AlmeriaRuta V2 (Flutter)
 
-A new Flutter project.
+Cliente móvil Flutter del proyecto AlmeriaRuta.
 
-## Getting Started
+## Funcionalidades destacadas
 
-This project is a starting point for a Flutter application.
+- Mapa interactivo con paradas y filtros (cercanas, todas, favoritas, por línea)
+- Modo turístico con categorías (playas, museos, monumentos, parques, compras, puerto, ocio)
+- Ruta automática a lugares turísticos con OSRM
+- Fallback a línea recta cuando falla el routing
+- Distancia y tiempo estimado para rutas
+- Sistema de tickets, validación y recarga
 
-A few resources to get you started if this is your first Flutter project:
+## Arquitectura
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+Proyecto basado en MVVM con `Provider` y `ChangeNotifier`.
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+Rutas clave:
+
+- `lib/features/map/` lógica y UI de mapa
+- `lib/features/map/tourism/` módulo turístico
+- `lib/features/home/` home y navegación principal
+
+## Ejecución
+
+```bash
+flutter pub get
+flutter run
+```
+
+## Backend local recomendado
+
+Desde la raíz del repositorio:
+
+```bash
+cd backend
+python almeria_busmaps_api.py
+```
+
+## Documentación completa
+
+Consulta el README raíz del repositorio para detalles funcionales y de arquitectura.

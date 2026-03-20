@@ -13,6 +13,15 @@ Aplicación móvil Flutter para consultar servicios de **movilidad municipal** d
 - **Datos en tiempo real**: API Flask procesando GTFS de ALSA
 - **Filtros avanzados**: Cercanas, todas, favoritas y por línea con buscador
 
+### 🗺️ Turismo y orientación
+
+- **Modo turístico en mapa**: Puntos de interés por categoría (playas, museos, monumentos, parques, compras, puerto y ocio)
+- **Filtro turístico compacto**: Selector en bottom sheet para reducir espacio en pantalla
+- **Ruta automática a lugar turístico**: Acción "Como llegar" desde el detalle del POI
+- **Distancia y tiempo estimado**: Datos visibles para la ruta seleccionada
+- **Fallback automático**: Línea recta cuando falla el cálculo de ruta
+- **Recalcular y cancelar**: Controles directos sobre la ruta activa
+
 ### 🏙️ Servicios de Movilidad Urbana
 
 - **Zona Azul**: Información sobre zonas de estacionamiento regulado
@@ -46,7 +55,8 @@ lib/
 │   │   ├── models/     # LocationModel, ZoneModel, FilterMode, FavoriteModel
 │   │   ├── viewmodels/ # MapViewModel + FavoritesViewModel
 │   │   ├── views/      # OptimizedMapView (presentacional y modular)
-│   │   └── widgets/    # SearchWidget, MapFilterBar, LineFilterSheet, FavoritesSheet, etc
+│   │   ├── widgets/    # SearchWidget, MapFilterBar, LineFilterSheet, FavoritesSheet, etc
+│   │   └── tourism/    # Módulo turístico (modelos, datos, VM y widgets)
 │   ├── tickets/        # Sistema de compra de tickets
 │   │   ├── models/     # TicketModel
 │   │   ├── viewmodels/ # TicketViewModel
@@ -75,6 +85,7 @@ lib/
 - `TicketModel`: Datos de tickets y compras con usos restantes
 - `TransportCardModel`: Tarjetas de transporte con caducidad e historial
 - `ValidationModel`: Registro de validaciones de viaje
+- `TouristPlace`: Lugar turístico con categoría y coordenadas
 
 **View**: Interfaz de usuario
 
@@ -84,6 +95,7 @@ lib/
 - `MapFilterBar`: Barra de filtros modular del mapa
 - `LineFilterSheet`: Selector de línea con buscador por nombre/destino/parada
 - `FavoritesSheet`: Gestión de favoritos (selección y eliminación)
+- `TourismMarkersLayer`: Marcadores turísticos desacoplados de la vista
 - `BuyTicketView`: Interfaz de compra de tickets
 - `RechargeView`: Gestión y recarga de tarjetas de transporte
 - `ValidateTripView`: Validación de viajes con código QR
@@ -96,9 +108,10 @@ lib/
   - `urbanMobilityServices`: 4 servicios informativos (Zona Azul, Parkings, Bicicletas, Patinetes)
   - `accessibilityService`: Notificaciones de accesibilidad PRM
 - `MapViewModel`: Estado del mapa, ubicación, rutas y filtros (MVVM compliant)
-  - Métodos centralizados: `loadStops()`, `getCurrentLocation()`, `getRoute()`, `setFilter()`, `refreshFavoriteStops()`
-  - Propiedades: `filteredStops`, `userLocation`, `currentFilter`, `isLoadingStops`, `favoriteStopIds`
+  - Métodos centralizados: `loadStops()`, `getCurrentLocation()`, `getRouteResult()`, `setFilter()`, `refreshFavoriteStops()`, `setTouristRoute()`
+  - Propiedades: `filteredStops`, `userLocation`, `currentFilter`, `isLoadingStops`, `favoriteStopIds`, `selectedTouristPlace`
 - `FavoritesViewModel`: Persistencia local de paradas/líneas favoritas con `SharedPreferences`
+- `TourismViewModel`: Control de modo turístico y categoría seleccionada
 - `TicketViewModel`: Lógica de compra y validación
 - `RechargeViewModel`: Gestión de tarjetas, caducidad e historial
 - `ValidationViewModel`: Control de validaciones y usos restantes
@@ -262,6 +275,9 @@ Consumer<MapViewModel>(
 - **Información contextual**: Distancia, tiempo caminando, líneas
 - **Popup de líneas con buscador**: Búsqueda por nombre, destino y paradas asociadas
 - **Favoritos sincronizados**: Si se eliminan favoritos, el filtro se actualiza automáticamente
+- **Modo turístico**: Marcadores de POIs con categorías
+- **Ruta a POI**: Cálculo automático desde la ubicación del usuario
+- **Tiempos peatonales coherentes**: Validación de duración para evitar estimaciones irreales
 
 ### Sistema de navegación
 
@@ -518,6 +534,9 @@ Este proyecto está bajo la Licencia MIT - ver [LICENSE](LICENSE) para detalles.
 - [X] Geolocalización en tiempo real
 - [X] Routing con OSRM
 - [X] Provider global de estado
+- [X] Modo turístico con categorías y selector compacto
+- [X] Ruta automática a lugares turísticos (OSRM + fallback)
+- [X] Distancia y tiempo para rutas turísticas con ajuste peatonal
 
 ### 🚧 En desarrollo
 
@@ -529,4 +548,4 @@ Este proyecto está bajo la Licencia MIT - ver [LICENSE](LICENSE) para detalles.
 
 ### 📝 Última actualización
 
-- **Marzo 2026**: Refactor modular del mapa (`MapFilterBar` y `LineFilterSheet`), filtro de favoritas, y mejoras de búsqueda por líneas/paradas
+- **Marzo 2026**: Integración completa de turismo en MVVM, rutas automáticas a POIs, mejora de tiempos peatonales y selector turístico optimizado
