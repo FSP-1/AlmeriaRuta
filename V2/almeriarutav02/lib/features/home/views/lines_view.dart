@@ -1,12 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
 import '../viewmodels/home_viewmodel.dart';
 import '../../map/viewmodels/favorites_viewmodel.dart';
 import '../../map/models/favorite_model.dart';
+import '../../map/models/zone_model.dart';
 import '../../../core/theme/app_theme.dart';
 
 class LinesView extends StatelessWidget {
   const LinesView({super.key});
+
+  String _resolveZoneName(double lat, double lon) {
+    final zone = AlmeriaZones.findZoneByLatLng(LatLng(lat, lon));
+    return zone?.name ?? 'Sin zona definida';
+  }
 
   Color _parseLineColor(String? colorString) {
     if (colorString == null || colorString.isEmpty) {
@@ -482,7 +489,7 @@ class LinesView extends StatelessWidget {
                                                   borderRadius: BorderRadius.circular(4),
                                                 ),
                                                 child: Text(
-                                                  'Zona ${stop.zone}',
+                                                  _resolveZoneName(stop.lat, stop.lon),
                                                   style: TextStyle(
                                                     fontSize: 12,
                                                     color: Colors.grey[700],

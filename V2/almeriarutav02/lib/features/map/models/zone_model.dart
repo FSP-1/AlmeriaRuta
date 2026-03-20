@@ -1,11 +1,17 @@
 import 'package:latlong2/latlong.dart';
 
+enum ZoneType {
+  transport,
+  tourist,
+}
+
 class ZoneModel {
   final String id;
   final String name;
   final List<LatLng> polygon;
   final LatLng center;
   final String description;
+  final ZoneType type;
 
   ZoneModel({
     required this.id,
@@ -13,6 +19,7 @@ class ZoneModel {
     required this.polygon,
     required this.center,
     required this.description,
+    this.type = ZoneType.transport,
   });
 
   factory ZoneModel.fromJson(Map<String, dynamic> json) {
@@ -24,65 +31,96 @@ class ZoneModel {
           .toList(),
       center: LatLng(json['center']['lat'], json['center']['lng']),
       description: json['description'] ?? '',
+      type: ZoneType.values.firstWhere(
+        (e) => e.name == (json['type'] ?? 'transport'),
+        orElse: () => ZoneType.transport,
+      ),
     );
   }
 }
 
-// Zonas predefinidas de Almería
+// Zonas geográficas reales (comarcas y área metropolitana)
 class AlmeriaZones {
   static final List<ZoneModel> zones = [
     ZoneModel(
-      id: 'centro',
-      name: 'Centro',
-      description: 'Centro histórico de Almería',
+      id: 'capital',
+      name: 'Almería Capital',
+      description: 'Centro, Zapillo, Ciudad Jardín, El Toyo y barrios del área metropolitana',
+      type: ZoneType.transport,
       center: const LatLng(36.8381, -2.4597),
       polygon: const [
-        LatLng(36.845, -2.475),
-        LatLng(36.845, -2.445),
-        LatLng(36.831, -2.445),
-        LatLng(36.831, -2.475),
+        LatLng(36.92, -2.59),
+        LatLng(36.92, -2.31),
+        LatLng(36.74, -2.31),
+        LatLng(36.74, -2.59),
       ],
     ),
     ZoneModel(
-      id: 'zapillo',
-      name: 'El Zapillo',
-      description: 'Zona costera este',
-      center: const LatLng(36.8290, -2.4350),
+      id: 'poniente',
+      name: 'Poniente',
+      description: 'Roquetas de Mar, El Ejido, Adra, Aguadulce y Almerimar',
+      type: ZoneType.transport,
+      center: const LatLng(36.76, -2.61),
       polygon: const [
-        LatLng(36.835, -2.445),
-        LatLng(36.835, -2.425),
-        LatLng(36.823, -2.425),
-        LatLng(36.823, -2.445),
+        LatLng(36.95, -2.95),
+        LatLng(36.95, -2.52),
+        LatLng(36.55, -2.52),
+        LatLng(36.55, -2.95),
       ],
     ),
     ZoneModel(
-      id: 'torrecardenas',
-      name: 'Torrecárdenas',
-      description: 'Zona norte - Hospital',
-      center: const LatLng(36.8630, -2.4440),
+      id: 'levante',
+      name: 'Levante',
+      description: 'Mojácar, Vera, Garrucha, Carboneras, Pulpí y Cuevas de Almanzora',
+      type: ZoneType.transport,
+      center: const LatLng(37.10, -1.85),
       polygon: const [
-        LatLng(36.870, -2.455),
-        LatLng(36.870, -2.433),
-        LatLng(36.856, -2.433),
-        LatLng(36.856, -2.455),
+        LatLng(37.42, -2.25),
+        LatLng(37.42, -1.52),
+        LatLng(36.90, -1.52),
+        LatLng(36.90, -2.25),
       ],
     ),
     ZoneModel(
-      id: 'nueva_almeria',
-      name: 'Nueva Almería',
-      description: 'Zona oeste moderna',
-      center: const LatLng(36.8450, -2.4750),
+      id: 'interior',
+      name: 'Interior',
+      description: 'Valle del Almanzora, Los Vélez y Alpujarra almeriense',
+      type: ZoneType.transport,
+      center: const LatLng(37.30, -2.20),
       polygon: const [
-        LatLng(36.855, -2.485),
-        LatLng(36.855, -2.465),
-        LatLng(36.835, -2.465),
-        LatLng(36.835, -2.485),
+        LatLng(37.80, -2.95),
+        LatLng(37.80, -1.80),
+        LatLng(36.90, -1.80),
+        LatLng(36.90, -2.95),
       ],
     ),
   ];
 
+  static bool _isTransportZone(ZoneModel zone) {
+    try {
+      return zone.type == ZoneType.transport;
+    } catch (_) {
+      // Backward compatibility with stale runtime objects.
+      return true;
+    }
+  }
+
+  static bool _isTouristZone(ZoneModel zone) {
+    try {
+      return zone.type == ZoneType.tourist;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  static List<ZoneModel> get transportZones =>
+      zones.where(_isTransportZone).toList();
+
+  static List<ZoneModel> get touristZones =>
+      zones.where(_isTouristZone).toList();
+
   static ZoneModel? findZoneByLatLng(LatLng point) {
-    for (final zone in zones) {
+    for (final zone in transportZones) {
       if (isPointInsidePolygon(point, zone.polygon)) {
         return zone;
       }

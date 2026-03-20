@@ -8,11 +8,28 @@ import '../models/location_model.dart';
 import '../models/zone_model.dart';
 import '../models/filter_mode.dart';
 import '../models/favorite_model.dart';
+import '../tourism/models/tourist_place.dart';
 import '../../../shared/services/line_models.dart';
 import '../../../shared/services/bus_api_service.dart';
 
+class RouteResult {
+  final List<LatLng> points;
+  final double distanceMeters;
+  final int durationMinutes;
+  final bool isFallback;
+
+  const RouteResult({
+    required this.points,
+    required this.distanceMeters,
+    required this.durationMinutes,
+    required this.isFallback,
+  });
+}
+
 class MapViewModel extends ChangeNotifier {
   final BusApiService _apiService = BusApiService();
+  static const double _walkingSpeedMps = 1.39; // ~5 km/h
+  static const double _maxReasonableWalkingSpeedMps = 2.2; // ~7.9 km/h
   
   // Estado de negocio
   List<StopModel> _stops = [];
@@ -20,6 +37,7 @@ class MapViewModel extends ChangeNotifier {
   LatLng? _userLocation;
   MapFilter _currentFilter = const MapFilter.nearby();
   Set<String> _favoriteStopIds = <String>{};
+  ZoneModel? _activeZone;
   
   // Estado de UI
   bool _isLoadingStops = false;
@@ -28,7 +46,11 @@ class MapViewModel extends ChangeNotifier {
   LocationModel? _selectedLocation;
   ZoneModel? _selectedZone;
   StopModel? _targetStop;
+  TouristPlace? _selectedTouristPlace;
   List<LatLng> _activeRoute = [];
+  double _routeDistanceMeters = 0;
+  int _routeDurationMinutes = 0;
+  bool _isRouteFallback = false;
   bool _isLoading = false;
   String? _errorMessage;
   List<StopModel> _stopsInZone = [];
@@ -42,12 +64,17 @@ class MapViewModel extends ChangeNotifier {
   MapFilter get currentFilter => _currentFilter;
   bool get isLoadingStops => _isLoadingStops;
   Set<String> get favoriteStopIds => _favoriteStopIds;
+  ZoneModel? get activeZone => _activeZone;
   
   // Legacy getters
   LocationModel? get selectedLocation => _selectedLocation;
   ZoneModel? get selectedZone => _selectedZone;
   StopModel? get targetStop => _targetStop;
+  TouristPlace? get selectedTouristPlace => _selectedTouristPlace;
   List<LatLng> get activeRoute => _activeRoute;
+  double get routeDistanceMeters => _routeDistanceMeters;
+  int get routeDurationMinutes => _routeDurationMinutes;
+  bool get isRouteFallback => _isRouteFallback;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
   List<StopModel> get stopsInZone => _stopsInZone;
@@ -155,10 +182,12 @@ class MapViewModel extends ChangeNotifier {
 
   // Filtrado de paradas
   List<StopModel> _getFilteredStops() {
+    List<StopModel> filteredByMode;
+
     switch (_currentFilter.mode) {
       case FilterMode.nearby:
         if (_userLocation == null) return _stops;
-        return _stops.where((stop) {
+        filteredByMode = _stops.where((stop) {
           final distance = Geolocator.distanceBetween(
             _userLocation!.latitude,
             _userLocation!.longitude,
@@ -167,20 +196,37 @@ class MapViewModel extends ChangeNotifier {
           );
           return distance <= 800; // 800 metros
         }).toList();
+        break;
         
       case FilterMode.all:
-        return _stops;
+        filteredByMode = _stops;
+        break;
 
       case FilterMode.favorites:
-        if (_favoriteStopIds.isEmpty) return [];
-        return _stops.where((stop) => _favoriteStopIds.contains(stop.id)).toList();
+        filteredByMode = _favoriteStopIds.isEmpty
+            ? []
+            : _stops.where((stop) => _favoriteStopIds.contains(stop.id)).toList();
+        break;
         
       case FilterMode.line:
-        if (_currentFilter.lineId == null) return _stops;
-        return _stops.where(
-          (stop) => stop.lineIds.contains(_currentFilter.lineId)
-        ).toList();
+        filteredByMode = _currentFilter.lineId == null
+            ? _stops
+            : _stops
+                .where((stop) => stop.lineIds.contains(_currentFilter.lineId))
+                .toList();
+        break;
     }
+
+    if (_activeZone == null) {
+      return filteredByMode;
+    }
+
+    return filteredByMode.where((stop) {
+      return AlmeriaZones.isPointInsidePolygon(
+        LatLng(stop.lat, stop.lon),
+        _activeZone!.polygon,
+      );
+    }).toList();
   }
 
   // Cambiar filtro
@@ -189,8 +235,23 @@ class MapViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  void setActiveZone(ZoneModel? zone) {
+    _activeZone = zone;
+    notifyListeners();
+  }
+
+  void clearZoneFilter() {
+    _activeZone = null;
+    notifyListeners();
+  }
+
   // Obtener ruta entre dos puntos
   Future<List<LatLng>> getRoute(LatLng from, LatLng to) async {
+    final result = await getRouteResult(from, to);
+    return result.points;
+  }
+
+  Future<RouteResult> getRouteResult(LatLng from, LatLng to) async {
     final url = Uri.parse(
       'https://router.project-osrm.org/route/v1/walking/'
       '${from.longitude},${from.latitude};${to.longitude},${to.latitude}'
@@ -205,12 +266,45 @@ class MapViewModel extends ChangeNotifier {
       }
 
       final data = json.decode(response.body);
-      final coords = data['routes'][0]['geometry']['coordinates'] as List;
+      final route = data['routes'][0];
+      final coords = route['geometry']['coordinates'] as List;
+      final distanceMeters = (route['distance'] as num?)?.toDouble() ??
+          Geolocator.distanceBetween(
+            from.latitude,
+            from.longitude,
+            to.latitude,
+            to.longitude,
+          );
+        final osrmDurationSeconds =
+          (route['duration'] as num?)?.toDouble() ?? (distanceMeters / _walkingSpeedMps);
+        final osrmSpeedMps = distanceMeters / osrmDurationSeconds;
 
-      return coords.map((c) => LatLng(c[1], c[0])).toList();
+        // Algunos perfiles devuelven duraciones tipo coche; si pasa, usamos estimacion peatonal.
+        final durationMinutes = osrmSpeedMps > _maxReasonableWalkingSpeedMps
+          ? _estimateWalkingMinutes(distanceMeters)
+          : (osrmDurationSeconds / 60).round();
+
+      return RouteResult(
+        points: coords.map((c) => LatLng(c[1], c[0])).toList(),
+        distanceMeters: distanceMeters,
+        durationMinutes: durationMinutes,
+        isFallback: false,
+      );
     } catch (e) {
-      // Si falla, retornar línea recta
-      return [from, to];
+      // Si falla, retornar linea recta como fallback
+      final distanceMeters = Geolocator.distanceBetween(
+        from.latitude,
+        from.longitude,
+        to.latitude,
+        to.longitude,
+      );
+      final durationMinutes = _estimateWalkingMinutes(distanceMeters);
+      return RouteResult(
+        points: [from, to],
+        distanceMeters: distanceMeters,
+        durationMinutes: durationMinutes,
+        isFallback: true,
+      );
     }
   }
 
@@ -240,10 +334,45 @@ class MapViewModel extends ChangeNotifier {
     );
     
     // Velocidad promedio caminando: 5 km/h = 1.39 m/s
-    final timeInSeconds = distance / 1.39;
-    final timeInMinutes = (timeInSeconds / 60).round();
+    final timeInMinutes = _estimateWalkingMinutes(distance);
     
     return timeInMinutes.toString();
+  }
+
+  String calculateDistanceToPoint(LatLng point) {
+    if (_userLocation == null) return '---';
+
+    final distance = Geolocator.distanceBetween(
+      _userLocation!.latitude,
+      _userLocation!.longitude,
+      point.latitude,
+      point.longitude,
+    );
+
+    return distance.round().toString();
+  }
+
+  String calculateWalkingTimeToPoint(LatLng point) {
+    if (_userLocation == null) return '---';
+
+    final distance = Geolocator.distanceBetween(
+      _userLocation!.latitude,
+      _userLocation!.longitude,
+      point.latitude,
+      point.longitude,
+    );
+
+    final timeInMinutes = _estimateWalkingMinutes(distance);
+
+    return timeInMinutes.toString();
+  }
+
+  int _estimateWalkingMinutes(double distanceMeters) {
+    final minutes = ((distanceMeters / _walkingSpeedMps) / 60).round();
+    if (distanceMeters > 0 && minutes == 0) {
+      return 1;
+    }
+    return minutes;
   }
 
   // Legacy methods (mantener compatibilidad)
@@ -261,13 +390,31 @@ class MapViewModel extends ChangeNotifier {
 
   void setRoute(StopModel stop, List<LatLng> route) {
     _targetStop = stop;
+    _selectedTouristPlace = null;
     _activeRoute = route;
+    _routeDistanceMeters = 0;
+    _routeDurationMinutes = 0;
+    _isRouteFallback = false;
+    notifyListeners();
+  }
+
+  void setTouristRoute(TouristPlace place, RouteResult routeResult) {
+    _targetStop = null;
+    _selectedTouristPlace = place;
+    _activeRoute = routeResult.points;
+    _routeDistanceMeters = routeResult.distanceMeters;
+    _routeDurationMinutes = routeResult.durationMinutes;
+    _isRouteFallback = routeResult.isFallback;
     notifyListeners();
   }
 
   void clearRoute() {
     _targetStop = null;
+    _selectedTouristPlace = null;
     _activeRoute = [];
+    _routeDistanceMeters = 0;
+    _routeDurationMinutes = 0;
+    _isRouteFallback = false;
     notifyListeners();
   }
 

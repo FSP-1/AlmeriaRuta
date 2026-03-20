@@ -13,11 +13,14 @@ class MapTutorialDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final maxHeight = MediaQuery.of(context).size.height * 0.82;
+
     return Dialog(
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
       ),
       child: Container(
+        constraints: BoxConstraints(maxHeight: maxHeight),
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(20),
@@ -26,13 +29,17 @@ class MapTutorialDialog extends StatelessWidget {
             end: Alignment.bottomRight,
             colors: [
               Colors.white,
-              AppTheme.primaryRed.withValues(alpha: 0.05),
+              const Color(0xFFFFF7F7),
             ],
           ),
         ),
         child: Column(
-          mainAxisSize: MainAxisSize.min,
           children: [
+            Expanded(
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
             // Header
             Row(
               children: [
@@ -65,7 +72,8 @@ class MapTutorialDialog extends StatelessWidget {
                         'Guía rápida del mapa',
                         style: TextStyle(
                           fontSize: 14,
-                          color: Colors.grey,
+                          color: Color(0xFF4A5568),
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
                     ],
@@ -78,10 +86,10 @@ class MapTutorialDialog extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: AppTheme.primaryRed.withValues(alpha: 0.05),
+                color: Colors.white,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: AppTheme.primaryRed.withValues(alpha: 0.2),
+                  color: AppTheme.primaryRed.withValues(alpha: 0.35),
                   width: 1,
                 ),
               ),
@@ -92,9 +100,13 @@ class MapTutorialDialog extends StatelessWidget {
                   Expanded(
                     child: Text(
                       isFirstTime
-                          ? 'Mostramos paradas cercanas (800m)\nPuedes cambiar el filtro arriba'
+                          ? 'Mostramos paradas cercanas (800m)\nPuedes filtrar por zona y activar modo turistico'
                           : 'Por defecto se muestran paradas cercanas a tu ubicación (800m)',
-                      style: const TextStyle(fontSize: 13),
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: Color(0xFF1A202C),
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                   ),
                 ],
@@ -106,7 +118,21 @@ class MapTutorialDialog extends StatelessWidget {
               icon: Icons.near_me,
               iconColor: AppTheme.primaryRed,
               title: 'Filtrar paradas',
-              description: 'Usa el menú superior: Cercanas, Todas o por Línea',
+              description: 'Usa el menú superior: Cercanas, Todas, Favoritas o por Línea',
+            ),
+            const SizedBox(height: 12),
+            _buildHelpItem(
+              icon: Icons.map,
+              iconColor: Colors.green,
+              title: 'Filtrar por zona',
+              description: 'Toca el botón verde para elegir Poniente, Levante, Capital o Interior',
+            ),
+            const SizedBox(height: 12),
+            _buildHelpItem(
+              icon: Icons.tune,
+              iconColor: Colors.teal,
+              title: 'Combinar filtros',
+              description: 'Si eliges zona y filtro (cercanas, favoritas o linea), veras solo paradas de esa zona',
             ),
             const SizedBox(height: 12),
             _buildHelpItem(
@@ -138,7 +164,18 @@ class MapTutorialDialog extends StatelessWidget {
               title: 'Cómo llegar',
               description: 'Desde los detalles de una parada, puedes ver la ruta',
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 12),
+            _buildHelpItem(
+              icon: Icons.camera_alt,
+              iconColor: Colors.blue,
+              title: 'Modo turístico',
+              description: 'Activa el botón azul para ver monumentos, museos y puntos destacados',
+            ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
             // Botón
             SizedBox(
               width: double.infinity,
@@ -202,7 +239,8 @@ class MapTutorialDialog extends StatelessWidget {
                 description,
                 style: TextStyle(
                   fontSize: 12,
-                  color: Colors.grey[700],
+                  color: const Color(0xFF2D3748),
+                  height: 1.35,
                 ),
               ),
             ],

@@ -1,0 +1,5 @@
+{
+    "java.help.firstView": "none",
+    "java.gradle.buildServer.enabled": "off",
+    "java.gradle.buildServer.openBuildOutput": "openOnBuildFailure"
+}

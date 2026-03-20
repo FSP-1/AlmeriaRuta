@@ -13,6 +13,9 @@ import '../widgets/stop_info_sheet.dart';
 import '../widgets/map_floating_buttons.dart';
 import '../widgets/line_filter_sheet.dart';
 import '../widgets/map_filter_bar.dart';
+import '../tourism/viewmodels/tourism_viewmodel.dart';
+import '../tourism/models/tourist_place.dart';
+import '../tourism/widgets/tourism_markers_layer.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../shared/services/line_models.dart';
 import '../../../shared/services/onboarding_service.dart';
@@ -56,6 +59,95 @@ class _OptimizedMapViewState extends State<OptimizedMapView> {
     );
   }
 
+  void _showZoneSelector(MapViewModel mapViewModel) {
+    showModalBottomSheet(
+      context: context,
+      builder: (_) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const ListTile(
+              title: Text(
+                'Filtrar por zona',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+            ListTile(
+              leading: const Icon(Icons.layers_clear, color: Colors.grey),
+              title: const Text('Todas las zonas'),
+              onTap: () {
+                mapViewModel.clearZoneFilter();
+                Navigator.pop(context);
+              },
+            ),
+            ...AlmeriaZones.transportZones.map((zone) => ListTile(
+                  leading: const Icon(Icons.map, color: Colors.green),
+                  title: Text(zone.name),
+                  subtitle: Text(zone.description),
+                  onTap: () {
+                    mapViewModel.setActiveZone(zone);
+                    _mapController.move(zone.center, 13.0);
+                    Navigator.pop(context);
+                  },
+                )),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showTourismCategorySelector(TourismViewModel tourismViewModel) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (_) {
+        final maxHeight = MediaQuery.sizeOf(context).height * 0.75;
+        return SafeArea(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(maxHeight: maxHeight),
+            child: ListView(
+              shrinkWrap: true,
+              children: [
+                const ListTile(
+                  title: Text(
+                    'Filtro turístico',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.apps, color: Colors.blue),
+                  title: const Text('Todos'),
+                  trailing: tourismViewModel.selectedCategory == null
+                      ? const Icon(Icons.check, color: Colors.blue)
+                      : null,
+                  onTap: () {
+                    tourismViewModel.setCategory(null);
+                    Navigator.pop(context);
+                  },
+                ),
+                ...TouristCategory.values.map(
+                  (category) => ListTile(
+                    leading: const Icon(Icons.place, color: Colors.blue),
+                    title: Text(_tourismCategoryLabel(category)),
+                    trailing: tourismViewModel.selectedCategory == category
+                        ? const Icon(Icons.check, color: Colors.blue)
+                        : null,
+                    onTap: () {
+                      tourismViewModel.setCategory(category);
+                      Navigator.pop(context);
+                    },
+                  ),
+                ),
+                const SizedBox(height: 8),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -74,12 +166,14 @@ class _OptimizedMapViewState extends State<OptimizedMapView> {
           ),
         ],
       ),
-      body: Consumer<MapViewModel>(
-        builder: (context, mapViewModel, child) {
+      body: Consumer2<MapViewModel, TourismViewModel>(
+        builder: (context, mapViewModel, tourismViewModel, child) {
           final isFavoritesFilterEmpty =
               mapViewModel.currentFilter.mode == FilterMode.favorites &&
               !mapViewModel.isLoadingStops &&
               mapViewModel.filteredStops.isEmpty;
+
+            final hasActiveZone = mapViewModel.activeZone != null;
 
           return Stack(
             children: [
@@ -102,26 +196,24 @@ class _OptimizedMapViewState extends State<OptimizedMapView> {
                             _currentZoom = position.zoom;
                           });
                         },
-                        onTap: (tapPosition, latLng) {
-                          final zone = AlmeriaZones.findZoneByLatLng(latLng);
-                          if (zone != null) {
-                            _mapController.move(zone.center, 15.0);
-                          }
-                        },
                       ),
                       children: [
                         TileLayer(
                           urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                           userAgentPackageName: 'com.example.almeriarutav02',
                         ),
-                        // Polígonos de zonas (invisibles)
+                        // Zona activa resaltada
                         PolygonLayer(
-                          polygons: AlmeriaZones.zones.map((zone) => Polygon(
-                            points: zone.polygon,
-                            color: Colors.transparent,
-                            borderColor: Colors.transparent,
-                            borderStrokeWidth: 0,
-                          )).toList(),
+                          polygons: hasActiveZone
+                              ? <Polygon<Object>>[
+                                  Polygon<Object>(
+                                    points: mapViewModel.activeZone!.polygon,
+                                    color: Colors.green.withValues(alpha: 0.08),
+                                    borderColor: Colors.green.withValues(alpha: 0.7),
+                                    borderStrokeWidth: 2,
+                                  ),
+                                ]
+                              : <Polygon<Object>>[],
                         ),
                         // Ruta activa
                         if (mapViewModel.activeRoute.isNotEmpty)
@@ -184,6 +276,13 @@ class _OptimizedMapViewState extends State<OptimizedMapView> {
                                 ),
                             ],
                           ),
+                        if (tourismViewModel.isEnabled)
+                          TourismMarkersLayer(
+                            places: tourismViewModel.filteredPlaces,
+                            onPlaceTap: (place) {
+                              _showTouristPlaceInfo(context, place, mapViewModel);
+                            },
+                          ),
                         RichAttributionWidget(
                           attributions: [
                             TextSourceAttribution(
@@ -239,14 +338,62 @@ class _OptimizedMapViewState extends State<OptimizedMapView> {
                     ),
                   ),
                 ),
+              if (hasActiveZone)
+                Positioned(
+                  top: isFavoritesFilterEmpty ? 140 : 72,
+                  left: 16,
+                  right: 16,
+                  child: Material(
+                    elevation: 2,
+                    borderRadius: BorderRadius.circular(12),
+                    color: Colors.white,
+                    child: ListTile(
+                      dense: true,
+                      leading: const Icon(Icons.map, color: Colors.green),
+                      title: Text('Zona activa: ${mapViewModel.activeZone!.name}'),
+                      subtitle: Text(mapViewModel.activeZone!.description),
+                      trailing: IconButton(
+                        icon: const Icon(Icons.close),
+                        onPressed: () => mapViewModel.clearZoneFilter(),
+                      ),
+                    ),
+                  ),
+                ),
+              if (tourismViewModel.isEnabled)
+                Positioned(
+                  top: hasActiveZone
+                      ? (isFavoritesFilterEmpty ? 234 : 166)
+                      : (isFavoritesFilterEmpty ? 140 : 72),
+                  left: 16,
+                  right: 16,
+                  child: Material(
+                    elevation: 2,
+                    borderRadius: BorderRadius.circular(12),
+                    color: Colors.white,
+                    child: ListTile(
+                      dense: true,
+                      leading: const Icon(Icons.tour, color: Colors.blue),
+                      title: Text(
+                        tourismViewModel.selectedCategory == null
+                            ? 'Turismo: todos'
+                            : 'Turismo: ${_tourismCategoryLabel(tourismViewModel.selectedCategory!)}',
+                      ),
+                      trailing: IconButton(
+                        icon: const Icon(Icons.tune, color: Colors.blue),
+                        onPressed: () => _showTourismCategorySelector(tourismViewModel),
+                      ),
+                    ),
+                  ),
+                ),
             ],
           );
         },
       ),
-      floatingActionButton: Consumer<MapViewModel>(
-        builder: (context, mapViewModel, child) {
+      floatingActionButton: Consumer2<MapViewModel, TourismViewModel>(
+        builder: (context, mapViewModel, tourismViewModel, child) {
           return MapFloatingButtons(
             hasActiveRoute: mapViewModel.activeRoute.isNotEmpty,
+            touristModeEnabled: tourismViewModel.isEnabled,
             onClearRoute: () => mapViewModel.clearRoute(),
             onMyLocation: () {
               if (mapViewModel.userLocation != null) {
@@ -277,6 +424,18 @@ class _OptimizedMapViewState extends State<OptimizedMapView> {
               ).whenComplete(() {
                 mapViewModel.refreshFavoriteStops();
               });
+            },
+            onZones: () {
+              _showZoneSelector(mapViewModel);
+            },
+            onTouristMode: () {
+              tourismViewModel.toggleEnabled();
+              final text = tourismViewModel.isEnabled
+                  ? 'Modo turístico activado'
+                  : 'Modo turístico desactivado';
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text(text), duration: const Duration(seconds: 1)),
+              );
             },
           );
         },
@@ -318,6 +477,125 @@ class _OptimizedMapViewState extends State<OptimizedMapView> {
     }
   }
 
+  void _showTouristPlaceInfo(
+    BuildContext parentContext,
+    TouristPlace place,
+    MapViewModel mapViewModel,
+  ) {
+    final hasRouteToThisPlace =
+        mapViewModel.activeRoute.isNotEmpty &&
+        mapViewModel.selectedTouristPlace?.id == place.id;
+
+    showModalBottomSheet(
+      context: parentContext,
+      isScrollControlled: true,
+      builder: (context) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Icon(Icons.place, color: Colors.blue),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      place.name,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(place.description),
+              const SizedBox(height: 12),
+              Text(
+                'Distancia estimada: ${mapViewModel.calculateDistanceToPoint(place.location)} m',
+              ),
+              Text(
+                'Tiempo estimado: ${mapViewModel.calculateWalkingTimeToPoint(place.location)} min',
+              ),
+              if (hasRouteToThisPlace) ...[
+                const SizedBox(height: 10),
+                Text(
+                  'Ruta activa: ${mapViewModel.routeDistanceMeters.round()} m • ${mapViewModel.routeDurationMinutes} min',
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
+                if (mapViewModel.isRouteFallback)
+                  const Padding(
+                    padding: EdgeInsets.only(top: 4),
+                    child: Text(
+                      'Ruta aproximada en linea recta (fallback)',
+                      style: TextStyle(color: Colors.orange),
+                    ),
+                  ),
+              ],
+              const SizedBox(height: 14),
+              Row(
+                children: [
+                  Expanded(
+                    child: FilledButton.icon(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        _openTouristDirections(mapViewModel, place);
+                      },
+                      icon: const Icon(Icons.directions_walk),
+                      label: Text(hasRouteToThisPlace ? 'Recalcular' : 'Como llegar'),
+                    ),
+                  ),
+                  if (hasRouteToThisPlace) ...[
+                    const SizedBox(width: 10),
+                    OutlinedButton.icon(
+                      onPressed: () {
+                        mapViewModel.clearRoute();
+                        Navigator.pop(context);
+                      },
+                      icon: const Icon(Icons.close),
+                      label: const Text('Cancelar'),
+                    ),
+                  ],
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _openTouristDirections(MapViewModel mapViewModel, TouristPlace place) async {
+    if (mapViewModel.userLocation == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No se pudo obtener tu ubicacion actual')),
+      );
+      return;
+    }
+
+    final result = await mapViewModel.getRouteResult(
+      mapViewModel.userLocation!,
+      place.location,
+    );
+
+    if (!mounted) return;
+
+    mapViewModel.setTouristRoute(place, result);
+
+    final fallbackText = result.isFallback ? ' (fallback)' : '';
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          'Ruta a ${place.name}: ${result.distanceMeters.round()} m · ${result.durationMinutes} min$fallbackText',
+        ),
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
   void _showMapTutorial({required bool isFirstTime}) {
     showDialog(
       context: context,
@@ -356,4 +634,24 @@ class _OptimizedMapViewState extends State<OptimizedMapView> {
       },
     );
   }
+
+  String _tourismCategoryLabel(TouristCategory category) {
+    switch (category) {
+      case TouristCategory.monument:
+        return 'Monumentos';
+      case TouristCategory.beach:
+        return 'Playas';
+      case TouristCategory.museum:
+        return 'Museos';
+      case TouristCategory.park:
+        return 'Parques';
+      case TouristCategory.shopping:
+        return 'Compras';
+      case TouristCategory.port:
+        return 'Puerto';
+      case TouristCategory.leisure:
+        return 'Ocio';
+    }
+  }
+
 }

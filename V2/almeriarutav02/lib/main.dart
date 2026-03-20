@@ -5,6 +5,7 @@ import 'core/constants/app_constants.dart';
 import 'features/home/viewmodels/home_viewmodel.dart';
 import 'features/home/views/home_view.dart';
 import 'features/map/viewmodels/map_viewmodel.dart';
+import 'features/map/tourism/viewmodels/tourism_viewmodel.dart';
 
 void main() {
   runApp(const AlmeriaRutaApp());
@@ -19,6 +20,7 @@ class AlmeriaRutaApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(create: (_) => HomeViewModel()),
         ChangeNotifierProvider(create: (_) => MapViewModel()),
+        ChangeNotifierProvider(create: (_) => TourismViewModel()),
       ],
       child: MaterialApp(
         title: AppConstants.appName,
