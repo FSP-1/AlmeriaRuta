@@ -82,38 +82,45 @@ class _OptimizedMapViewState extends State<OptimizedMapView> {
   void _showZoneSelector(MapViewModel mapViewModel) {
     showModalBottomSheet(
       context: context,
-      builder: (_) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const ListTile(
-              title: Text(
-                'Filtrar por zona',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-            ),
-            ListTile(
-              leading: const Icon(Icons.layers_clear, color: Colors.grey),
-              title: const Text('Todas las zonas'),
-              onTap: () {
-                mapViewModel.clearZoneFilter();
-                Navigator.pop(context);
-              },
-            ),
-            ...AlmeriaZones.transportZones.map((zone) => ListTile(
-                  leading: const Icon(Icons.map, color: Colors.green),
-                  title: Text(zone.name),
-                  subtitle: Text(zone.description),
+      isScrollControlled: true,
+      builder: (_) {
+        final maxHeight = MediaQuery.sizeOf(context).height * 0.75;
+        return SafeArea(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(maxHeight: maxHeight),
+            child: ListView(
+              shrinkWrap: true,
+              children: [
+                const ListTile(
+                  title: Text(
+                    'Filtrar por zona',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.layers_clear, color: Colors.grey),
+                  title: const Text('Todas las zonas'),
                   onTap: () {
-                    mapViewModel.setActiveZone(zone);
-                    _mapController.move(zone.center, 13.0);
+                    mapViewModel.clearZoneFilter();
                     Navigator.pop(context);
                   },
-                )),
-            const SizedBox(height: 8),
-          ],
-        ),
-      ),
+                ),
+                ...AlmeriaZones.transportZones.map((zone) => ListTile(
+                      leading: const Icon(Icons.map, color: Colors.green),
+                      title: Text(zone.name),
+                      subtitle: Text(zone.description),
+                      onTap: () {
+                        mapViewModel.setActiveZone(zone);
+                        _mapController.move(zone.center, 13.0);
+                        Navigator.pop(context);
+                      },
+                    )),
+                const SizedBox(height: 8),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
