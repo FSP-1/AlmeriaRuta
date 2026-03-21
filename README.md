@@ -37,6 +37,19 @@ Aplicación móvil Flutter para consultar servicios de **movilidad municipal** d
 - **Validación de viajes**: Sistema QR para validar tickets al subir al autobús
 - **Control de saldo**: Tarjeta virtual recargable
 
+## Conexion API y Rendimiento
+
+Resumen corto de la optimizacion global de conectividad y estado:
+
+- Capa API central con cache, deduplicacion de requests en vuelo, timeout y retry.
+- Inicializacion del mapa protegida para evitar reinicializaciones y llamadas redundantes.
+- Carga de paradas optimizada en paralelo (`Future.wait`) para reducir tiempo de arranque.
+- Popup de parada en Lineas sin recomputacion redundante en cada rebuild.
+- Home y Lineas con guardas de recarga y refresh explicito solo al reintentar.
+
+Documentacion tecnica completa:
+- [documentacion/API_CONEXION_Y_OPTIMIZACION.md](documentacion/API_CONEXION_Y_OPTIMIZACION.md)
+
 ## Arquitectura MVVM
 
 ### Estructura del proyecto

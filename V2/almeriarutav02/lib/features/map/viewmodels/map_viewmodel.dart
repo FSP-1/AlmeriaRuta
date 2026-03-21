@@ -55,6 +55,7 @@ class MapViewModel extends ChangeNotifier {
   String? _errorMessage;
   List<StopModel> _stopsInZone = [];
   Map<String, int> _linesInZone = {};
+  bool _initialized = false;
 
   // Getters - Estado de negocio
   List<StopModel> get stops => _stops;
@@ -82,9 +83,12 @@ class MapViewModel extends ChangeNotifier {
 
   // Inicialización
   Future<void> initialize() async {
+    if (_initialized) return;
+
     await loadStops();
     await getCurrentLocation();
     await refreshFavoriteStops();
+    _initialized = true;
   }
 
   Future<void> refreshFavoriteStops() async {
@@ -112,6 +116,9 @@ class MapViewModel extends ChangeNotifier {
 
   // Cargar paradas desde API
   Future<void> loadStops() async {
+    if (_isLoadingStops) return;
+    if (_stops.isNotEmpty) return;
+
     _isLoadingStops = true;
     _isLoading = true;
     _errorMessage = null;
@@ -120,19 +127,24 @@ class MapViewModel extends ChangeNotifier {
     try {
       final lines = await _apiService.getLines();
       final uniqueStops = <String, StopModel>{};
-      
-      for (final line in lines) {
-        final stops = await _apiService.getLineStops(line.id);
-        
+
+      final stopsByLine = await Future.wait(
+        lines.map((line) async {
+          final stops = await _apiService.getLineStops(line.id);
+          return MapEntry(line.id, stops);
+        }),
+      );
+
+      for (final entry in stopsByLine) {
+        final lineId = entry.key;
+        final stops = entry.value;
         for (final stop in stops) {
           if (uniqueStops.containsKey(stop.id)) {
             uniqueStops[stop.id] = uniqueStops[stop.id]!.copyWith(
-              lineIds: {...uniqueStops[stop.id]!.lineIds, line.id},
+              lineIds: {...uniqueStops[stop.id]!.lineIds, lineId},
             );
           } else {
-            uniqueStops[stop.id] = stop.copyWith(
-              lineIds: {line.id},
-            );
+            uniqueStops[stop.id] = stop.copyWith(lineIds: {lineId});
           }
         }
       }
@@ -153,6 +165,8 @@ class MapViewModel extends ChangeNotifier {
 
   // Obtener ubicación del usuario
   Future<void> getCurrentLocation() async {
+    if (_userLocation != null) return;
+
     try {
       final permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied) {

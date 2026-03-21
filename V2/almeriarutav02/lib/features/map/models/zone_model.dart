@@ -45,7 +45,7 @@ class AlmeriaZones {
     ZoneModel(
       id: 'capital',
       name: 'Almería Capital',
-      description: 'Centro, Zapillo, Ciudad Jardín, El Toyo y barrios del área metropolitana',
+      description: 'Zona urbana principal de la ciudad de Almería',
       type: ZoneType.transport,
       center: const LatLng(36.8381, -2.4597),
       polygon: const [
@@ -58,7 +58,7 @@ class AlmeriaZones {
     ZoneModel(
       id: 'poniente',
       name: 'Poniente',
-      description: 'Roquetas de Mar, El Ejido, Adra, Aguadulce y Almerimar',
+      description: 'Comarca general del Poniente almeriense',
       type: ZoneType.transport,
       center: const LatLng(36.76, -2.61),
       polygon: const [
@@ -71,7 +71,7 @@ class AlmeriaZones {
     ZoneModel(
       id: 'levante',
       name: 'Levante',
-      description: 'Mojácar, Vera, Garrucha, Carboneras, Pulpí y Cuevas de Almanzora',
+      description: 'Comarca general del Levante almeriense',
       type: ZoneType.transport,
       center: const LatLng(37.10, -1.85),
       polygon: const [
@@ -84,7 +84,7 @@ class AlmeriaZones {
     ZoneModel(
       id: 'interior',
       name: 'Interior',
-      description: 'Valle del Almanzora, Los Vélez y Alpujarra almeriense',
+      description: 'Zonas del interior de la provincia de Almería',
       type: ZoneType.transport,
       center: const LatLng(37.30, -2.20),
       polygon: const [

@@ -404,21 +404,22 @@ class LinesView extends StatelessWidget {
     LinesViewModel linesViewModel,
   ) {
     final mapViewModel = context.read<MapViewModel>();
+    final popupFuture = () async {
+      if (mapViewModel.stops.isEmpty) {
+        await mapViewModel.loadStops();
+      }
+      return linesViewModel.buildStopPopupData(
+        stop,
+        currentLine,
+        aggregatedStops: mapViewModel.stops,
+      );
+    }();
 
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       builder: (context) => FutureBuilder<StopPopupModel>(
-        future: () async {
-          if (mapViewModel.stops.isEmpty) {
-            await mapViewModel.loadStops();
-          }
-          return linesViewModel.buildStopPopupData(
-            stop,
-            currentLine,
-            aggregatedStops: mapViewModel.stops,
-          );
-        }(),
+        future: popupFuture,
         builder: (context, snapshot) {
           final popup = snapshot.data;
           final passingLines = popup?.passingLines ?? [currentLine];
