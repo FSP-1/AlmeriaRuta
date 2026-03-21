@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import '../../../shared/services/line_models.dart';
 import '../../../shared/services/bus_api_service.dart';
@@ -109,13 +108,17 @@ class HomeViewModel extends ChangeNotifier {
     status: ServiceStatus.information,
   );
 
-  Future<void> loadLines() async {
+  Future<void> loadLines({bool forceRefresh = false}) async {
+    if (!forceRefresh && (_isLoading || _lines.isNotEmpty)) {
+      return;
+    }
+
     _isLoading = true;
     _error = null;
     notifyListeners();
 
     try {
-      _lines = await _apiService.getLines();
+      _lines = await _apiService.getLines(forceRefresh: forceRefresh);
     } catch (e) {
       _error = e.toString();
     } finally {

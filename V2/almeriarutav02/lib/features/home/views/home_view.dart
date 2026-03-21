@@ -5,7 +5,7 @@ import '../models/mobility_service_model.dart';
 import '../../map/views/optimized_map_view.dart';
 import '../../tickets/views/buy_ticket_view.dart';
 import '../../recharge/views/recharge_view.dart';
-import 'lines_view.dart';
+import '../../lines/views/lines_view.dart';
 import '../../../core/theme/app_theme.dart';
 
 class HomeView extends StatefulWidget {
@@ -215,7 +215,7 @@ class _HomeViewState extends State<HomeView> {
                           Text('Error: ${viewModel.error}'),
                           const SizedBox(height: 8),
                           ElevatedButton(
-                            onPressed: () => viewModel.loadLines(),
+                            onPressed: () => viewModel.loadLines(forceRefresh: true),
                             child: const Text('Reintentar'),
                           ),
                         ],

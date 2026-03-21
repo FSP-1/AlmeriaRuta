@@ -21,7 +21,14 @@ import '../../../shared/services/line_models.dart';
 import '../../../shared/services/onboarding_service.dart';
 
 class OptimizedMapView extends StatefulWidget {
-  const OptimizedMapView({super.key});
+  final StopModel? initialStop;
+  final String? initialLineId;
+
+  const OptimizedMapView({
+    super.key,
+    this.initialStop,
+    this.initialLineId,
+  });
 
   @override
   State<OptimizedMapView> createState() => _OptimizedMapViewState();
@@ -36,10 +43,23 @@ class _OptimizedMapViewState extends State<OptimizedMapView> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final vm = context.read<MapViewModel>();
-      vm.initialize();
-      _checkOnboarding();
+      _initializeMapView();
     });
+  }
+
+  Future<void> _initializeMapView() async {
+    final vm = context.read<MapViewModel>();
+    await vm.initialize();
+
+    if (!mounted) return;
+
+    if (widget.initialStop != null) {
+      await vm.showStopWithRouteFromExternal(widget.initialStop!);
+      if (!mounted) return;
+      _mapController.move(LatLng(widget.initialStop!.lat, widget.initialStop!.lon), 16.0);
+    }
+
+    _checkOnboarding();
   }
 
   Future<void> _checkOnboarding() async {

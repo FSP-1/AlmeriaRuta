@@ -140,11 +140,6 @@ class MapViewModel extends ChangeNotifier {
       _lines = lines;
       _stops = uniqueStops.values.toList();
       
-      // Asegurar que inicia con paradas cercanas si hay ubicación
-      if (_userLocation != null) {
-        _currentFilter = const MapFilter.nearby();
-      }
-      
       _isLoadingStops = false;
       _isLoading = false;
       notifyListeners();
@@ -166,11 +161,6 @@ class MapViewModel extends ChangeNotifier {
 
       final position = await Geolocator.getCurrentPosition();
       _userLocation = LatLng(position.latitude, position.longitude);
-      
-      // Si ya cargó paradas, actualizar filtro a nearby
-      if (_stops.isNotEmpty) {
-        _currentFilter = const MapFilter.nearby();
-      }
       
       notifyListeners();
     } catch (e) {
@@ -233,6 +223,23 @@ class MapViewModel extends ChangeNotifier {
   void setFilter(MapFilter filter) {
     _currentFilter = filter;
     notifyListeners();
+  }
+
+  void focusStopFromExternal(StopModel stop, {String? lineId}) {
+    _targetStop = stop;
+    _selectedTouristPlace = null;
+    _activeRoute = [];
+    _routeDistanceMeters = 0;
+    _routeDurationMinutes = 0;
+    _isRouteFallback = false;
+    _currentFilter = lineId == null ? const MapFilter.all() : MapFilter.line(lineId);
+    notifyListeners();
+  }
+
+  Future<void> showStopWithRouteFromExternal(StopModel stop) async {
+    final from = _userLocation ?? const LatLng(36.8381, -2.4597);
+    final route = await getRoute(from, LatLng(stop.lat, stop.lon));
+    setRoute(stop, route);
   }
 
   void setActiveZone(ZoneModel? zone) {
