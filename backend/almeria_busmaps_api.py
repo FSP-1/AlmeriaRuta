@@ -3,6 +3,7 @@ from flask_cors import CORS
 import os
 import zipfile
 import pandas as pd
+from datetime import datetime
 
 app = Flask(__name__)
 CORS(app)
@@ -37,6 +38,17 @@ def clean_route_name(name: str) -> str:
     if not name:
         return ""
     return name.replace("ALSA - ", "").strip()
+
+
+def parse_gtfs_time_to_seconds(time_str):
+    """Parses GTFS HH:MM:SS (supports HH>=24) into seconds from service day start."""
+    if pd.isna(time_str):
+        return None
+    try:
+        hh, mm, ss = str(time_str).split(':')
+        return int(hh) * 3600 + int(mm) * 60 + int(ss)
+    except Exception:
+        return None
 
 class BusMapsClient:
     def __init__(self):
@@ -91,6 +103,25 @@ class BusMapsClient:
         
         # Cache para líneas
         self.lines_cache = None
+        self.line_arrivals_cache = {}
+
+        self.urban_routes_almeria = self.urban_routes_almeria.copy()
+        self.urban_routes_almeria['line_id'] = self.urban_routes_almeria['route_short_name'].apply(clean_route_name)
+
+        # Mapa route_id -> line_id
+        self.route_to_line = dict(
+            zip(self.urban_routes_almeria['route_id'], self.urban_routes_almeria['line_id'])
+        )
+
+        # stop_times enriquecido para calcular llegadas programadas
+        trip_routes = self.trips[['trip_id', 'route_id']]
+        st = self.stop_times[['trip_id', 'stop_id_norm', 'arrival_time']].copy()
+        st = st.merge(trip_routes, on='trip_id', how='inner')
+        st = st[st['route_id'].isin(set(self.urban_routes_almeria['route_id']))]
+        st['line_id'] = st['route_id'].map(self.route_to_line)
+        st['arrival_seconds'] = st['arrival_time'].apply(parse_gtfs_time_to_seconds)
+        st = st[st['arrival_seconds'].notna() & st['line_id'].notna() & st['stop_id_norm'].notna()]
+        self.stop_times_with_line = st[['line_id', 'stop_id_norm', 'arrival_seconds']]
 
     def get_almeria_lines(self):
         """Obtiene todas las líneas urbanas de Almería"""
@@ -171,6 +202,67 @@ class BusMapsClient:
         self.lines_cache = lines
         return lines
 
+    def _now_seconds_service_day(self):
+        now = datetime.now()
+        return now.hour * 3600 + now.minute * 60 + now.second
+
+    def get_line_arrivals(self, line_id):
+        """Devuelve próxima llegada programada por parada para una línea (GTFS estático)."""
+        cache_key = (line_id, datetime.now().strftime('%Y%m%d%H%M'))
+        if cache_key in self.line_arrivals_cache:
+            return self.line_arrivals_cache[cache_key]
+
+        df = self.stop_times_with_line[self.stop_times_with_line['line_id'] == line_id]
+        if df.empty:
+            return {"lineId": line_id, "arrivals": []}
+
+        now_seconds = self._now_seconds_service_day()
+        work = df.copy()
+        work['delta_seconds'] = work['arrival_seconds'] - now_seconds
+        work.loc[work['delta_seconds'] < 0, 'delta_seconds'] += 86400
+
+        min_by_stop = work.groupby('stop_id_norm', as_index=False)['delta_seconds'].min()
+        min_by_stop['minutes'] = (min_by_stop['delta_seconds'] / 60).apply(lambda x: int(x) if x >= 1 else 1)
+
+        result = {
+            "lineId": line_id,
+            "generatedAt": datetime.now().isoformat(),
+            "arrivals": [
+                {"stopId": str(row['stop_id_norm']), "minutes": int(row['minutes'])}
+                for _, row in min_by_stop.iterrows()
+            ],
+        }
+
+        self.line_arrivals_cache = {cache_key: result}
+        return result
+
+    def get_stop_arrivals(self, stop_id, limit=3):
+        """Devuelve próximas llegadas programadas por línea para una parada."""
+        stop_id_norm = normalize_stop_id(stop_id)
+        if stop_id_norm is None:
+            return []
+
+        df = self.stop_times_with_line[self.stop_times_with_line['stop_id_norm'] == stop_id_norm]
+        if df.empty:
+            return []
+
+        now_seconds = self._now_seconds_service_day()
+        work = df.copy()
+        work['delta_seconds'] = work['arrival_seconds'] - now_seconds
+        work.loc[work['delta_seconds'] < 0, 'delta_seconds'] += 86400
+
+        min_by_line = work.groupby('line_id', as_index=False)['delta_seconds'].min()
+        min_by_line = min_by_line.sort_values('delta_seconds').head(limit)
+        min_by_line['minutes'] = (min_by_line['delta_seconds'] / 60).apply(lambda x: int(x) if x >= 1 else 1)
+
+        return [
+            {
+                "lineId": row['line_id'],
+                "minutes": int(row['minutes']),
+            }
+            for _, row in min_by_line.iterrows()
+        ]
+
 client = BusMapsClient()
 
 @app.route('/lines')
@@ -202,8 +294,21 @@ def get_stop_detail(stop_id):
         "lat": 36.8381,
         "lon": -2.4597,
         "zone": "A",
-        "arrivals": []
+        "arrivals": client.get_stop_arrivals(stop_id)
     })
+
+
+@app.route('/lines/<line_id>/arrivals')
+def get_line_arrivals(line_id):
+    """Obtiene próxima llegada programada por parada para una línea."""
+    return jsonify(client.get_line_arrivals(line_id))
+
+
+@app.route('/stops/<stop_id>/arrivals')
+def get_stop_arrivals(stop_id):
+    """Obtiene próximas llegadas programadas por línea para una parada."""
+    limit = request.args.get('limit', default=3, type=int)
+    return jsonify(client.get_stop_arrivals(stop_id, limit=limit))
 
 if __name__ == '__main__':
     print("Iniciando API de Almería con datos GTFS reales...")

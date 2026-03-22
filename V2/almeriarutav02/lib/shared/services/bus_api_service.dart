@@ -12,6 +12,9 @@ class BusApiService {
   static Future<List<LineModel>>? _inFlightLines;
   static final Map<String, List<StopModel>> _stopsCache = {};
   static final Map<String, Future<List<StopModel>>> _inFlightStops = {};
+  static final Map<String, Map<String, int>> _lineArrivalsCache = {};
+  static final Map<String, DateTime> _lineArrivalsFetchedAt = {};
+  static final Map<String, Future<Map<String, int>>> _inFlightLineArrivals = {};
 
   Future<List<LineModel>> getLines({bool forceRefresh = false}) async {
     if (!forceRefresh && _linesCache != null) {
@@ -53,6 +56,31 @@ class BusApiService {
     }
   }
 
+  Future<Map<String, int>> getLineArrivals(String lineId, {bool forceRefresh = false}) async {
+    final fetchedAt = _lineArrivalsFetchedAt[lineId];
+    final isFresh =
+        fetchedAt != null && DateTime.now().difference(fetchedAt).inSeconds < 30;
+
+    if (!forceRefresh && isFresh && _lineArrivalsCache.containsKey(lineId)) {
+      return _lineArrivalsCache[lineId]!;
+    }
+
+    if (!forceRefresh && _inFlightLineArrivals.containsKey(lineId)) {
+      return _inFlightLineArrivals[lineId]!;
+    }
+
+    final future = _fetchLineArrivals(lineId);
+    _inFlightLineArrivals[lineId] = future;
+    try {
+      final arrivals = await future;
+      _lineArrivalsCache[lineId] = arrivals;
+      _lineArrivalsFetchedAt[lineId] = DateTime.now();
+      return arrivals;
+    } finally {
+      _inFlightLineArrivals.remove(lineId);
+    }
+  }
+
   Future<List<LineModel>> _fetchLines() async {
     final response = await _getWithRetry(Uri.parse('${AppConstants.apiBaseUrl}/lines'));
     if (response.statusCode == 200) {
@@ -71,6 +99,31 @@ class BusApiService {
       return data.map((json) => StopModel.fromJson(json)).toList();
     }
     throw Exception('Error al cargar paradas');
+  }
+
+  Future<Map<String, int>> _fetchLineArrivals(String lineId) async {
+    final response = await _getWithRetry(
+      Uri.parse('${AppConstants.apiBaseUrl}/lines/$lineId/arrivals'),
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('Error al cargar tiempos de llegada');
+    }
+
+    final data = json.decode(response.body) as Map<String, dynamic>;
+    final arrivals = (data['arrivals'] as List<dynamic>? ?? const []);
+
+    final result = <String, int>{};
+    for (final item in arrivals) {
+      if (item is Map<String, dynamic>) {
+        final stopId = item['stopId']?.toString();
+        final minutes = item['minutes'];
+        if (stopId != null && minutes is num) {
+          result[stopId] = minutes.toInt();
+        }
+      }
+    }
+    return result;
   }
 
   Future<http.Response> _getWithRetry(Uri uri) async {

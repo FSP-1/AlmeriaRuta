@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../viewmodels/map_viewmodel.dart';
 import '../models/filter_mode.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../shared/services/line_search_utils.dart';
+import '../../../shared/widgets/app_search_field.dart';
 
 class LineFilterSheet extends StatefulWidget {
   final MapViewModel mapViewModel;
@@ -19,16 +21,6 @@ class _LineFilterSheetState extends State<LineFilterSheet> {
   final TextEditingController _searchController = TextEditingController();
   String _query = '';
 
-  String _normalize(String text) {
-    return text
-        .toLowerCase()
-        .replaceAll('á', 'a')
-        .replaceAll('é', 'e')
-        .replaceAll('í', 'i')
-        .replaceAll('ó', 'o')
-        .replaceAll('ú', 'u');
-  }
-
   @override
   void dispose() {
     _searchController.dispose();
@@ -37,25 +29,17 @@ class _LineFilterSheetState extends State<LineFilterSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final normalizedQuery = _normalize(_query.trim());
-    final filteredLines = widget.mapViewModel.lines.where((line) {
-      if (normalizedQuery.isEmpty) return true;
-
-      final matchesLineInfo =
-          _normalize(line.name).contains(normalizedQuery) ||
-          _normalize(line.fullName).contains(normalizedQuery) ||
-          _normalize(line.description).contains(normalizedQuery);
-
-      if (matchesLineInfo) return true;
-
-      final matchesStops = widget.mapViewModel.stops.any(
-        (stop) =>
-            stop.lineIds.contains(line.id) &&
-            _normalize(stop.name).contains(normalizedQuery),
-      );
-
-      return matchesStops;
-    }).toList();
+    final filteredLines = LineSearchUtils.filterLines(
+      widget.mapViewModel.lines,
+      _query,
+      stopMatcher: (lineId, normalizedQuery) {
+        return widget.mapViewModel.stops.any(
+          (stop) =>
+              stop.lineIds.contains(lineId) &&
+              LineSearchUtils.normalizeText(stop.name).contains(normalizedQuery),
+        );
+      },
+    );
 
     return SafeArea(
       child: SizedBox(
@@ -70,27 +54,12 @@ class _LineFilterSheetState extends State<LineFilterSheet> {
             ),
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-              child: TextField(
+              child: AppSearchField(
                 controller: _searchController,
                 autofocus: true,
-                decoration: InputDecoration(
-                  hintText: 'Buscar línea por nombre o destino',
-                  prefixIcon: const Icon(Icons.search),
-                  suffixIcon: _query.isEmpty
-                      ? null
-                      : IconButton(
-                          icon: const Icon(Icons.clear),
-                          onPressed: () {
-                            _searchController.clear();
-                            setState(() => _query = '');
-                          },
-                        ),
-                  border: const OutlineInputBorder(),
-                ),
-                onChanged: (value) {
-                  setState(() => _query = value);
-                },
-                onSubmitted: (value) {
+                query: _query,
+                hintText: 'Buscar línea por nombre o destino',
+                onQueryChanged: (value) {
                   setState(() => _query = value);
                 },
               ),

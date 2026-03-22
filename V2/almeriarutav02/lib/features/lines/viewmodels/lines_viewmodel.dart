@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:latlong2/latlong.dart';
+import 'dart:async';
 import '../../../shared/services/bus_api_service.dart';
 import '../../../shared/services/line_models.dart';
 import '../../map/models/zone_model.dart';
@@ -11,6 +12,9 @@ class LinesViewModel extends ChangeNotifier {
   List<LineModel> _lines = [];
   final Map<String, List<StopModel>> _lineStopsCache = {};
   final Map<String, Set<String>> _stopToLineIds = {};
+  final Map<String, Map<String, int>> _arrivalsByLine = {};
+  final Set<String> _watchedLines = {};
+  Timer? _clockTimer;
   bool _isLoading = false;
   String? _error;
 
@@ -19,6 +23,8 @@ class LinesViewModel extends ChangeNotifier {
   String? get error => _error;
 
   Future<void> loadLines({bool forceRefresh = false}) async {
+    _ensureClockRunning();
+
     if (!forceRefresh && (_isLoading || _lines.isNotEmpty)) {
       return;
     }
@@ -37,6 +43,21 @@ class LinesViewModel extends ChangeNotifier {
     }
   }
 
+  void _ensureClockRunning() {
+    _clockTimer ??= Timer.periodic(const Duration(seconds: 30), (_) {
+      for (final lineId in _watchedLines) {
+        ensureLineArrivals(lineId, forceRefresh: true);
+      }
+      notifyListeners();
+    });
+  }
+
+  @override
+  void dispose() {
+    _clockTimer?.cancel();
+    super.dispose();
+  }
+
   Future<List<StopModel>> getLineStops(String lineId) async {
     final cached = _lineStopsCache[lineId];
     if (cached != null) {
@@ -52,6 +73,29 @@ class LinesViewModel extends ChangeNotifier {
     }
 
     return stops;
+  }
+
+  Future<void> ensureLineArrivals(String lineId, {bool forceRefresh = false}) async {
+    _watchedLines.add(lineId);
+    try {
+      final arrivals = await _apiService.getLineArrivals(
+        lineId,
+        forceRefresh: forceRefresh,
+      );
+      _arrivalsByLine[lineId] = arrivals;
+      notifyListeners();
+    } catch (_) {}
+  }
+
+  int? getArrivalMinutes(String lineId, String stopId) {
+    return _arrivalsByLine[lineId]?[stopId];
+  }
+
+  String formatArrivalLabel(int? minutes) {
+    if (minutes == null) return '--';
+    if (minutes <= 1) return 'Llegando';
+    if (minutes <= 3) return 'Inminente';
+    return '$minutes min';
   }
 
   Future<List<LineModel>> getLinesPassingStop(StopModel stop, LineModel currentLine) async {
