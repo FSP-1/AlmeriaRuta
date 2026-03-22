@@ -46,6 +46,7 @@ class _LineStopsContent extends StatefulWidget {
 class _LineStopsContentState extends State<_LineStopsContent> {
   final TextEditingController _searchController = TextEditingController();
   String _query = '';
+  List<StopModel> _loadedStops = const [];
 
   @override
   void dispose() {
@@ -62,6 +63,20 @@ class _LineStopsContentState extends State<_LineStopsContent> {
     return stops.where((stop) {
       return LineSearchUtils.normalizeText(stop.name).contains(normalizedQuery);
     }).toList();
+  }
+
+  void _openFirstMatchIfAny() {
+    final filteredStops = _filterStops(_loadedStops);
+    if (filteredStops.isEmpty) {
+      return;
+    }
+
+    _showStopActions(
+      context,
+      filteredStops.first,
+      widget.line,
+      widget.viewModel,
+    );
   }
 
   @override
@@ -163,6 +178,10 @@ class _LineStopsContentState extends State<_LineStopsContent> {
                     onQueryChanged: (value) {
                       setState(() => _query = value);
                     },
+                    onQuerySubmitted: (value) {
+                      setState(() => _query = value);
+                      _openFirstMatchIfAny();
+                    },
                   ),
                 ),
                 Expanded(
@@ -186,6 +205,7 @@ class _LineStopsContentState extends State<_LineStopsContent> {
                       }
 
                       final stops = snapshot.data ?? [];
+                      _loadedStops = stops;
                       final filteredStops = _filterStops(stops);
                       if (filteredStops.isEmpty) {
                         return Center(

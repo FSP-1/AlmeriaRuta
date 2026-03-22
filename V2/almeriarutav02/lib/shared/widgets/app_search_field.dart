@@ -4,6 +4,7 @@ class AppSearchField extends StatelessWidget {
   final TextEditingController controller;
   final String query;
   final ValueChanged<String> onQueryChanged;
+  final ValueChanged<String>? onQuerySubmitted;
   final String hintText;
   final bool autofocus;
 
@@ -12,6 +13,7 @@ class AppSearchField extends StatelessWidget {
     required this.controller,
     required this.query,
     required this.onQueryChanged,
+    this.onQuerySubmitted,
     required this.hintText,
     this.autofocus = false,
   });
@@ -36,7 +38,7 @@ class AppSearchField extends StatelessWidget {
         border: const OutlineInputBorder(),
       ),
       onChanged: onQueryChanged,
-      onSubmitted: onQueryChanged,
+      onSubmitted: onQuerySubmitted ?? onQueryChanged,
     );
   }
 }
