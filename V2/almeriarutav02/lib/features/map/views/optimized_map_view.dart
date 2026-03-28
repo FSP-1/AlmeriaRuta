@@ -23,11 +23,13 @@ import '../../../shared/services/onboarding_service.dart';
 class OptimizedMapView extends StatefulWidget {
   final StopModel? initialStop;
   final String? initialLineId;
+  final bool openWithFavoritesFilter;
 
   const OptimizedMapView({
     super.key,
     this.initialStop,
     this.initialLineId,
+    this.openWithFavoritesFilter = false,
   });
 
   @override
@@ -54,9 +56,19 @@ class _OptimizedMapViewState extends State<OptimizedMapView> {
     if (!mounted) return;
 
     if (widget.initialStop != null) {
-      await vm.showStopWithRouteFromExternal(widget.initialStop!);
-      if (!mounted) return;
-      _mapController.move(LatLng(widget.initialStop!.lat, widget.initialStop!.lon), 16.0);
+      if (widget.openWithFavoritesFilter) {
+        _mapController.move(LatLng(widget.initialStop!.lat, widget.initialStop!.lon), 16.0);
+      } else {
+        await vm.showStopWithRouteFromExternal(widget.initialStop!);
+        if (!mounted) return;
+        _mapController.move(LatLng(widget.initialStop!.lat, widget.initialStop!.lon), 16.0);
+      }
+    }
+
+    if (widget.openWithFavoritesFilter) {
+      await vm.refreshFavoriteStops();
+      vm.clearRoute();
+      vm.setFilter(const MapFilter.favorites());
     }
 
     _checkOnboarding();

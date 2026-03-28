@@ -174,7 +174,7 @@ class _LineStopsContentState extends State<_LineStopsContent> {
                     controller: _searchController,
                     query: _query,
                     hintText: 'Buscar parada en esta línea',
-                    autofocus: true,
+                    autofocus: false,
                     onQueryChanged: (value) {
                       setState(() => _query = value);
                     },
@@ -223,6 +223,7 @@ class _LineStopsContentState extends State<_LineStopsContent> {
                         itemBuilder: (context, index) {
                           final stop = filteredStops[index];
                           final isLast = index == filteredStops.length - 1;
+                          final isStopFav = favVM.isFavorite(stop.id, FavoriteType.stop);
                           final minutes = widget.viewModel.getArrivalMinutes(widget.line.id, stop.id);
                           final arrivalLabel = widget.viewModel.formatArrivalLabel(minutes);
                           final badgeBackgroundColor = minutes == null
@@ -306,6 +307,28 @@ class _LineStopsContentState extends State<_LineStopsContent> {
                                             color: badgeTextColor,
                                           ),
                                         ),
+                                      ),
+                                      IconButton(
+                                        tooltip: isStopFav
+                                            ? 'Quitar de favoritos'
+                                            : 'Guardar en favoritos',
+                                        icon: Icon(
+                                          isStopFav ? Icons.star : Icons.star_border,
+                                          color: Colors.amber,
+                                        ),
+                                        onPressed: () async {
+                                          if (isStopFav) {
+                                            await favVM.remove(stop.id, FavoriteType.stop);
+                                          } else {
+                                            await favVM.add(
+                                              FavoriteModel(
+                                                id: stop.id,
+                                                name: stop.name,
+                                                type: FavoriteType.stop,
+                                              ),
+                                            );
+                                          }
+                                        },
                                       ),
                                       Icon(Icons.chevron_right, color: Colors.grey[400]),
                                     ],
