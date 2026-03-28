@@ -6,6 +6,7 @@ import '../../map/views/optimized_map_view.dart';
 import '../../tickets/views/buy_ticket_view.dart';
 import '../../recharge/views/recharge_view.dart';
 import '../../lines/views/lines_view.dart';
+import '../../notifications/views/notifications_view.dart';
 import '../../../core/theme/app_theme.dart';
 
 class HomeView extends StatefulWidget {
@@ -558,6 +559,9 @@ class _HomeViewState extends State<HomeView> {
       case 'map':
         _navigateToMap(context);
         break;
+      case 'notifications':
+        _navigateToNotifications(context);
+        break;
       default:
         break;
     }
@@ -588,6 +592,13 @@ class _HomeViewState extends State<HomeView> {
     Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => const RechargeView()),
+    );
+  }
+
+  void _navigateToNotifications(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const NotificationsView()),
     );
   }
 }

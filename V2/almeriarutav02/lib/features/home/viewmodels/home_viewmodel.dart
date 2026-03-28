@@ -47,6 +47,15 @@ class HomeViewModel extends ChangeNotifier {
       status: ServiceStatus.active,
     ),
     const MobilityServiceModel(
+      id: 'notifications',
+      title: 'Notificaciones',
+      subtitle: 'Configura tus avisos',
+      description: 'Recordatorios de recarga y avisos de llegada a paradas',
+      icon: Icons.notifications_active,
+      color: Colors.deepPurple,
+      status: ServiceStatus.active,
+    ),
+    const MobilityServiceModel(
       id: 'map',
       title: 'Mapa Interactivo',
       subtitle: 'Visualiza paradas en tiempo real',

@@ -81,6 +81,33 @@ class BusApiService {
     }
   }
 
+  Future<Map<String, int>> getStopArrivals(String stopId, {int limit = 3}) async {
+    final response = await _getWithRetry(
+      Uri.parse('${AppConstants.apiBaseUrl}/stops/$stopId/arrivals?limit=$limit'),
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('Error al cargar tiempos de llegada por parada');
+    }
+
+    final data = json.decode(response.body);
+    if (data is! List) {
+      return <String, int>{};
+    }
+
+    final result = <String, int>{};
+    for (final item in data) {
+      if (item is Map<String, dynamic>) {
+        final lineId = item['lineId']?.toString();
+        final minutes = item['minutes'];
+        if (lineId != null && minutes is num) {
+          result[lineId] = minutes.toInt();
+        }
+      }
+    }
+    return result;
+  }
+
   Future<List<LineModel>> _fetchLines() async {
     final response = await _getWithRetry(Uri.parse('${AppConstants.apiBaseUrl}/lines'));
     if (response.statusCode == 200) {
