@@ -1,82 +1,51 @@
-# AlmeriaRuta - Estructura MVVM
+# AlmeriaRuta - Estructura MVVM (V2)
 
-## Estructura del Proyecto
+Este documento describe la estructura real del cliente Flutter en `V2/almeriarutav02/`.
+
+## Estructura del Proyecto (Flutter)
 
 ```
 lib/
-├── core/                          # Configuración y utilidades centrales
-│   ├── constants/                 # Constantes de la aplicación
-│   │   └── app_constants.dart
-│   ├── routes/                    # Configuración de rutas
-│   │   └── app_routes.dart
-│   └── theme/                     # Temas de la aplicación
-│       └── app_theme.dart
-├── features/                      # Funcionalidades de la aplicación
-│   ├── home/                      # Página principal
-│   │   ├── models/
-│   │   │   └── menu_item_model.dart
-│   │   ├── viewmodels/
-│   │   │   └── home_viewmodel.dart
-│   │   └── views/
-│   │       └── home_view.dart
-│   └── movilidad/                 # Funcionalidades de movilidad
-│       └── buses/                 # Funcionalidad de buses
-│           ├── models/
-│           │   └── bus_model.dart
-│           ├── viewmodels/
-│           │   └── buses_viewmodel.dart
-│           └── views/
-│               └── buses_view.dart
-├── shared/                        # Componentes compartidos
-│   ├── widgets/                   # Widgets reutilizables
-│   │   └── common_widgets.dart
-│   └── services/                  # Servicios compartidos (futuro)
-└── main.dart                      # Punto de entrada de la aplicación
+├── core/
+│   ├── constants/                 # Constantes globales (ej. apiBaseUrl)
+│   └── theme/                     # Tema y colores
+├── features/
+│   ├── home/                      # Home + navegación a módulos
+│   ├── lines/                     # Listado/detalle de líneas + favoritos
+│   ├── map/                       # Mapa, filtros, favoritos y turismo
+│   ├── notifications/             # Notificaciones (caducidad mensual + llegada)
+│   ├── recharge/                  # Recargas / tarjetas
+│   ├── tickets/                   # Compra de tickets
+│   └── validation/                # Validación QR
+└── shared/
+	└── services/                  # Cliente API + modelos compartidos (LineModel/StopModel/etc.)
 ```
 
-## Patrón MVVM Implementado
+Cada feature sigue la jerarquía MVVM:
 
-### Model
-- Contiene la lógica de datos y modelos de negocio
-- Ejemplo: `BusModel` para representar información de autobuses
+```
+features/<feature>/
+├── models/        # DTOs / settings / entidades
+├── services/      # Integraciones (storage local, notificaciones, etc.)
+├── viewmodels/    # ChangeNotifier (estado + lógica de presentación)
+└── views/         # Widgets/pantallas
+```
 
-### View
-- Interfaz de usuario (UI)
-- Se comunica con el ViewModel a través de Provider
-- Ejemplo: `HomeView`, `BusesView`
+## Patrón MVVM
 
-### ViewModel
-- Lógica de presentación y estado
-- Extiende `ChangeNotifier` para notificar cambios a la vista
-- Ejemplo: `HomeViewModel`, `BusesViewModel`
+- **Model**: datos puros (p.ej. `NotificationSettings`, `LineModel`, `StopModel`).
+- **ViewModel**: estado + acciones, con `ChangeNotifier` y `Provider`.
+- **View**: UI; lee estado con `context.watch()` y dispara acciones con `context.read()`.
 
-## Dependencias Utilizadas
+## Dependencias relevantes
 
-- **provider**: Gestión de estado y patrón MVVM
-- **go_router**: Navegación declarativa
-- **mockito**: Generación de mocks para testing
-- **faker**: Generación de datos falsos para desarrollo
+- `provider`: estado MVVM (`ChangeNotifier`).
+- `http`: API hacia el backend Flask.
+- `shared_preferences`: persistencia local (favoritos y settings de notificaciones).
+- `flutter_local_notifications` + `timezone`: scheduling de notificaciones locales.
 
-## Cómo Agregar Nuevas Funcionalidades
+## Añadir una feature nueva
 
-1. Crear carpeta en `features/` con el nombre de la funcionalidad
-2. Crear subcarpetas: `models/`, `viewmodels/`, `views/`
-3. Implementar los archivos siguiendo el patrón MVVM
-4. Agregar rutas en `app_routes.dart`
-5. Agregar constantes en `app_constants.dart`
-6. Actualizar el menú principal en `home_viewmodel.dart`
-
-## Datos Mock
-
-Actualmente la aplicación utiliza datos mock para desarrollo:
-- Los modelos incluyen factory constructors para generar datos falsos
-- Los ViewModels simulan llamadas asíncronas con delays
-- Esto permite desarrollar la UI sin depender de APIs reales
-
-## Próximos Pasos
-
-1. Implementar servicios reales para reemplazar los mocks
-2. Agregar más funcionalidades de movilidad
-3. Implementar tests unitarios y de integración
-4. Agregar manejo de errores más robusto
-5. Implementar persistencia local de datos
+1. Crear `lib/features/<feature>/{models,services,viewmodels,views}`.
+2. Exponer la entrada desde `home/` (card/route).
+3. Mantener el ViewModel sin lógica de UI (solo estado/acciones).

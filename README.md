@@ -12,6 +12,7 @@ Aplicación móvil Flutter para consultar servicios de **movilidad municipal** d
 - **Navegación real**: Rutas caminando usando OSRM que siguen calles reales
 - **Datos en tiempo real**: API Flask procesando GTFS de ALSA
 - **Filtros avanzados**: Cercanas, todas, favoritas y por línea con buscador
+- **Notificaciones locales**: aviso de caducidad de mensual (3 días antes) y aviso de llegada (X min) por parada/línea
 
 ### 🗺️ Turismo y orientación
 
@@ -124,6 +125,7 @@ lib/
   - Métodos centralizados: `loadStops()`, `getCurrentLocation()`, `getRouteResult()`, `setFilter()`, `refreshFavoriteStops()`, `setTouristRoute()`
   - Propiedades: `filteredStops`, `userLocation`, `currentFilter`, `isLoadingStops`, `favoriteStopIds`, `selectedTouristPlace`
 - `FavoritesViewModel`: Persistencia local de paradas/líneas favoritas con `SharedPreferences`
+- `NotificationsViewModel`: Configuración y programación de notificaciones locales (caducidad mensual y llegada)
 - `TourismViewModel`: Control de modo turístico y categoría seleccionada
 - `TicketViewModel`: Lógica de compra y validación
 - `RechargeViewModel`: Gestión de tarjetas, caducidad e historial
@@ -500,6 +502,38 @@ dependencies:
 - **Historial completo**: Registro de todas las recargas
 - **Avisos proactivos**: Notificaciones de próximos vencimientos
 
+## Desarrollo (V2 Flutter)
+
+La app Flutter activa vive en `V2/almeriarutav02/`.
+
+### Backend local
+
+```bash
+cd backend
+python almeria_busmaps_api.py
+```
+
+### App Flutter
+
+```bash
+cd V2/almeriarutav02
+flutter pub get
+flutter run
+```
+
+Notas:
+- En emulador Android, la app usa `http://10.0.2.2:5000`.
+- En un móvil físico, hay que cambiar `apiBaseUrl` por la IP del PC (misma red) en `lib/core/constants/app_constants.dart`.
+
+### Icono (launcher)
+
+El icono se genera desde `assets/app_icon/app_icon.png` usando `flutter_launcher_icons`.
+
+```bash
+cd V2/almeriarutav02
+dart run flutter_launcher_icons
+```
+
 ### Búsqueda de direcciones
 
 - **Nominatim OSM**: Geocoding gratuito
@@ -544,6 +578,7 @@ Este proyecto está bajo la Licencia MIT - ver [LICENSE](LICENSE) para detalles.
 - [X] Filtros avanzados en mapa
 - [X] Sistema de tickets y validación con QR
 - [X] Gestión de tarjetas de transporte
+- [X] Notificaciones locales (caducidad mensual y llegada a parada)
 - [X] Geolocalización en tiempo real
 - [X] Routing con OSRM
 - [X] Provider global de estado
@@ -561,4 +596,4 @@ Este proyecto está bajo la Licencia MIT - ver [LICENSE](LICENSE) para detalles.
 
 ### 📝 Última actualización
 
-- **Marzo 2026**: Integración completa de turismo en MVVM, rutas automáticas a POIs, mejora de tiempos peatonales y selector turístico optimizado
+- **Marzo 2026**: Módulo de Notificaciones (caducidad mensual y llegada), selector de favoritos, y actualización de icono/nombre de la app
