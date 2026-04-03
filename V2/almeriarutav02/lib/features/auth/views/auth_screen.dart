@@ -160,7 +160,7 @@ class _AuthScreenState extends State<AuthScreen> {
                           _loginIdentifier.text.trim(),
                           _loginPassword.text,
                         );
-                        if (success && context.mounted) {
+                        if (success && mounted) {
                           Navigator.of(context).popUntil((route) => route.isFirst);
                         }
                       },
@@ -234,7 +234,7 @@ class _AuthScreenState extends State<AuthScreen> {
                           _registerUsername.text.trim(),
                           _registerPassword.text,
                         );
-                        if (success && context.mounted) {
+                        if (success && mounted) {
                           Navigator.of(context).popUntil((route) => route.isFirst);
                         }
                       },

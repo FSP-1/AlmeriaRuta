@@ -4,6 +4,11 @@ Aplicación móvil Flutter para consultar servicios de **movilidad municipal** d
 
 ## Características
 
+### 👤 Acceso por tipo de usuario
+
+- **No registrado**: puede acceder a Líneas, Mapa, Tickets y Notificaciones de bus.
+- **Registrado**: además habilita recargas, pago con saldo, bandeja personal de tickets recibidos y compra para otro usuario.
+
 ### 🚌 Transporte Público
 
 - **Líneas urbanas reales**: 16 líneas de autobús urbano (L1-L31) con datos oficiales GTFS de ALSA
@@ -34,9 +39,10 @@ Aplicación móvil Flutter para consultar servicios de **movilidad municipal** d
 ### 💳 Sistema de Transporte
 
 - **Compra de tickets**: Billetes individuales y múltiples
-- **Gestión de tarjetas**: Recarga de títulos de transporte con normativa oficial SURBUS
+- **Compra para otro usuario**: Disponible solo para cuentas registradas
+- **Gestión de tarjetas**: Recarga de títulos de transporte con normativa oficial SURBUS (solo registrado)
 - **Validación de viajes**: Sistema QR para validar tickets al subir al autobús
-- **Control de saldo**: Tarjeta virtual recargable
+- **Control de saldo**: Tarjeta virtual recargable (solo registrado)
 
 ## Conexion API y Rendimiento
 
@@ -61,6 +67,11 @@ lib/
 │   ├── theme/           # Tema y colores de la app
 │   └── constants/       # Constantes globales
 ├── features/
+│   ├── auth/           # Acceso, registro y sesión
+│   │   ├── models/     # AppUser
+│   │   ├── services/   # AuthApiService
+│   │   ├── viewmodels/ # AuthViewModel
+│   │   └── views/      # AuthScreen
 │   ├── home/           # Pantalla principal
 │   │   ├── models/     # MobilityServiceModel, ServiceStatus
 │   │   ├── viewmodels/ # HomeViewModel con servicios
@@ -79,6 +90,13 @@ lib/
 │   │   ├── models/     # TransportCardModel, RechargeHistory
 │   │   ├── viewmodels/ # RechargeViewModel
 │   │   └── views/      # RechargeView
+│   ├── settings/       # Ajustes y estado de cuenta
+│   │   └── views/      # SettingsView
+│   ├── notifications/  # Notificaciones de bus y bandeja personal
+│   │   ├── models/     # NotificationSettings, UserNotification
+│   │   ├── services/   # LocalNotificationService, BackendNotificationsApiService
+│   │   ├── viewmodels/ # NotificationsViewModel
+│   │   └── views/      # NotificationsView
 │   └── validation/     # Validación de viajes
 │       ├── models/     # ValidationModel
 │       ├── services/   # ValidationService
@@ -110,7 +128,10 @@ lib/
 - `LineFilterSheet`: Selector de línea con buscador por nombre/destino/parada
 - `FavoritesSheet`: Gestión de favoritos (selección y eliminación)
 - `TourismMarkersLayer`: Marcadores turísticos desacoplados de la vista
+- `AuthScreen`: Pantalla de iniciar sesión y crear cuenta
+- `SettingsView`: Ajustes y gestión de sesión
 - `BuyTicketView`: Interfaz de compra de tickets
+- `NotificationsView`: Avisos de llegada y bandeja personal (registrado)
 - `RechargeView`: Gestión y recarga de tarjetas de transporte
 - `ValidateTripView`: Validación de viajes con código QR
 - Widgets reutilizables y responsive
@@ -125,12 +146,22 @@ lib/
   - Métodos centralizados: `loadStops()`, `getCurrentLocation()`, `getRouteResult()`, `setFilter()`, `refreshFavoriteStops()`, `setTouristRoute()`
   - Propiedades: `filteredStops`, `userLocation`, `currentFilter`, `isLoadingStops`, `favoriteStopIds`, `selectedTouristPlace`
 - `FavoritesViewModel`: Persistencia local de paradas/líneas favoritas con `SharedPreferences`
-- `NotificationsViewModel`: Configuración y programación de notificaciones locales (caducidad mensual y llegada)
+- `AuthViewModel`: Estado de sesión, login/registro, recuperación de usuario y control de permisos por perfil
+- `NotificationsViewModel`: Configuración de notificaciones locales de bus, bandeja personal remota (registrado), marcado como leída y eliminación automática al agotar ticket
 - `TourismViewModel`: Control de modo turístico y categoría seleccionada
-- `TicketViewModel`: Lógica de compra y validación
+- `TicketViewModel`: Lógica de compra, restricciones por perfil (no registrado sin saldo ni envío a terceros) y consumo/eliminación de tickets agotados
 - `RechargeViewModel`: Gestión de tarjetas, caducidad e historial
 - `ValidationViewModel`: Control de validaciones y usos restantes
 - `ChangeNotifier` + `Provider` para reactividad global
+
+### Cambios MVVM Recientes
+
+- **Auth + Settings**:
+  `AuthViewModel` centraliza sesión/token/usuario y `SettingsView` refleja estado de cuenta y cierre de sesión.
+- **Notifications**:
+  `NotificationsViewModel` combina notificación local de bus con bandeja remota (usuarios registrados), soporta marcar leída y eliminar notificación cuando el ticket se agota.
+- **Tickets**:
+  `BuyTicketView` y `TicketViewModel` aplican reglas por perfil: no registrado compra solo para sí y solo con Google Pay/Apple Pay/Visa; registrado añade saldo y compra para terceros.
 
 ## Servicios de Movilidad
 
@@ -178,19 +209,20 @@ enum ServiceStatus {
 
 - **Tickets individuales**: 1.05€ por viaje
 - **Tickets múltiples**: 1.05€ × cantidad seleccionada
-- **Métodos de pago**: Saldo, Google Pay, Apple Pay, Visa
-- **Validación de saldo**: Control de saldo insuficiente
-- **Redirección automática**: Tras compra exitosa, redirige a validación
+- **Métodos de pago (no registrado)**: Google Pay, Apple Pay y Visa
+- **Métodos de pago (registrado)**: Saldo, Google Pay, Apple Pay y Visa
+- **Validación de saldo**: Control de saldo insuficiente (solo cuando se usa saldo)
+- **Compra para otro usuario**: Solo registrada, con notificación al destinatario
+- **Redirección automática**: Tras compra propia exitosa, redirige a validación
 
 ### Validación de Viajes
 
 **Funcionalidades:**
-
-- **Código QR**: Generación automática con ID del ticket
 - **Contador de usos**: Muestra viajes restantes en tickets múltiples
 - **Validación simulada**: Sistema de validación con resultado aleatorio
 - **Control de usos**: Decremento automático al validar
 - **Bloqueo inteligente**: Deshabilita validación cuando no hay viajes disponibles
+- **Cierre automático**: Al agotar usos, la pantalla de validación se cierra automáticamente
 - **Registro de validación**: Información de línea, bus y fecha/hora
 - **Estados visuales**: Confirmación verde o rechazo rojo
 
@@ -204,6 +236,12 @@ enum ServiceStatus {
 6. Muestra resultado con detalles del viaje
 7. Decrementa contador de usos automáticamente
 
+**Tickets recibidos por notificación:**
+
+1. Usuario registrado recibe notificación de ticket
+2. Abre la notificación y entra directamente a validar
+3. Si se agotan los usos, la notificación se elimina automáticamente
+
 ### Gestión de Tarjetas de Transporte
 
 **Tipos de tarjetas soportadas:**
@@ -216,19 +254,13 @@ enum ServiceStatus {
 - **Bonobús Pensionista**: 1.75€ - 10 viajes con transbordo
 - **Tarjeta Estudiante 10**: 7.15€ - Viajes ilimitados mensuales
 - **Tarjeta +65**: Gratuita - Sin caducidad
-- **Tarjeta Discapacidad 65%**: Gratuita - Sin caducidad
-- **Tarjeta Infantil**: Gratuita - Caduca en cumpleaños
 
 **Funcionalidades:**
 
+- **Acceso restringido**: Funcionalidad disponible para usuarios registrados
 - **Restricciones de recarga**: Solo 1 día antes o después de caducar
 - **Importes fijos**: Según normativa oficial SURBUS
 - **Historial de recargas**: Registro completo de transacciones
-- **Avisos de caducidad**: Banner superior para tarjetas próximas a vencer
-- **Renovación automática**: Extensión de fechas al recargar tarjetas mensuales
-- **Estados visuales**: Tarjetas caducadas en gris, botones deshabilitados
-
-## Sistema de Mapas
 
 ### Arquitectura MVVM en MapView
 
@@ -395,9 +427,15 @@ AlmeriaRuta es una plataforma integral de movilidad municipal que integra:
 
 ```bash
 cd backend/
-pip install flask flask-cors pandas
+pip install flask flask-cors pandas pymysql itsdangerous
+
+# API de líneas/paradas (GTFS/OSRM)
 python almeria_busmaps_api.py
-# API disponible en http://localhost:5000
+# disponible en http://localhost:5000
+
+# API de autenticación/notificaciones/tickets entre usuarios
+python almeria_auth_api.py
+# disponible en http://localhost:5001
 ```
 
 ### Frontend (Flutter)
@@ -410,9 +448,22 @@ flutter run
 
 ### Endpoints API
 
+**Movilidad (5000):**
 - `GET /lines` - Todas las líneas urbanas
 - `GET /lines/{id}/stops` - Paradas de una línea específica
 - `GET /stops/{id}` - Detalles de una parada
+
+**Auth y cuenta (5001):**
+- `POST /auth/register` - Registro de usuario
+- `POST /auth/login` - Inicio de sesión
+- `POST /auth/guest` - Sesión temporal de no registrado
+- `GET /auth/me` - Perfil actual
+
+**Tickets entre usuarios y notificaciones (5001):**
+- `POST /auth/tickets/purchase` - Compra para otro usuario (crea notificación con payload de ticket)
+- `GET /auth/notifications` - Listado de notificaciones de cuenta
+- `POST /auth/notifications/{id}/read` - Marcar notificación como leída (idempotente)
+- `DELETE /auth/notifications/{id}` - Eliminar notificación (usado al agotar ticket recibido)
 
 ## Diseño
 
