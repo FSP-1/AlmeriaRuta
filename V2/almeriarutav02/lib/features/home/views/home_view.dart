@@ -7,6 +7,10 @@ import '../../tickets/views/buy_ticket_view.dart';
 import '../../recharge/views/recharge_view.dart';
 import '../../lines/views/lines_view.dart';
 import '../../notifications/views/notifications_view.dart';
+import '../../notifications/services/backend_notifications_api_service.dart';
+import '../../auth/viewmodels/auth_viewmodel.dart';
+import '../../auth/views/auth_screen.dart';
+import '../../settings/views/settings_view.dart';
 import '../../../core/theme/app_theme.dart';
 
 class HomeView extends StatefulWidget {
@@ -17,22 +21,95 @@ class HomeView extends StatefulWidget {
 }
 
 class _HomeViewState extends State<HomeView> {
+  final BackendNotificationsApiService _notificationsApi = BackendNotificationsApiService();
+  int _unreadNotificationsCount = 0;
+  String? _badgeToken;
+  bool _loadingUnreadNotifications = false;
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      _initializeHomeState();
       context.read<HomeViewModel>().loadLines();
     });
   }
 
+  Future<void> _initializeHomeState() async {
+    await context.read<AuthViewModel>().initialize();
+    if (!mounted) return;
+    await _refreshUnreadNotificationsCount();
+  }
+
+  Future<void> _refreshUnreadNotificationsCount() async {
+    final auth = context.read<AuthViewModel>();
+    final token = auth.token;
+    if (token == null || !auth.isAuthenticated || auth.isGuest) {
+      if (!mounted) return;
+      setState(() {
+        _badgeToken = null;
+        _unreadNotificationsCount = 0;
+      });
+      return;
+    }
+
+    if (_loadingUnreadNotifications || _badgeToken == token) {
+      return;
+    }
+
+    _loadingUnreadNotifications = true;
+    try {
+      final notifications = await _notificationsApi.fetchNotifications(token: token, unreadOnly: true);
+      if (!mounted) return;
+      setState(() {
+        _badgeToken = token;
+        _unreadNotificationsCount = notifications.length;
+      });
+    } finally {
+      _loadingUnreadNotifications = false;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final auth = context.watch<AuthViewModel>();
+    if (!auth.isAuthenticated && _badgeToken != null && _unreadNotificationsCount != 0) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          setState(() {
+            _badgeToken = null;
+            _unreadNotificationsCount = 0;
+          });
+        }
+      });
+    }
+    if (auth.isAuthenticated && auth.token != _badgeToken && !_loadingUnreadNotifications) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _refreshUnreadNotificationsCount();
+        }
+      });
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('AlmeriaRuta'),
         centerTitle: true,
         backgroundColor: AppTheme.primaryRed,
         foregroundColor: Colors.white,
+        actions: [
+          IconButton(
+            icon: Icon(auth.isAuthenticated ? Icons.settings : Icons.login),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => auth.isAuthenticated ? const SettingsView() : const AuthScreen(),
+                ),
+              );
+            },
+          ),
+        ],
       ),
       body: Container(
         decoration: BoxDecoration(
@@ -295,6 +372,23 @@ class _HomeViewState extends State<HomeView> {
                 color: Colors.grey[400],
                 size: 16,
               ),
+              if (service.id == 'notifications' && _unreadNotificationsCount > 0)
+                Container(
+                  margin: const EdgeInsets.only(left: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.red,
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: Text(
+                    _unreadNotificationsCount > 9 ? '9+' : '$_unreadNotificationsCount',
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
             ],
           ),
         ),
@@ -589,6 +683,7 @@ class _HomeViewState extends State<HomeView> {
   }
 
   void _navigateToRecharge(BuildContext context) {
+    if (_requireRegisteredUser(context)) return;
     Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => const RechargeView()),
@@ -599,6 +694,30 @@ class _HomeViewState extends State<HomeView> {
     Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => const NotificationsView()),
+    ).then((_) => _refreshUnreadNotificationsCount());
+  }
+
+  bool _requireRegisteredUser(BuildContext context) {
+    final auth = context.read<AuthViewModel>();
+    if (auth.isAuthenticated && !auth.isGuest) {
+      return false;
+    }
+
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Acceso restringido'),
+        content: const Text(
+          'Esta funcionalidad requiere una cuenta registrada. Ve a Ajustes para iniciar sesión o registrarte.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Entendido'),
+          ),
+        ],
+      ),
     );
+    return true;
   }
 }

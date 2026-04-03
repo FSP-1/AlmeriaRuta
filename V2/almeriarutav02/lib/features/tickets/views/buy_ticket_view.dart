@@ -1,14 +1,35 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../viewmodels/ticket_viewmodel.dart';
+
+import '../../auth/viewmodels/auth_viewmodel.dart';
 import '../../validation/views/validate_trip_view.dart';
+import '../services/ticket_purchase_api_service.dart';
+import '../viewmodels/ticket_viewmodel.dart';
 import '../../../core/theme/app_theme.dart';
 
-class BuyTicketView extends StatelessWidget {
+class BuyTicketView extends StatefulWidget {
   const BuyTicketView({super.key});
 
   @override
+  State<BuyTicketView> createState() => _BuyTicketViewState();
+}
+
+class _BuyTicketViewState extends State<BuyTicketView> {
+  final _recipientController = TextEditingController();
+  final _purchaseApi = TicketPurchaseApiService();
+  bool _giftMode = false;
+
+  @override
+  void dispose() {
+    _recipientController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final auth = context.watch<AuthViewModel>();
+    final isRegisteredUser = auth.isAuthenticated && !auth.isGuest;
+
     return ChangeNotifierProvider(
       create: (_) => TicketViewModel(),
       child: Scaffold(
@@ -19,12 +40,27 @@ class BuyTicketView extends StatelessWidget {
         ),
         body: Consumer<TicketViewModel>(
           builder: (context, vm, child) {
+            if (!isRegisteredUser && _giftMode) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (!mounted) return;
+                setState(() {
+                  _giftMode = false;
+                  _recipientController.clear();
+                });
+              });
+            }
+
+            if (!isRegisteredUser && vm.paymentMethod == 'Saldo') {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                vm.setPaymentMethod('Google Pay');
+              });
+            }
+
             return SingleChildScrollView(
               padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Seleccionar billete
                   const Text(
                     'Seleccionar billete',
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
@@ -41,7 +77,7 @@ class BuyTicketView extends StatelessWidget {
                       value: vm.selectedType,
                       isExpanded: true,
                       underline: const SizedBox(),
-                      items: [
+                      items: const [
                         DropdownMenuItem(
                           value: 'Individual',
                           child: Row(
@@ -66,9 +102,37 @@ class BuyTicketView extends StatelessWidget {
                       onChanged: (v) => vm.setType(v!),
                     ),
                   ),
+                  const SizedBox(height: 20),
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('Comprar para otro usuario'),
+                    subtitle: Text(
+                      isRegisteredUser
+                          ? 'El destinatario recibirá una notificación en su cuenta.'
+                          : 'Disponible solo para cuentas registradas.',
+                    ),
+                    value: _giftMode,
+                    onChanged: !isRegisteredUser
+                        ? null
+                        : (value) {
+                            setState(() {
+                              _giftMode = value;
+                            });
+                          },
+                  ),
+                  if (_giftMode) ...[
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: _recipientController,
+                      decoration: const InputDecoration(
+                        labelText: 'Email o usuario del destinatario',
+                        border: OutlineInputBorder(),
+                        helperText: 'Debe estar registrado en la app',
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 24),
 
-                  // Cantidad (solo para tickets múltiples)
                   if (vm.selectedType == 'Multiple') ...[
                     const Text(
                       'Cantidad',
@@ -78,17 +142,12 @@ class BuyTicketView extends StatelessWidget {
                     Row(
                       children: [
                         IconButton(
-                          onPressed: vm.quantity > 1
-                              ? () => vm.setQuantity(vm.quantity - 1)
-                              : null,
+                          onPressed: vm.quantity > 1 ? () => vm.setQuantity(vm.quantity - 1) : null,
                           icon: const Icon(Icons.remove_circle_outline),
                           color: AppTheme.primaryRed,
                         ),
                         Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 8,
-                          ),
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                           decoration: BoxDecoration(
                             border: Border.all(color: Colors.grey),
                             borderRadius: BorderRadius.circular(8),
@@ -99,9 +158,7 @@ class BuyTicketView extends StatelessWidget {
                           ),
                         ),
                         IconButton(
-                          onPressed: vm.quantity < 99
-                              ? () => vm.setQuantity(vm.quantity + 1)
-                              : null,
+                          onPressed: vm.quantity < 99 ? () => vm.setQuantity(vm.quantity + 1) : null,
                           icon: const Icon(Icons.add_circle_outline),
                           color: AppTheme.primaryRed,
                         ),
@@ -110,7 +167,6 @@ class BuyTicketView extends StatelessWidget {
                     const SizedBox(height: 24),
                   ],
 
-                  // Método de pago
                   const Text(
                     'Método de pago',
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
@@ -118,14 +174,15 @@ class BuyTicketView extends StatelessWidget {
                   const SizedBox(height: 8),
                   Column(
                     children: [
-                      _PaymentOption(
-                        value: 'Saldo',
-                        groupValue: vm.paymentMethod,
-                        onChanged: vm.setPaymentMethod,
-                        icon: Icons.account_balance_wallet,
-                        title: 'Saldo: ${vm.balance.toStringAsFixed(2)} €',
-                        subtitle: vm.hasInsufficientBalance ? 'Saldo insuficiente' : null,
-                      ),
+                      if (isRegisteredUser)
+                        _PaymentOption(
+                          value: 'Saldo',
+                          groupValue: vm.paymentMethod,
+                          onChanged: vm.setPaymentMethod,
+                          icon: Icons.account_balance_wallet,
+                          title: 'Saldo: ${vm.balance.toStringAsFixed(2)} €',
+                          subtitle: vm.hasInsufficientBalance ? 'Saldo insuficiente' : null,
+                        ),
                       _PaymentOption(
                         value: 'Google Pay',
                         groupValue: vm.paymentMethod,
@@ -151,8 +208,7 @@ class BuyTicketView extends StatelessWidget {
                   ),
                   const SizedBox(height: 24),
 
-                  // Error de saldo insuficiente
-                  if (vm.paymentMethod == 'Saldo' && vm.hasInsufficientBalance) ...[
+                  if (isRegisteredUser && vm.paymentMethod == 'Saldo' && vm.hasInsufficientBalance) ...[
                     Container(
                       width: double.infinity,
                       padding: const EdgeInsets.all(12),
@@ -177,7 +233,6 @@ class BuyTicketView extends StatelessWidget {
                     const SizedBox(height: 16),
                   ],
 
-                  // Error message
                   if (vm.errorMessage != null) ...[
                     Container(
                       width: double.infinity,
@@ -207,7 +262,6 @@ class BuyTicketView extends StatelessWidget {
                     const SizedBox(height: 16),
                   ],
 
-                  // Precio total
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.all(16),
@@ -227,7 +281,6 @@ class BuyTicketView extends StatelessWidget {
                   ),
                   const SizedBox(height: 16),
 
-                  // Botón comprar
                   SizedBox(
                     width: double.infinity,
                     height: 50,
@@ -264,21 +317,77 @@ class BuyTicketView extends StatelessWidget {
     );
   }
 
-  void _handlePurchase(BuildContext context, TicketViewModel vm) async {
-    final success = await vm.buyTicket();
-    
-    if (success && context.mounted) {
-      final ticket = vm.tickets.last;
-      
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (_) => ValidateTripView(
-            ticket: ticket,
+  Future<void> _handlePurchase(BuildContext context, TicketViewModel vm) async {
+    final auth = context.read<AuthViewModel>();
+    final recipient = _recipientController.text.trim();
+
+    if (_giftMode) {
+      if (!auth.isAuthenticated || auth.isGuest || auth.token == null) {
+        if (!context.mounted) return;
+        await showDialog<void>(
+          context: context,
+          builder: (dialogContext) => AlertDialog(
+            title: const Text('Necesitas iniciar sesión'),
+            content: const Text('Para comprar un ticket a otro usuario debes iniciar sesión o registrarte.'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext),
+                child: const Text('Cerrar'),
+              ),
+            ],
           ),
-        ),
-      );
+        );
+        return;
+      }
+
+      if (recipient.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Introduce el email o usuario del destinatario')),
+        );
+        return;
+      }
     }
+
+    final success = await vm.buyTicket();
+    if (!success || !context.mounted) {
+      return;
+    }
+
+    final ticket = vm.tickets.last;
+
+    if (_giftMode) {
+      try {
+        await _purchaseApi.notifyTicketPurchase(
+          token: auth.token!,
+          recipientIdentifier: recipient,
+          type: ticket.type,
+          quantity: ticket.quantity,
+          amount: ticket.amount,
+          paymentMethod: vm.paymentMethod,
+        );
+
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Ticket enviado a $recipient')),
+        );
+        Navigator.of(context).pop();
+      } catch (e) {
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Compra realizada, pero no se pudo notificar al destinatario: $e')),
+        );
+      }
+      return;
+    }
+
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ValidateTripView(
+          ticket: ticket,
+        ),
+      ),
+    );
   }
 }
 

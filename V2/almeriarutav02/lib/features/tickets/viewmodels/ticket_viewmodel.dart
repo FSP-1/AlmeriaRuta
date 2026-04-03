@@ -111,7 +111,12 @@ class TicketViewModel extends ChangeNotifier {
   void useTicket(String ticketId) {
     final index = _tickets.indexWhere((t) => t.id == ticketId);
     if (index != -1) {
-      _tickets[index] = _tickets[index].copyWith(status: 'Usado');
+      final ticket = _tickets[index];
+      if (ticket.remainingUses > 1) {
+        ticket.remainingUses--;
+      } else {
+        _tickets.removeAt(index);
+      }
       notifyListeners();
     }
   }

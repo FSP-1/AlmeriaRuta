@@ -116,11 +116,18 @@ class ValidateTripView extends StatelessWidget {
                       ),
                       onPressed: vm.loading || (vm.currentTicket?.remainingUses ?? ticket.remainingUses) <= 0
                           ? null
-                          : () {
-                              vm.validate(
+                          : () async {
+                              await vm.validate(
                                 ticketId: ticket.id,
                                 type: ticket.type,
                               );
+
+                              if (!context.mounted) return;
+
+                              final remainingUses = vm.currentTicket?.remainingUses ?? ticket.remainingUses;
+                              if (vm.result?.isValid == true && remainingUses <= 0) {
+                                Navigator.of(context).pop(true);
+                              }
                             },
                     ),
                   ),

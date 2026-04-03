@@ -3,8 +3,11 @@ import 'package:provider/provider.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../../shared/services/line_models.dart';
+import '../../auth/viewmodels/auth_viewmodel.dart';
 import '../../map/models/favorite_model.dart';
 import '../../map/viewmodels/favorites_viewmodel.dart';
+import '../models/user_notification.dart';
+import '../../validation/views/validate_trip_view.dart';
 import '../viewmodels/notifications_viewmodel.dart';
 
 class NotificationsView extends StatelessWidget {
@@ -12,9 +15,12 @@ class NotificationsView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final auth = context.read<AuthViewModel>();
+
     return ChangeNotifierProvider(
       create: (_) => NotificationsViewModel(
         favoritesViewModel: FavoritesViewModel(),
+        token: auth.token,
       )..load(),
       child: const _NotificationsViewBody(),
     );
@@ -27,6 +33,8 @@ class _NotificationsViewBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final vm = context.watch<NotificationsViewModel>();
+    final auth = context.watch<AuthViewModel>();
+    final isRegisteredUser = auth.isAuthenticated && !auth.isGuest;
     final draft = vm.draft;
 
     return Scaffold(
@@ -52,61 +60,98 @@ class _NotificationsViewBody extends StatelessWidget {
                           ),
                         ),
 
-                      _sectionTitle('Recarga'),
-                      Card(
-                        child: Column(
-                          children: [
-                            SwitchListTile(
-                              title: const Text('Recordatorio de mensual'),
-                              subtitle: const Text('Aviso 3 días antes de caducar'),
-                              value: draft.recharge.enabled,
-                              onChanged: (v) => vm.setRechargeEnabled(v),
+                      if (isRegisteredUser) ...[
+                        _sectionTitle('Bandeja personal'),
+                        if (vm.remoteNotifications.isEmpty)
+                          const Card(
+                            child: ListTile(
+                              leading: Icon(Icons.mail_outline),
+                              title: Text('Sin notificaciones pendientes'),
+                              subtitle: Text('Aquí aparecerán los tickets recibidos y otros avisos de cuenta.'),
                             ),
-                            ListTile(
-                              title: const Text('Fecha de caducidad'),
-                              subtitle: Text(_formatIsoDate(draft.recharge.monthlyExpiryDateIso) ?? 'Sin seleccionar'),
-                              trailing: const Icon(Icons.event, color: AppTheme.lightRed),
-                              enabled: draft.recharge.enabled,
-                              onTap: !draft.recharge.enabled
-                                  ? null
-                                  : () async {
-                                      final initial = _tryParseIsoDate(draft.recharge.monthlyExpiryDateIso) ?? DateTime.now();
-                                      final picked = await showDatePicker(
-                                        context: context,
-                                        initialDate: initial,
-                                        firstDate: DateTime(2020),
-                                        lastDate: DateTime(2100),
-                                      );
-                                      if (!context.mounted) return;
-                                      vm.setMonthlyExpiryDate(picked);
-                                    },
+                          )
+                        else
+                          ...vm.remoteNotifications.map(
+                            (notification) => Card(
+                              child: ListTile(
+                                onTap: () => _openNotification(context, vm, notification),
+                                leading: Icon(
+                                  notification.isRead ? Icons.mark_email_read : Icons.mark_email_unread,
+                                  color: notification.isRead ? Colors.grey : AppTheme.primaryRed,
+                                ),
+                                title: Text(notification.title),
+                                subtitle: Text(
+                                  '${notification.body}\n${_formatRemoteDate(notification.createdAt)}',
+                                ),
+                                isThreeLine: true,
+                                trailing: notification.isRead
+                                    ? const SizedBox.shrink()
+                                    : TextButton(
+                                        onPressed: () => _openNotification(context, vm, notification),
+                                        child: const Text('Abrir'),
+                                      ),
+                              ),
                             ),
-                            ListTile(
-                              title: const Text('Hora del aviso'),
-                              subtitle: Text(_formatTime(draft.recharge.hour, draft.recharge.minute)),
-                              trailing: const Icon(Icons.schedule, color: AppTheme.lightRed),
-                              enabled: draft.recharge.enabled,
-                              onTap: !draft.recharge.enabled
-                                  ? null
-                                  : () async {
-                                      final time = await showTimePicker(
-                                        context: context,
-                                        initialTime: TimeOfDay(
-                                          hour: draft.recharge.hour,
-                                          minute: draft.recharge.minute,
-                                        ),
-                                      );
-                                      if (!context.mounted) return;
-                                      if (time != null) {
-                                        vm.setRechargeTime(time);
-                                      }
-                                    },
-                            ),
-                          ],
-                        ),
-                      ),
+                          ),
 
-                      const SizedBox(height: 12),
+                        const SizedBox(height: 16),
+
+                        _sectionTitle('Recarga'),
+                        Card(
+                          child: Column(
+                            children: [
+                              SwitchListTile(
+                                title: const Text('Recordatorio de mensual'),
+                                subtitle: const Text('Aviso 3 días antes de caducar'),
+                                value: draft.recharge.enabled,
+                                onChanged: (v) => vm.setRechargeEnabled(v),
+                              ),
+                              ListTile(
+                                title: const Text('Fecha de caducidad'),
+                                subtitle: Text(_formatIsoDate(draft.recharge.monthlyExpiryDateIso) ?? 'Sin seleccionar'),
+                                trailing: const Icon(Icons.event, color: AppTheme.lightRed),
+                                enabled: draft.recharge.enabled,
+                                onTap: !draft.recharge.enabled
+                                    ? null
+                                    : () async {
+                                        final initial = _tryParseIsoDate(draft.recharge.monthlyExpiryDateIso) ?? DateTime.now();
+                                        final picked = await showDatePicker(
+                                          context: context,
+                                          initialDate: initial,
+                                          firstDate: DateTime(2020),
+                                          lastDate: DateTime(2100),
+                                        );
+                                        if (!context.mounted) return;
+                                        vm.setMonthlyExpiryDate(picked);
+                                      },
+                              ),
+                              ListTile(
+                                title: const Text('Hora del aviso'),
+                                subtitle: Text(_formatTime(draft.recharge.hour, draft.recharge.minute)),
+                                trailing: const Icon(Icons.schedule, color: AppTheme.lightRed),
+                                enabled: draft.recharge.enabled,
+                                onTap: !draft.recharge.enabled
+                                    ? null
+                                    : () async {
+                                        final time = await showTimePicker(
+                                          context: context,
+                                          initialTime: TimeOfDay(
+                                            hour: draft.recharge.hour,
+                                            minute: draft.recharge.minute,
+                                          ),
+                                        );
+                                        if (!context.mounted) return;
+                                        if (time != null) {
+                                          vm.setRechargeTime(time);
+                                        }
+                                      },
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        const SizedBox(height: 12),
+                      ],
 
                       _sectionTitle('Llegada de bus'),
                       Card(
@@ -206,6 +251,40 @@ class _NotificationsViewBody extends StatelessWidget {
     if (stopName == null || stopName.isEmpty) return null;
     if (lineName == null || lineName.isEmpty) return stopName;
     return '$stopName · Línea: $lineName';
+  }
+
+  String _formatRemoteDate(DateTime dateTime) {
+    final day = dateTime.day.toString().padLeft(2, '0');
+    final month = dateTime.month.toString().padLeft(2, '0');
+    final hour = dateTime.hour.toString().padLeft(2, '0');
+    final minute = dateTime.minute.toString().padLeft(2, '0');
+    return '$day/$month/${dateTime.year} $hour:$minute';
+  }
+
+  Future<void> _openNotification(
+    BuildContext context,
+    NotificationsViewModel vm,
+    UserNotification notification,
+  ) async {
+    await vm.markRemoteNotificationAsRead(notification.id);
+    if (!context.mounted) return;
+    if (notification.ticket != null) {
+      final exhausted = await Navigator.push<bool>(
+        context,
+        MaterialPageRoute(
+          builder: (_) => ValidateTripView(ticket: notification.ticket!),
+        ),
+      );
+
+      if (!context.mounted) return;
+      if (exhausted == true) {
+        await vm.deleteRemoteNotification(notification.id);
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Ticket agotado. Notificación eliminada.')),
+        );
+      }
+    }
   }
 
   DateTime? _tryParseIsoDate(String? iso) {

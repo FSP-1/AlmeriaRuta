@@ -4,19 +4,24 @@ import '../../../shared/services/bus_api_service.dart';
 import '../../../shared/services/line_models.dart';
 import '../../map/viewmodels/favorites_viewmodel.dart';
 import '../models/notification_settings.dart';
+import '../models/user_notification.dart';
+import '../services/backend_notifications_api_service.dart';
 import '../services/local_notification_service.dart';
 import '../services/notification_storage.dart';
 
 class NotificationsViewModel extends ChangeNotifier {
   final NotificationStorage _storage;
   final LocalNotificationService _localNotifications;
+  final BackendNotificationsApiService _backendNotifications;
   final BusApiService _apiService;
   final FavoritesViewModel _favoritesViewModel;
+  final String? _token;
 
   NotificationSettings _settings = const NotificationSettings.defaults();
   NotificationSettings _draft = const NotificationSettings.defaults();
   bool _loading = false;
   String? _error;
+  List<UserNotification> _remoteNotifications = [];
 
   List<LineModel>? _linesCache;
 
@@ -24,6 +29,7 @@ class NotificationsViewModel extends ChangeNotifier {
   NotificationSettings get draft => _draft;
   bool get loading => _loading;
   String? get error => _error;
+  List<UserNotification> get remoteNotifications => _remoteNotifications;
 
   bool get hasPendingChanges => _draft.toStorageString() != _settings.toStorageString();
 
@@ -47,12 +53,16 @@ class NotificationsViewModel extends ChangeNotifier {
   NotificationsViewModel({
     NotificationStorage? storage,
     LocalNotificationService? localNotifications,
+    BackendNotificationsApiService? backendNotifications,
     BusApiService? apiService,
     required FavoritesViewModel favoritesViewModel,
+    String? token,
   })  : _storage = storage ?? NotificationStorage(),
         _localNotifications = localNotifications ?? LocalNotificationService(),
+        _backendNotifications = backendNotifications ?? BackendNotificationsApiService(),
         _apiService = apiService ?? BusApiService(),
-        _favoritesViewModel = favoritesViewModel;
+        _favoritesViewModel = favoritesViewModel,
+        _token = token;
 
   Future<void> load() async {
     _loading = true;
@@ -63,6 +73,7 @@ class NotificationsViewModel extends ChangeNotifier {
       await _favoritesViewModel.load();
       _settings = await _storage.load();
       _draft = _settings;
+      await _loadRemoteNotifications();
 
       // Apply schedules on load (best effort, in case the OS lost them).
       await _applySchedules(_settings);
@@ -148,6 +159,37 @@ class NotificationsViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> refreshRemoteNotifications() async {
+    try {
+      await _loadRemoteNotifications(force: true);
+    } catch (e) {
+      _error = e.toString();
+      notifyListeners();
+    }
+  }
+
+  Future<void> markRemoteNotificationAsRead(int notificationId) async {
+    final token = _token;
+    if (token == null) return;
+    try {
+      await _backendNotifications.markAsRead(token: token, notificationId: notificationId);
+    } catch (_) {
+      // Idempotent behavior on client: if backend says not found, just refresh list.
+    }
+    await _loadRemoteNotifications(force: true);
+  }
+
+  Future<void> deleteRemoteNotification(int notificationId) async {
+    final token = _token;
+    if (token == null) return;
+    try {
+      await _backendNotifications.deleteNotification(token: token, notificationId: notificationId);
+    } catch (_) {
+      // If it was already removed, keep UI consistent by reloading anyway.
+    }
+    await _loadRemoteNotifications(force: true);
+  }
+
   Future<void> _applySchedules(NotificationSettings s) async {
     // Ask for permissions only if any notification gets enabled.
     final anyEnabled = s.recharge.enabled || s.arrival.enabled;
@@ -178,6 +220,18 @@ class NotificationsViewModel extends ChangeNotifier {
     } else {
       await _localNotifications.cancelArrivalAlert();
     }
+  }
+
+  Future<void> _loadRemoteNotifications({bool force = false}) async {
+    final token = _token;
+    if (token == null) {
+      _remoteNotifications = [];
+      notifyListeners();
+      return;
+    }
+
+    _remoteNotifications = await _backendNotifications.fetchNotifications(token: token, unreadOnly: !force ? false : false);
+    notifyListeners();
   }
 
   DateTime? _computeMonthlyExpiryReminderTime(NotificationSettings s) {
