@@ -1,12 +1,12 @@
 # AlmeriaRuta
 
-Aplicación móvil Flutter para consultar servicios de **movilidad municipal** de Almería: transporte público, estacionamiento regulado, parkings, bicicletas compartidas, patinetes y mucho más. 🚌🚗🚴‍♂️🛴
+Aplicación móvil Flutter para consultar servicios de **movilidad municipal** de Almería: transporte público, estacionamiento regulado, parkings, bicicletas compartidas, patinetes y mucho más. La app usa una arquitectura MVVM real, con `Provider`/`ChangeNotifier`, backend propio y notificaciones locales/remotas sin Firebase. 🚌🚗🚴‍♂️🛴
 
 ## Características
 
 ### 👤 Acceso por tipo de usuario
 
-- **No registrado**: puede acceder a Líneas, Mapa, Tickets y Notificaciones de bus.
+- **No registrado**: puede acceder a Líneas, Mapa, Tickets y avisos de llegada de bus.
 - **Registrado**: además habilita recargas, pago con saldo, bandeja personal de tickets recibidos y compra para otro usuario.
 
 ### 🚌 Transporte Público
@@ -17,7 +17,14 @@ Aplicación móvil Flutter para consultar servicios de **movilidad municipal** d
 - **Navegación real**: Rutas caminando usando OSRM que siguen calles reales
 - **Datos en tiempo real**: API Flask procesando GTFS de ALSA
 - **Filtros avanzados**: Cercanas, todas, favoritas y por línea con buscador
-- **Notificaciones locales**: aviso de caducidad de mensual (3 días antes) y aviso de llegada (X min) por parada/línea
+- **Notificaciones locales**: aviso de caducidad de mensual (3 días antes) y aviso de llegada (X min) por parada/línea, con observador global en segundo plano que sigue solo la parada elegida por el usuario y dispara el aviso una sola vez por configuración
+
+### 🔐 Backend y sesión
+
+- **Auth propia**: registro, login y sesión gestionados por backend Flask + MySQL
+- **Usuarios únicos**: email y username se validan de forma case-insensitive
+- **Tickets para terceros**: disponible solo para cuentas registradas, con notificación al destinatario
+- **Sin Firebase**: toda la infraestructura de auth y notificaciones depende de APIs propias
 
 ### 🗺️ Turismo y orientación
 
@@ -159,7 +166,7 @@ lib/
 - **Auth + Settings**:
   `AuthViewModel` centraliza sesión/token/usuario y `SettingsView` refleja estado de cuenta y cierre de sesión.
 - **Notifications**:
-  `NotificationsViewModel` combina notificación local de bus con bandeja remota (usuarios registrados), soporta marcar leída y eliminar notificación cuando el ticket se agota.
+  `NotificationsViewModel` combina notificación local de bus con bandeja remota (usuarios registrados), soporta marcar leída y eliminar notificación cuando el ticket se agota. Los avisos de llegada se observan en segundo plano desde una parada elegida, no solo al abrir la pantalla de notificaciones.
 - **Tickets**:
   `BuyTicketView` y `TicketViewModel` aplican reglas por perfil: no registrado compra solo para sí y solo con Google Pay/Apple Pay/Visa; registrado añade saldo y compra para terceros.
 
