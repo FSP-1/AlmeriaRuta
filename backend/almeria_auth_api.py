@@ -53,6 +53,62 @@ class AuthRepository:
                 )
                 cur.execute(
                     """
+                    SELECT COUNT(*) AS idx_count
+                    FROM information_schema.STATISTICS
+                    WHERE TABLE_SCHEMA = DATABASE()
+                      AND TABLE_NAME = 'users'
+                      AND COLUMN_NAME = 'email'
+                      AND NON_UNIQUE = 0
+                    """
+                )
+                has_unique_email = cur.fetchone()['idx_count'] > 0
+                if not has_unique_email:
+                    cur.execute(
+                        """
+                        SELECT LOWER(TRIM(email)) AS value, COUNT(*) AS total
+                        FROM users
+                        GROUP BY LOWER(TRIM(email))
+                        HAVING COUNT(*) > 1
+                        LIMIT 1
+                        """
+                    )
+                    duplicate_email = cur.fetchone()
+                    if duplicate_email:
+                        raise RuntimeError(
+                            f"No se puede aplicar unicidad de email: hay duplicados ({duplicate_email['value']})"
+                        )
+                    cur.execute("ALTER TABLE users ADD UNIQUE INDEX uq_users_email (email)")
+
+                cur.execute(
+                    """
+                    SELECT COUNT(*) AS idx_count
+                    FROM information_schema.STATISTICS
+                    WHERE TABLE_SCHEMA = DATABASE()
+                      AND TABLE_NAME = 'users'
+                      AND COLUMN_NAME = 'username'
+                      AND NON_UNIQUE = 0
+                    """
+                )
+                has_unique_username = cur.fetchone()['idx_count'] > 0
+                if not has_unique_username:
+                    cur.execute(
+                        """
+                        SELECT LOWER(TRIM(username)) AS value, COUNT(*) AS total
+                        FROM users
+                        GROUP BY LOWER(TRIM(username))
+                        HAVING COUNT(*) > 1
+                        LIMIT 1
+                        """
+                    )
+                    duplicate_username = cur.fetchone()
+                    if duplicate_username:
+                        raise RuntimeError(
+                            f"No se puede aplicar unicidad de username: hay duplicados ({duplicate_username['value']})"
+                        )
+                    cur.execute("ALTER TABLE users ADD UNIQUE INDEX uq_users_username (username)")
+
+                cur.execute(
+                    """
                     CREATE TABLE IF NOT EXISTS app_notifications (
                         id BIGINT PRIMARY KEY AUTO_INCREMENT,
                         user_id BIGINT NOT NULL,
@@ -93,7 +149,10 @@ class AuthRepository:
         with self._conn() as conn:
             with conn.cursor() as cur:
                 cur.execute(
-                    "SELECT id, email, username, password_hash FROM users WHERE email=%s OR username=%s LIMIT 1",
+                    "SELECT id, email, username, password_hash "
+                    "FROM users "
+                    "WHERE LOWER(email)=LOWER(%s) OR LOWER(username)=LOWER(%s) "
+                    "LIMIT 1",
                     (value, value),
                 )
                 return cur.fetchone()
@@ -240,6 +299,7 @@ def auth_register():
         body = request.get_json(silent=True) or {}
         email = str(body.get('email', '')).strip().lower()
         username = str(body.get('username', '')).strip()
+        normalized_username = username.lower()
         password = str(body.get('password', ''))
 
         if not _is_valid_email(email):
@@ -251,16 +311,18 @@ def auth_register():
         if not _is_strong_password(password):
             return jsonify({'error': 'Contraseña inválida: mínimo 8 caracteres y debe incluir letras y números'}), 400
 
-        exists = auth_repo.find_user_by_email_or_username(email) or auth_repo.find_user_by_email_or_username(username)
+        exists = auth_repo.find_user_by_email_or_username(email) or auth_repo.find_user_by_email_or_username(normalized_username)
         if exists:
             return jsonify({'error': 'Usuario ya existe'}), 409
 
-        user_id = auth_repo.create_user(email, username, _hash_password(password))
-        token = _issue_token({'uid': user_id, 'email': email, 'username': username, 'guest': False})
+        user_id = auth_repo.create_user(email, normalized_username, _hash_password(password))
+        token = _issue_token({'uid': user_id, 'email': email, 'username': normalized_username, 'guest': False})
         return jsonify({
             'token': token,
-            'user': {'id': user_id, 'email': email, 'username': username, 'guest': False},
+            'user': {'id': user_id, 'email': email, 'username': normalized_username, 'guest': False},
         })
+    except pymysql.err.IntegrityError:
+        return jsonify({'error': 'Usuario ya existe (email o username en uso)'}), 409
     except Exception as e:
         return jsonify({'error': f'No se pudo registrar: {e}'}), 500
 
