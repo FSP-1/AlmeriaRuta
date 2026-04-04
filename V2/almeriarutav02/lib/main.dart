@@ -7,8 +7,16 @@ import 'features/home/viewmodels/home_viewmodel.dart';
 import 'features/home/views/home_view.dart';
 import 'features/map/viewmodels/map_viewmodel.dart';
 import 'features/map/tourism/viewmodels/tourism_viewmodel.dart';
+import 'features/notifications/services/notification_scheduler_service.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Rehidrata y reaplica avisos locales al iniciar la app.
+  try {
+    await NotificationSchedulerService().restoreFromStorage();
+  } catch (_) {}
+
   runApp(const AlmeriaRutaApp());
 }
 

@@ -6,16 +6,16 @@ import '../../map/viewmodels/favorites_viewmodel.dart';
 import '../models/notification_settings.dart';
 import '../models/user_notification.dart';
 import '../services/backend_notifications_api_service.dart';
-import '../services/local_notification_service.dart';
+import '../services/notification_scheduler_service.dart';
 import '../services/notification_storage.dart';
 
 class NotificationsViewModel extends ChangeNotifier {
   final NotificationStorage _storage;
-  final LocalNotificationService _localNotifications;
   final BackendNotificationsApiService _backendNotifications;
   final BusApiService _apiService;
   final FavoritesViewModel _favoritesViewModel;
   final String? _token;
+  final NotificationSchedulerService _notificationScheduler;
 
   NotificationSettings _settings = const NotificationSettings.defaults();
   NotificationSettings _draft = const NotificationSettings.defaults();
@@ -52,15 +52,15 @@ class NotificationsViewModel extends ChangeNotifier {
 
   NotificationsViewModel({
     NotificationStorage? storage,
-    LocalNotificationService? localNotifications,
     BackendNotificationsApiService? backendNotifications,
     BusApiService? apiService,
+    NotificationSchedulerService? notificationScheduler,
     required FavoritesViewModel favoritesViewModel,
     String? token,
   })  : _storage = storage ?? NotificationStorage(),
-        _localNotifications = localNotifications ?? LocalNotificationService(),
         _backendNotifications = backendNotifications ?? BackendNotificationsApiService(),
         _apiService = apiService ?? BusApiService(),
+      _notificationScheduler = notificationScheduler ?? NotificationSchedulerService(),
         _favoritesViewModel = favoritesViewModel,
         _token = token;
 
@@ -76,7 +76,7 @@ class NotificationsViewModel extends ChangeNotifier {
       await _loadRemoteNotifications();
 
       // Apply schedules on load (best effort, in case the OS lost them).
-      await _applySchedules(_settings);
+      await _notificationScheduler.applySchedules(_settings);
     } catch (e) {
       _error = e.toString();
     } finally {
@@ -146,7 +146,7 @@ class NotificationsViewModel extends ChangeNotifier {
     try {
       _settings = _draft;
       await _storage.save(_settings);
-      await _applySchedules(_settings);
+      await _notificationScheduler.applySchedules(_settings);
     } catch (e) {
       _error = e.toString();
     } finally {
@@ -190,38 +190,6 @@ class NotificationsViewModel extends ChangeNotifier {
     await _loadRemoteNotifications(force: true);
   }
 
-  Future<void> _applySchedules(NotificationSettings s) async {
-    // Ask for permissions only if any notification gets enabled.
-    final anyEnabled = s.recharge.enabled || s.arrival.enabled;
-    if (anyEnabled) {
-      await _localNotifications.requestPermissionsIfNeeded();
-    }
-
-    if (s.recharge.enabled) {
-      final scheduled = _computeMonthlyExpiryReminderTime(s);
-      if (scheduled != null) {
-        await _localNotifications.scheduleMonthlyCardExpiryReminder(
-          scheduledTime: scheduled,
-        );
-      } else {
-        await _localNotifications.cancelRechargeReminder();
-      }
-    } else {
-      await _localNotifications.cancelRechargeReminder();
-    }
-
-    if (s.arrival.enabled) {
-      try {
-        await _scheduleArrivalAlert(s);
-      } catch (e) {
-        _error = e.toString();
-        await _localNotifications.cancelArrivalAlert();
-      }
-    } else {
-      await _localNotifications.cancelArrivalAlert();
-    }
-  }
-
   Future<void> _loadRemoteNotifications({bool force = false}) async {
     final token = _token;
     if (token == null) {
@@ -234,70 +202,6 @@ class NotificationsViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  DateTime? _computeMonthlyExpiryReminderTime(NotificationSettings s) {
-    final iso = s.recharge.monthlyExpiryDateIso;
-    if (iso == null || iso.isEmpty) return null;
-
-    final expiry = _tryParseIsoDate(iso);
-    if (expiry == null) return null;
-
-    final reminderDate = expiry.subtract(const Duration(days: 3));
-    final scheduled = DateTime(
-      reminderDate.year,
-      reminderDate.month,
-      reminderDate.day,
-      s.recharge.hour,
-      s.recharge.minute,
-    );
-
-    if (!scheduled.isAfter(DateTime.now())) return null;
-    return scheduled;
-  }
-
-  Future<void> _scheduleArrivalAlert(NotificationSettings s) async {
-    final lineId = s.arrival.lineId;
-    final lineName = s.arrival.lineName;
-    final stopId = s.arrival.stopId;
-    final stopName = s.arrival.stopName;
-    final leadMinutes = s.arrival.leadMinutes;
-
-    if (lineId == null || lineName == null || stopId == null || stopName == null) {
-      await _localNotifications.cancelArrivalAlert();
-      return;
-    }
-
-    final arrivals = await _apiService.getStopArrivals(stopId, limit: 5);
-    final minutesToArrive = arrivals[lineId];
-    if (minutesToArrive == null) {
-      await _localNotifications.cancelArrivalAlert();
-      return;
-    }
-
-    final scheduledInMinutes = minutesToArrive - leadMinutes;
-    if (scheduledInMinutes <= 0) {
-      // If the bus is already within the lead window, notify immediately.
-      if (minutesToArrive > 0 && minutesToArrive <= leadMinutes) {
-        await _localNotifications.showArrivalAlertNow(
-          lineName: lineName,
-          stopName: stopName,
-          leadMinutes: leadMinutes,
-        );
-      } else {
-        await _localNotifications.cancelArrivalAlert();
-      }
-      return;
-    }
-
-    final scheduledTime = DateTime.now().add(Duration(minutes: scheduledInMinutes));
-
-    await _localNotifications.scheduleOneShotArrivalAlert(
-      scheduledTime: scheduledTime,
-      lineName: lineName,
-      stopName: stopName,
-      leadMinutes: leadMinutes,
-    );
-  }
-
   String _dateToIso(DateTime d) {
     final yyyy = d.year.toString().padLeft(4, '0');
     final mm = d.month.toString().padLeft(2, '0');
@@ -305,13 +209,4 @@ class NotificationsViewModel extends ChangeNotifier {
     return '$yyyy-$mm-$dd';
   }
 
-  DateTime? _tryParseIsoDate(String iso) {
-    final parts = iso.split('-');
-    if (parts.length != 3) return null;
-    final y = int.tryParse(parts[0]);
-    final m = int.tryParse(parts[1]);
-    final d = int.tryParse(parts[2]);
-    if (y == null || m == null || d == null) return null;
-    return DateTime(y, m, d);
-  }
 }
