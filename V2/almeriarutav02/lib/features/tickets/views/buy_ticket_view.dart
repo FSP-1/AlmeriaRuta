@@ -17,11 +17,13 @@ class BuyTicketView extends StatefulWidget {
 class _BuyTicketViewState extends State<BuyTicketView> {
   final _recipientController = TextEditingController();
   final _purchaseApi = TicketPurchaseApiService();
+  final TicketViewModel _ticketViewModel = TicketViewModel();
   bool _giftMode = false;
 
   @override
   void dispose() {
     _recipientController.dispose();
+    _ticketViewModel.dispose();
     super.dispose();
   }
 
@@ -30,8 +32,8 @@ class _BuyTicketViewState extends State<BuyTicketView> {
     final auth = context.watch<AuthViewModel>();
     final isRegisteredUser = auth.isAuthenticated && !auth.isGuest;
 
-    return ChangeNotifierProvider(
-      create: (_) => TicketViewModel(),
+    return ChangeNotifierProvider.value(
+      value: _ticketViewModel,
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Comprar Ticket'),

@@ -12,6 +12,10 @@ import '../../auth/viewmodels/auth_viewmodel.dart';
 import '../../auth/views/auth_screen.dart';
 import '../../settings/views/settings_view.dart';
 import '../../../core/theme/app_theme.dart';
+import 'widgets/coming_soon_dialog.dart';
+import 'widgets/home_accessibility_info_card.dart';
+import 'widgets/home_info_card.dart';
+import 'widgets/home_section_card.dart';
 
 class HomeView extends StatefulWidget {
   const HomeView({super.key});
@@ -25,6 +29,9 @@ class _HomeViewState extends State<HomeView> {
   int _unreadNotificationsCount = 0;
   String? _badgeToken;
   bool _loadingUnreadNotifications = false;
+  String? _observedToken;
+  bool? _observedIsAuthenticated;
+  bool? _observedIsGuest;
 
   @override
   void initState() {
@@ -36,9 +43,41 @@ class _HomeViewState extends State<HomeView> {
   }
 
   Future<void> _initializeHomeState() async {
-    await context.read<AuthViewModel>().initialize();
+    final auth = context.read<AuthViewModel>();
+    await auth.initialize();
     if (!mounted) return;
-    await _refreshUnreadNotificationsCount();
+    _syncAuthState(auth);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _syncAuthState(context.read<AuthViewModel>());
+  }
+
+  void _syncAuthState(AuthViewModel auth) {
+    final token = auth.token;
+    final isAuthenticated = auth.isAuthenticated;
+    final isGuest = auth.isGuest;
+
+    final authChanged = _observedToken != token ||
+        _observedIsAuthenticated != isAuthenticated ||
+        _observedIsGuest != isGuest;
+    if (!authChanged) {
+      return;
+    }
+
+    _observedToken = token;
+    _observedIsAuthenticated = isAuthenticated;
+    _observedIsGuest = isGuest;
+
+    if (token == null || !isAuthenticated || isGuest) {
+      _badgeToken = null;
+      _unreadNotificationsCount = 0;
+      return;
+    }
+
+    _refreshUnreadNotificationsCount();
   }
 
   Future<void> _refreshUnreadNotificationsCount() async {
@@ -73,23 +112,6 @@ class _HomeViewState extends State<HomeView> {
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthViewModel>();
-    if (!auth.isAuthenticated && _badgeToken != null && _unreadNotificationsCount != 0) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
-          setState(() {
-            _badgeToken = null;
-            _unreadNotificationsCount = 0;
-          });
-        }
-      });
-    }
-    if (auth.isAuthenticated && auth.token != _badgeToken && !_loadingUnreadNotifications) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
-          _refreshUnreadNotificationsCount();
-        }
-      });
-    }
 
     return Scaffold(
       appBar: AppBar(
@@ -203,10 +225,10 @@ class _HomeViewState extends State<HomeView> {
                   // Servicios de autobús desde ViewModel
                   ...viewModel.busServices.map((service) => Padding(
                     padding: const EdgeInsets.only(bottom: 16),
-                    child: _buildSectionCard(
-                      context,
+                    child: HomeSectionCard(
                       service: service,
                       onTap: () => _handleServiceTap(context, service),
+                      unreadNotificationsCount: _unreadNotificationsCount,
                     ),
                   )),
                   
@@ -252,9 +274,9 @@ class _HomeViewState extends State<HomeView> {
                           ...rowServices.asMap().entries.map((entry) => [
                             if (entry.key > 0) const SizedBox(width: 12),
                             Expanded(
-                              child: _buildInfoCard(
-                                context,
+                              child: HomeInfoCard(
                                 service: entry.value,
+                                onTap: () => _handleServiceTap(context, entry.value),
                               ),
                             ),
                           ]).expand((x) => x),
@@ -266,17 +288,14 @@ class _HomeViewState extends State<HomeView> {
                   const SizedBox(height: 4),
                   
                   // Tarjeta de notificaciones PRM desde ViewModel
-                  _buildInfoNotificationCard(
-                    context,
+                  HomeAccessibilityInfoCard(
                     service: viewModel.accessibilityService,
+                    onTap: () =>
+                        _handleServiceTap(context, viewModel.accessibilityService),
                   ),
                   
                   const SizedBox(height: 32),
-                  
-                  // Información adicional
-                  if (!viewModel.isLoading && viewModel.error == null)
-                    
-                  
+
                   // Error state
                   if (viewModel.error != null)
                     Container(
@@ -308,325 +327,6 @@ class _HomeViewState extends State<HomeView> {
     );
   }
 
-  Widget _buildSectionCard(
-    BuildContext context, {
-    required MobilityServiceModel service,
-    required VoidCallback onTap,
-  }) {
-    return Card(
-      elevation: 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
-        child: Container(
-          padding: const EdgeInsets.all(20),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: service.color.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(
-                  service.icon,
-                  size: 32,
-                  color: service.color,
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      service.title,
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: AppTheme.darkRed,
-                      ),
-                    ),
-                    if (service.subtitle != null) ...[
-                      const SizedBox(height: 4),
-                      Text(
-                        service.subtitle!,
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: service.color,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                    const SizedBox(height: 4),
-                    Text(
-                      service.description,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Colors.grey[600],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Icon(
-                Icons.arrow_forward_ios,
-                color: Colors.grey[400],
-                size: 16,
-              ),
-              if (service.id == 'notifications' && _unreadNotificationsCount > 0)
-                Container(
-                  margin: const EdgeInsets.only(left: 8),
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.red,
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                  child: Text(
-                    _unreadNotificationsCount > 9 ? '9+' : '$_unreadNotificationsCount',
-                    style: const TextStyle(
-                      fontSize: 11,
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildInfoCard(
-    BuildContext context, {
-    required MobilityServiceModel service,
-  }) {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: InkWell(
-        onTap: () => _handleServiceTap(context, service),
-        borderRadius: BorderRadius.circular(12),
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: service.color.withValues(alpha: 0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  service.icon,
-                  size: 32,
-                  color: service.color,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                service.title,
-                style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: AppTheme.darkRed,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 4),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(
-                  color: Colors.orange[100],
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  'Próximamente',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Colors.orange[800],
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildInfoNotificationCard(
-    BuildContext context, {
-    required MobilityServiceModel service,
-  }) {
-    return Card(
-      elevation: 3,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: InkWell(
-        onTap: () => _handleServiceTap(context, service),
-        borderRadius: BorderRadius.circular(12),
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: service.color.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(
-                  service.icon,
-                  size: 28,
-                  color: service.color,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            service.title,
-                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: AppTheme.darkRed,
-                            ),
-                          ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: Colors.blue[100],
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(
-                            'Info',
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Colors.blue[800],
-                              fontSize: 11,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      service.description,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Colors.grey[600],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  void _showComingSoonDialog(BuildContext context, String feature) {
-    showDialog(
-      context: context,
-      builder: (context) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        child: Container(
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20),
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Colors.white,
-                AppTheme.primaryRed.withValues(alpha: 0.05),
-              ],
-            ),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.orange[100],
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  Icons.access_time,
-                  size: 48,
-                  color: Colors.orange[800],
-                ),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'Próximamente',
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: AppTheme.darkRed,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                feature,
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: AppTheme.primaryRed,
-                  fontWeight: FontWeight.w600,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'Esta funcionalidad estará disponible en futuras versiones de AlmeriaRuta.',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Colors.grey[800],
-                  fontWeight: FontWeight.w500,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Por ahora, nos enfocamos en ofrecerte el mejor servicio de información de autobuses urbanos.',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Colors.grey[700],
-                  fontWeight: FontWeight.w500,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () => Navigator.pop(context),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.primaryRed,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: const Text(
-                    'Entendido',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
   void _handleServiceTap(BuildContext context, MobilityServiceModel service) {
     switch (service.status) {
       case ServiceStatus.active:
@@ -634,7 +334,7 @@ class _HomeViewState extends State<HomeView> {
         break;
       case ServiceStatus.comingSoon:
       case ServiceStatus.information:
-        _showComingSoonDialog(context, service.title);
+        showComingSoonDialog(context, service.title);
         break;
     }
   }

@@ -47,6 +47,21 @@ class _LineStopsContentState extends State<_LineStopsContent> {
   final TextEditingController _searchController = TextEditingController();
   String _query = '';
   List<StopModel> _loadedStops = const [];
+  late Future<List<StopModel>> _stopsFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _stopsFuture = _loadStopsAndArrivals();
+  }
+
+  @override
+  void didUpdateWidget(covariant _LineStopsContent oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.line.id != widget.line.id) {
+      _stopsFuture = _loadStopsAndArrivals();
+    }
+  }
 
   @override
   void dispose() {
@@ -63,6 +78,13 @@ class _LineStopsContentState extends State<_LineStopsContent> {
     return stops.where((stop) {
       return LineSearchUtils.normalizeText(stop.name).contains(normalizedQuery);
     }).toList();
+  }
+
+  Future<List<StopModel>> _loadStopsAndArrivals() async {
+    final stops = await widget.viewModel.getLineStops(widget.line.id);
+    await widget.viewModel.ensureLineArrivals(widget.line.id);
+    _loadedStops = stops;
+    return stops;
   }
 
   void _openFirstMatchIfAny() {
@@ -186,11 +208,7 @@ class _LineStopsContentState extends State<_LineStopsContent> {
                 ),
                 Expanded(
                   child: FutureBuilder<List<StopModel>>(
-                    future: () async {
-                      final stops = await widget.viewModel.getLineStops(widget.line.id);
-                      await widget.viewModel.ensureLineArrivals(widget.line.id);
-                      return stops;
-                    }(),
+                    future: _stopsFuture,
                     builder: (context, snapshot) {
                       if (snapshot.connectionState == ConnectionState.waiting) {
                         return const Center(
@@ -205,7 +223,6 @@ class _LineStopsContentState extends State<_LineStopsContent> {
                       }
 
                       final stops = snapshot.data ?? [];
-                      _loadedStops = stops;
                       final filteredStops = _filterStops(stops);
                       if (filteredStops.isEmpty) {
                         return Center(
