@@ -85,8 +85,8 @@ class MapViewModel extends ChangeNotifier {
   Future<void> initialize() async {
     if (_initialized) return;
 
-    await loadStops();
     await getCurrentLocation();
+    await loadStops();
     await refreshFavoriteStops();
     _initialized = true;
   }
@@ -128,16 +128,11 @@ class MapViewModel extends ChangeNotifier {
       final lines = await _apiService.getLines();
       final uniqueStops = <String, StopModel>{};
 
-      final stopsByLine = await Future.wait(
-        lines.map((line) async {
-          final stops = await _apiService.getLineStops(line.id);
-          return MapEntry(line.id, stops);
-        }),
-      );
-
-      for (final entry in stopsByLine) {
-        final lineId = entry.key;
-        final stops = entry.value;
+      // En arranque en frio preferimos carga secuencial para evitar picos
+      // de CPU/memoria/red en el emulador.
+      for (final line in lines) {
+        final lineId = line.id;
+        final stops = await _apiService.getLineStops(lineId);
         for (final stop in stops) {
           if (uniqueStops.containsKey(stop.id)) {
             uniqueStops[stop.id] = uniqueStops[stop.id]!.copyWith(
@@ -190,7 +185,9 @@ class MapViewModel extends ChangeNotifier {
 
     switch (_currentFilter.mode) {
       case FilterMode.nearby:
-        if (_userLocation == null) return _stops;
+        if (_userLocation == null) {
+          return const [];
+        }
         filteredByMode = _stops.where((stop) {
           final distance = Geolocator.distanceBetween(
             _userLocation!.latitude,

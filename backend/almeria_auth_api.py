@@ -328,6 +328,7 @@ def auth_purchase_ticket():
         sender_id = request.auth.get('uid')
         sender_username = request.auth.get('username') or 'Usuario'
         recipient_identifier = str(body.get('recipientIdentifier', '')).strip()
+        validate_only = str(body.get('validateOnly', 'false')).lower() in {'1', 'true', 'yes'}
         ticket_type = str(body.get('type', 'Individual')).strip() or 'Individual'
         payment_method = str(body.get('paymentMethod', 'Google Pay')).strip() or 'Google Pay'
         quantity = int(body.get('quantity', 1) or 1)
@@ -341,6 +342,19 @@ def auth_purchase_ticket():
             recipient = auth_repo.find_user_by_email_or_username(recipient_identifier)
             if not recipient:
                 return jsonify({'error': 'Usuario destinatario no encontrado'}), 404
+
+        if validate_only:
+            if not recipient_identifier:
+                return jsonify({'error': 'Destinatario requerido'}), 400
+            return jsonify({
+                'success': True,
+                'validateOnly': True,
+                'recipient': {
+                    'id': recipient['id'],
+                    'email': recipient['email'],
+                    'username': recipient['username'],
+                },
+            })
 
         notification = None
         if recipient and recipient['id'] != sender_id:

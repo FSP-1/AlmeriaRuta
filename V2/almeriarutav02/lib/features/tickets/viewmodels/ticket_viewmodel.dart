@@ -62,8 +62,8 @@ class TicketViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  // Simular compra
-  Future<bool> buyTicket() async {
+  // Simular compra. En modo regalo puede procesar pago sin crear ticket local.
+  Future<bool> buyTicket({bool createLocalTicket = true}) async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
@@ -87,16 +87,18 @@ class TicketViewModel extends ChangeNotifier {
         _balance -= totalPrice;
       }
 
-      final ticket = TicketModel(
-        id: _generateId(),
-        type: _selectedType,
-        quantity: _quantity,
-        purchaseDate: DateTime.now(),
-        amount: totalPrice,
-        status: 'Activo',
-      );
+      if (createLocalTicket) {
+        final ticket = TicketModel(
+          id: _generateId(),
+          type: _selectedType,
+          quantity: _quantity,
+          purchaseDate: DateTime.now(),
+          amount: totalPrice,
+          status: 'Activo',
+        );
 
-      _tickets.add(ticket);
+        _tickets.add(ticket);
+      }
       _isLoading = false;
       notifyListeners();
       return true;

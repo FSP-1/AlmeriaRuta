@@ -348,23 +348,34 @@ class _BuyTicketViewState extends State<BuyTicketView> {
         );
         return;
       }
+
+      try {
+        await _purchaseApi.validateRecipient(
+          token: auth.token!,
+          recipientIdentifier: recipient,
+        );
+      } catch (e) {
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('No se puede comprar: $e')),
+        );
+        return;
+      }
     }
 
-    final success = await vm.buyTicket();
+    final success = await vm.buyTicket(createLocalTicket: !_giftMode);
     if (!success || !context.mounted) {
       return;
     }
-
-    final ticket = vm.tickets.last;
 
     if (_giftMode) {
       try {
         await _purchaseApi.notifyTicketPurchase(
           token: auth.token!,
           recipientIdentifier: recipient,
-          type: ticket.type,
-          quantity: ticket.quantity,
-          amount: ticket.amount,
+          type: vm.selectedType,
+          quantity: vm.selectedType == 'Multiple' ? vm.quantity : 1,
+          amount: vm.totalPrice,
           paymentMethod: vm.paymentMethod,
         );
 
@@ -381,6 +392,8 @@ class _BuyTicketViewState extends State<BuyTicketView> {
       }
       return;
     }
+
+    final ticket = vm.tickets.last;
 
     Navigator.pushReplacement(
       context,
