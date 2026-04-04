@@ -80,7 +80,7 @@ class _HomeViewState extends State<HomeView> {
     _refreshUnreadNotificationsCount();
   }
 
-  Future<void> _refreshUnreadNotificationsCount() async {
+  Future<void> _refreshUnreadNotificationsCount({bool force = false}) async {
     final auth = context.read<AuthViewModel>();
     final token = auth.token;
     if (token == null || !auth.isAuthenticated || auth.isGuest) {
@@ -92,7 +92,7 @@ class _HomeViewState extends State<HomeView> {
       return;
     }
 
-    if (_loadingUnreadNotifications || _badgeToken == token) {
+    if (_loadingUnreadNotifications || (!force && _badgeToken == token)) {
       return;
     }
 
@@ -394,7 +394,7 @@ class _HomeViewState extends State<HomeView> {
     Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => const NotificationsView()),
-    ).then((_) => _refreshUnreadNotificationsCount());
+    ).then((_) => _refreshUnreadNotificationsCount(force: true));
   }
 
   bool _requireRegisteredUser(BuildContext context) {
