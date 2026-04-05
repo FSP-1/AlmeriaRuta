@@ -17,7 +17,7 @@ class LocalNotificationService {
     tz_data.initializeTimeZones();
     try {
       final name = await FlutterTimezone.getLocalTimezone();
-      tz.setLocalLocation(tz.getLocation(name));
+      tz.setLocalLocation(tz.getLocation(name.identifier));
     } catch (_) {
       // Fallback to tz.local.
     }
@@ -25,7 +25,7 @@ class LocalNotificationService {
     const androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
     const initSettings = InitializationSettings(android: androidInit);
 
-    await _plugin.initialize(initSettings);
+    await _plugin.initialize(settings: initSettings);
 
     _initialized = true;
   }
@@ -42,12 +42,12 @@ class LocalNotificationService {
 
   Future<void> cancelRechargeReminder() async {
     await initialize();
-    await _plugin.cancel(rechargeNotificationId);
+    await _plugin.cancel(id: rechargeNotificationId);
   }
 
   Future<void> cancelArrivalAlert() async {
     await initialize();
-    await _plugin.cancel(arrivalNotificationId);
+    await _plugin.cancel(id: arrivalNotificationId);
   }
 
   Future<void> scheduleMonthlyCardExpiryReminder({
@@ -58,11 +58,9 @@ class LocalNotificationService {
     if (!scheduledTime.isAfter(DateTime.now())) return;
 
     await _plugin.zonedSchedule(
-      rechargeNotificationId,
-      'Recarga pendiente',
-      'Tu tarjeta mensual caduca pronto.',
-      _toTZ(scheduledTime),
-      const NotificationDetails(
+      id: rechargeNotificationId,
+      scheduledDate: _toTZ(scheduledTime),
+      notificationDetails: const NotificationDetails(
         android: AndroidNotificationDetails(
           'recharge_reminders',
           'Recordatorios de recarga',
@@ -72,7 +70,8 @@ class LocalNotificationService {
         ),
       ),
       androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
-      uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
+      title: 'Recarga pendiente',
+      body: 'Tu tarjeta mensual caduca pronto.',
     );
   }
 
@@ -88,11 +87,9 @@ class LocalNotificationService {
     if (!scheduledTime.isAfter(now)) return;
 
     await _plugin.zonedSchedule(
-      arrivalNotificationId,
-      (lineName == null || lineName.isEmpty) ? 'Bus en $leadMinutes min' : 'Bus $lineName en $leadMinutes min',
-      'Parada: $stopName',
-      _toTZ(scheduledTime),
-      const NotificationDetails(
+      id: arrivalNotificationId,
+      scheduledDate: _toTZ(scheduledTime),
+      notificationDetails: const NotificationDetails(
         android: AndroidNotificationDetails(
           'arrival_alerts',
           'Avisos de llegada',
@@ -102,7 +99,8 @@ class LocalNotificationService {
         ),
       ),
       androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
-      uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
+      title: (lineName == null || lineName.isEmpty) ? 'Bus en $leadMinutes min' : 'Bus $lineName en $leadMinutes min',
+      body: 'Parada: $stopName',
     );
   }
 
@@ -114,10 +112,8 @@ class LocalNotificationService {
     await initialize();
 
     await _plugin.show(
-      arrivalNotificationId,
-      (lineName == null || lineName.isEmpty) ? 'Bus en $leadMinutes min' : 'Bus $lineName en $leadMinutes min',
-      'Parada: $stopName',
-      const NotificationDetails(
+      id: arrivalNotificationId,
+      notificationDetails: const NotificationDetails(
         android: AndroidNotificationDetails(
           'arrival_alerts',
           'Avisos de llegada',
@@ -126,6 +122,8 @@ class LocalNotificationService {
           priority: Priority.high,
         ),
       ),
+      title: (lineName == null || lineName.isEmpty) ? 'Bus en $leadMinutes min' : 'Bus $lineName en $leadMinutes min',
+      body: 'Parada: $stopName',
     );
   }
 

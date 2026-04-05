@@ -25,7 +25,7 @@ class ValidateTripView extends StatelessWidget {
           foregroundColor: Colors.white,
         ),
         body: Consumer<ValidationViewModel>(
-          builder: (_, vm, __) {
+          builder: (_, vm, _) {
             return SingleChildScrollView(
               padding: const EdgeInsets.all(16),
               child: Column(

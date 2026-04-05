@@ -18,7 +18,7 @@ class RechargeView extends StatelessWidget {
           foregroundColor: Colors.white,
         ),
         body: Consumer<RechargeViewModel>(
-          builder: (_, vm, __) {
+          builder: (_, vm, _) {
             return Column(
               children: [
                 if (vm.expiringSoon.isNotEmpty) _buildExpirationWarning(vm),
