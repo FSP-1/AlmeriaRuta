@@ -445,6 +445,24 @@ python almeria_auth_api.py
 # disponible en http://localhost:5001
 ```
 
+
+#### Actualización reciente: Auth API en MVC
+
+Se refactorizó `backend/almeria_auth_api.py` para pasar de archivo monolítico a estructura MVC manteniendo los mismos endpoints y puerto (`5001`).
+
+Estructura actual del módulo de autenticación:
+
+- `backend/almeria_auth_api.py`: bootstrap de Flask, CORS, wiring de dependencias y arranque.
+- `backend/auth_mvc/controller.py`: rutas HTTP (`/auth/...`), decorator de auth y respuestas JSON.
+- `backend/auth_mvc/service.py`: lógica de negocio (registro/login/guest/me, compra para terceros y notificaciones).
+- `backend/auth_mvc/repository.py`: acceso a MySQL (schema, queries de usuarios y notificaciones).
+
+Beneficios del cambio:
+
+- Menor acoplamiento entre rutas, lógica y base de datos.
+- Mejor mantenibilidad para corregir bugs sin tocar todo el archivo.
+- Estructura más clara para seguir creciendo funcionalidades de auth/tickets/notificaciones.
+
 ### Frontend (Flutter)
 
 ```bash
@@ -569,7 +587,10 @@ La app Flutter activa vive en `V2/almeriarutav02/`.
 ```bash
 cd backend
 python almeria_busmaps_api.py
+python almeria_auth_api.py
 ```
+
+Si vas a levantar `almeria_auth_api.py`, define antes las variables de entorno indicadas en `backend/.env.example`.
 
 ### App Flutter
 
