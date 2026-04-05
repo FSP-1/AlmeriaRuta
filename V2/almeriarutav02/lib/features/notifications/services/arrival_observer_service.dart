@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
+
 import '../../../shared/services/bus_api_service.dart';
 import '../models/notification_settings.dart';
 import 'local_notification_service.dart';
@@ -9,24 +11,36 @@ class ArrivalObserverService {
 
   factory ArrivalObserverService() => _instance;
 
-  ArrivalObserverService._internal() {
-    _apiService = BusApiService();
-    _localNotifications = LocalNotificationService();
-  }
+  ArrivalObserverService._internal({
+    BusApiService? apiService,
+    LocalNotificationService? localNotifications,
+  })  : _apiService = apiService ?? BusApiService(),
+        _localNotifications = localNotifications ?? LocalNotificationService();
 
-  late final BusApiService _apiService;
-  late final LocalNotificationService _localNotifications;
+  @visibleForTesting
+  ArrivalObserverService.testing({
+    required BusApiService apiService,
+    required LocalNotificationService localNotifications,
+  })  : _apiService = apiService,
+        _localNotifications = localNotifications;
+
+  final BusApiService _apiService;
+  final LocalNotificationService _localNotifications;
 
   Timer? _timer;
   String? _observedSignature;
   String? _lastTriggeredSignature;
   bool _busy = false;
 
-  Future<void> updateFromSettings(ArrivalAlertSettings settings) async {
+  void stopObserving() {
     _timer?.cancel();
     _timer = null;
     _observedSignature = null;
     _lastTriggeredSignature = null;
+  }
+
+  Future<void> updateFromSettings(ArrivalAlertSettings settings) async {
+    stopObserving();
 
     if (!settings.enabled ||
         settings.lineId == null ||

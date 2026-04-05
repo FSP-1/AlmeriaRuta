@@ -64,6 +64,23 @@ Resumen corto de la optimizacion global de conectividad y estado:
 Documentacion tecnica completa:
 - [documentacion/API_CONEXION_Y_OPTIMIZACION.md](documentacion/API_CONEXION_Y_OPTIMIZACION.md)
 
+## Estado de Pruebas (Fase actual)
+
+Durante esta fase se ha priorizado la cobertura por funcionalidad (tests organizados por carpeta `test/features/...`) y la estabilizacion de la suite tras refactors y upgrades de dependencias.
+
+- Suite actual verificada en verde: **109 tests pasando**.
+- Comando de validacion recomendado: `flutter test`.
+- Se detecto y documentó un falso positivo de runner interno (resultado `0/0`), por lo que la validacion oficial se hace con el runner de Flutter.
+- Se ampliaron tests en ViewModels, modelos y servicios clave de notificaciones, tickets, mapa y capas compartidas.
+
+Tambien se aplico un refactor minimo para habilitar testeo real de servicios complejos sin alterar el comportamiento funcional:
+
+- `ArrivalObserverService`: constructor de testing por inyeccion + metodo `stopObserving()` para cleanup controlado.
+- `TicketPurchaseApiService`: inyeccion opcional de `http.Client` para tests deterministas.
+
+Documentacion tecnica completa de esta fase:
+- [documentacion/8-Estrategia-y-cobertura-de-tests.md](documentacion/8-Estrategia-y-cobertura-de-tests.md)
+
 ## Arquitectura MVVM
 
 ### Estructura del proyecto

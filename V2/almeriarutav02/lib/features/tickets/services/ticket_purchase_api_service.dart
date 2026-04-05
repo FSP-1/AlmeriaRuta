@@ -5,7 +5,9 @@ import 'package:http/http.dart' as http;
 import '../../../core/constants/app_constants.dart';
 
 class TicketPurchaseApiService {
-  final http.Client _client = http.Client();
+  final http.Client _client;
+
+  TicketPurchaseApiService({http.Client? client}) : _client = client ?? http.Client();
 
   Future<void> validateRecipient({
     required String token,
