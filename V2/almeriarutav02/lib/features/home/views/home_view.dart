@@ -3,14 +3,13 @@ import 'package:provider/provider.dart';
 import '../viewmodels/home_viewmodel.dart';
 import '../models/mobility_service_model.dart';
 import '../../map/views/optimized_map_view.dart';
-import '../../tickets/views/buy_ticket_view.dart';
-import '../../recharge/views/recharge_view.dart';
 import '../../lines/views/lines_view.dart';
 import '../../notifications/views/notifications_view.dart';
 import '../../notifications/services/backend_notifications_api_service.dart';
 import '../../auth/viewmodels/auth_viewmodel.dart';
 import '../../auth/views/auth_screen.dart';
 import '../../auth/views/profile_view.dart';
+import '../../tickets/views/tickets_hub_view.dart';
 import '../../../core/theme/app_theme.dart';
 import 'widgets/coming_soon_dialog.dart';
 import 'widgets/home_accessibility_info_card.dart';
@@ -390,10 +389,7 @@ class _HomeViewState extends State<HomeView> {
         _navigateToLines(context);
         break;
       case 'tickets':
-        _navigateToTickets(context);
-        break;
-      case 'recharge':
-        _navigateToRecharge(context);
+        _navigateToTicketsHub(context);
         break;
       case 'map':
         _navigateToMap(context);
@@ -420,18 +416,10 @@ class _HomeViewState extends State<HomeView> {
     );
   }
 
-  void _navigateToTickets(BuildContext context) {
+  void _navigateToTicketsHub(BuildContext context) {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => const BuyTicketView()),
-    );
-  }
-
-  void _navigateToRecharge(BuildContext context) {
-    if (_requireRegisteredUser(context)) return;
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => const RechargeView()),
+      MaterialPageRoute(builder: (context) => const TicketsHubView()),
     );
   }
 
@@ -440,29 +428,5 @@ class _HomeViewState extends State<HomeView> {
       context,
       MaterialPageRoute(builder: (context) => const NotificationsView()),
     ).then((_) => _refreshUnreadNotificationsCount(force: true));
-  }
-
-  bool _requireRegisteredUser(BuildContext context) {
-    final auth = context.read<AuthViewModel>();
-    if (auth.isAuthenticated && !auth.isGuest) {
-      return false;
-    }
-
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Acceso restringido'),
-        content: const Text(
-          'Esta funcionalidad requiere una cuenta registrada. Ve al icono de perfil para iniciar sesión o registrarte.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Entendido'),
-          ),
-        ],
-      ),
-    );
-    return true;
   }
 }

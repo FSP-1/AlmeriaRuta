@@ -8,7 +8,9 @@ import '../viewmodels/ticket_viewmodel.dart';
 import '../../../core/theme/app_theme.dart';
 
 class BuyTicketView extends StatefulWidget {
-  const BuyTicketView({super.key});
+  final TicketViewModel? ticketViewModel;
+
+  const BuyTicketView({super.key, this.ticketViewModel});
 
   @override
   State<BuyTicketView> createState() => _BuyTicketViewState();
@@ -17,13 +19,23 @@ class BuyTicketView extends StatefulWidget {
 class _BuyTicketViewState extends State<BuyTicketView> {
   final _recipientController = TextEditingController();
   final _purchaseApi = TicketPurchaseApiService();
-  final TicketViewModel _ticketViewModel = TicketViewModel();
+  late final TicketViewModel _ticketViewModel;
+  late final bool _ownsTicketViewModel;
   bool _giftMode = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _ticketViewModel = widget.ticketViewModel ?? TicketViewModel();
+    _ownsTicketViewModel = widget.ticketViewModel == null;
+  }
 
   @override
   void dispose() {
     _recipientController.dispose();
-    _ticketViewModel.dispose();
+    if (_ownsTicketViewModel) {
+      _ticketViewModel.dispose();
+    }
     super.dispose();
   }
 
@@ -36,7 +48,7 @@ class _BuyTicketViewState extends State<BuyTicketView> {
       value: _ticketViewModel,
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('Comprar Ticket'),
+          title: const Text('Comprar billete'),
           backgroundColor: AppTheme.primaryRed,
           foregroundColor: Colors.white,
         ),
@@ -381,7 +393,7 @@ class _BuyTicketViewState extends State<BuyTicketView> {
 
         if (!context.mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Ticket enviado a $recipient')),
+          SnackBar(content: Text('Billete enviado a $recipient')),
         );
         Navigator.of(context).pop();
       } catch (e) {
@@ -395,14 +407,48 @@ class _BuyTicketViewState extends State<BuyTicketView> {
 
     final ticket = vm.tickets.last;
 
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(
-        builder: (_) => ValidateTripView(
-          ticket: ticket,
-        ),
-      ),
-    );
+    final shouldValidate = await showDialog<bool>(
+          context: context,
+          builder: (dialogContext) => AlertDialog(
+            title: const Text('Compra completada'),
+            content: const Text('¿Quieres validar o usar el billete ahora?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext, false),
+                child: const Text('No, volver'),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(dialogContext, true),
+                child: const Text('Sí, validar'),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+
+    if (!shouldValidate || !context.mounted) {
+      return;
+    }
+
+    final initialRemainingUses = ticket.remainingUses;
+
+    await Navigator.push<bool>(
+          context,
+          MaterialPageRoute(
+            builder: (_) => ValidateTripView(ticket: ticket),
+          ),
+        );
+
+    if (!context.mounted) return;
+
+    if (ticket.remainingUses < initialRemainingUses) {
+      if (ticket.remainingUses <= 0) {
+        vm.useTicket(ticket.id);
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Billete validado')),
+      );
+    }
   }
 }
 
