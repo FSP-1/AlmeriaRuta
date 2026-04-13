@@ -1,8 +1,15 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:almeriarutav02/features/tickets/models/ticket_model.dart';
 import 'package:almeriarutav02/features/tickets/viewmodels/ticket_viewmodel.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
+  setUp(() async {
+    SharedPreferences.setMockInitialValues({});
+  });
+
   group('TicketViewModel', () {
     test('computes totals based on selected type and quantity', () {
       final vm = TicketViewModel();
@@ -27,7 +34,7 @@ void main() {
       expect(vm.totalPrice, 10.0);
     });
 
-    test('useTicket decrements or removes ticket', () {
+    test('useTicket decrements or removes ticket', () async {
       final vm = TicketViewModel();
       vm.tickets.add(
         TicketModel(
@@ -41,10 +48,10 @@ void main() {
         ),
       );
 
-      vm.useTicket('T1');
+      await vm.useTicket('T1');
       expect(vm.tickets.first.remainingUses, 1);
 
-      vm.useTicket('T1');
+      await vm.useTicket('T1');
       expect(vm.tickets, isEmpty);
     });
   });

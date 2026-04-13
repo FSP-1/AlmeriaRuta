@@ -1,14 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
 import '../models/ticket_model.dart';
 import 'dart:math';
 
 class TicketViewModel extends ChangeNotifier {
+  static const _ticketsKey = 'local_tickets';
   String _selectedType = 'Individual';
   int _quantity = 1;
   String _paymentMethod = 'Google Pay';
   bool _isLoading = false;
   String? _errorMessage;
   double _balance = 15.50; // Saldo simulado
+  bool _ticketsLoaded = false;
 
   final List<TicketModel> _tickets = [];
 
@@ -62,6 +66,30 @@ class TicketViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> loadTickets() async {
+    if (_ticketsLoaded) return;
+    _ticketsLoaded = true;
+
+    final prefs = await SharedPreferences.getInstance();
+    final rawTickets = prefs.getStringList(_ticketsKey) ?? const [];
+
+    _tickets.clear();
+    for (final raw in rawTickets) {
+      try {
+        final data = jsonDecode(raw) as Map<String, dynamic>;
+        _tickets.add(TicketModel.fromJson(data));
+      } catch (_) {
+        // Skip malformed entries instead of failing the whole load.
+      }
+    }
+    notifyListeners();
+  }
+
+  Future<void> persistTicketsState() async {
+    await _saveTickets();
+    notifyListeners();
+  }
+
   // Simular compra. En modo regalo puede procesar pago sin crear ticket local.
   Future<bool> buyTicket({bool createLocalTicket = true}) async {
     _isLoading = true;
@@ -98,6 +126,7 @@ class TicketViewModel extends ChangeNotifier {
         );
 
         _tickets.add(ticket);
+        await _saveTickets();
       }
       _isLoading = false;
       notifyListeners();
@@ -110,7 +139,7 @@ class TicketViewModel extends ChangeNotifier {
     }
   }
 
-  void useTicket(String ticketId) {
+  Future<void> useTicket(String ticketId) async {
     final index = _tickets.indexWhere((t) => t.id == ticketId);
     if (index != -1) {
       final ticket = _tickets[index];
@@ -119,8 +148,15 @@ class TicketViewModel extends ChangeNotifier {
       } else {
         _tickets.removeAt(index);
       }
+      await _saveTickets();
       notifyListeners();
     }
+  }
+
+  Future<void> _saveTickets() async {
+    final prefs = await SharedPreferences.getInstance();
+    final data = _tickets.map((t) => jsonEncode(t.toJson())).toList();
+    await prefs.setStringList(_ticketsKey, data);
   }
 
   String _generateId() {
