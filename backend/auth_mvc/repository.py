@@ -146,10 +146,59 @@ class AuthRepository:
         with self._conn() as conn:
             with conn.cursor() as cur:
                 cur.execute(
-                    "SELECT id, email, username, created_at FROM users WHERE id=%s LIMIT 1",
+                    "SELECT id, email, username, password_hash, created_at FROM users WHERE id=%s LIMIT 1",
                     (user_id,),
                 )
                 return cur.fetchone()
+
+    def find_user_by_email_or_username_except_id(self, value, user_id):
+        with self._conn() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "SELECT id, email, username "
+                    "FROM users "
+                    "WHERE (LOWER(email)=LOWER(%s) OR LOWER(username)=LOWER(%s)) "
+                    "AND id<>%s "
+                    "LIMIT 1",
+                    (value, value, user_id),
+                )
+                return cur.fetchone()
+
+    def email_exists_for_other_user(self, email, user_id):
+        with self._conn() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "SELECT id FROM users WHERE LOWER(email)=LOWER(%s) AND id<>%s LIMIT 1",
+                    (email, user_id),
+                )
+                return cur.fetchone() is not None
+
+    def username_exists_for_other_user(self, username, user_id):
+        with self._conn() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "SELECT id FROM users WHERE LOWER(username)=LOWER(%s) AND id<>%s LIMIT 1",
+                    (username, user_id),
+                )
+                return cur.fetchone() is not None
+
+    def update_user_profile(self, user_id, email, username):
+        with self._conn() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "UPDATE users SET email=%s, username=%s WHERE id=%s",
+                    (email, username, user_id),
+                )
+                return cur.rowcount
+
+    def update_user_password(self, user_id, new_password_hash):
+        with self._conn() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "UPDATE users SET password_hash=%s WHERE id=%s",
+                    (new_password_hash, user_id),
+                )
+                return cur.rowcount
 
     def create_notification(self, user_id, title, body, payload_json=None):
         with self._conn() as conn:

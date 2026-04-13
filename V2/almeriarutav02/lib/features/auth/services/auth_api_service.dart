@@ -65,6 +65,49 @@ class AuthApiService {
     return AppUser.fromJson(data);
   }
 
+  Future<(String, AppUser)> updateProfile({
+    required String token,
+    required String email,
+    required String username,
+  }) async {
+    final response = await _client.patch(
+      Uri.parse('${AppConstants.authApiBaseUrl}/auth/me'),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({
+        'email': email,
+        'username': username,
+      }),
+    );
+
+    return _parseAuthResponse(response);
+  }
+
+  Future<void> changePassword({
+    required String token,
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    final response = await _client.post(
+      Uri.parse('${AppConstants.authApiBaseUrl}/auth/me/password'),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({
+        'currentPassword': currentPassword,
+        'newPassword': newPassword,
+      }),
+    );
+
+    final data = jsonDecode(response.body) as Map<String, dynamic>;
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception(data['error']?.toString() ?? 'No se pudo cambiar la contraseña');
+    }
+  }
+
   (String, AppUser) _parseAuthResponse(http.Response response) {
     final data = jsonDecode(response.body) as Map<String, dynamic>;
     if (response.statusCode >= 200 && response.statusCode < 300) {

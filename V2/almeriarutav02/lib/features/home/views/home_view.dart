@@ -10,7 +10,7 @@ import '../../notifications/views/notifications_view.dart';
 import '../../notifications/services/backend_notifications_api_service.dart';
 import '../../auth/viewmodels/auth_viewmodel.dart';
 import '../../auth/views/auth_screen.dart';
-import '../../settings/views/settings_view.dart';
+import '../../auth/views/profile_view.dart';
 import '../../../core/theme/app_theme.dart';
 import 'widgets/coming_soon_dialog.dart';
 import 'widgets/home_accessibility_info_card.dart';
@@ -119,15 +119,60 @@ class _HomeViewState extends State<HomeView> {
         centerTitle: true,
         backgroundColor: AppTheme.primaryRed,
         foregroundColor: Colors.white,
+        leading: auth.isAuthenticated
+            ? IconButton(
+                icon: Icon(auth.avatarIcon),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const ProfileView(),
+                    ),
+                  );
+                },
+              )
+            : null,
         actions: [
           IconButton(
-            icon: Icon(auth.isAuthenticated ? Icons.settings : Icons.login),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => auth.isAuthenticated ? const SettingsView() : const AuthScreen(),
-                ),
+            icon: Icon(auth.isAuthenticated ? Icons.logout : Icons.login),
+            onPressed: () async {
+              if (!auth.isAuthenticated) {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const AuthScreen(),
+                  ),
+                );
+                return;
+              }
+
+              final shouldLogout = await showDialog<bool>(
+                    context: context,
+                    builder: (_) => AlertDialog(
+                      title: const Text('Cerrar sesión'),
+                      content: const Text('¿Seguro que quieres cerrar tu sesión actual?'),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.of(context).pop(false),
+                          child: const Text('Cancelar'),
+                        ),
+                        ElevatedButton(
+                          onPressed: () => Navigator.of(context).pop(true),
+                          child: const Text('Salir'),
+                        ),
+                      ],
+                    ),
+                  ) ??
+                  false;
+
+              if (!shouldLogout || !context.mounted) {
+                return;
+              }
+
+              await context.read<AuthViewModel>().logout();
+              if (!context.mounted) return;
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Sesión cerrada')),
               );
             },
           ),
@@ -408,7 +453,7 @@ class _HomeViewState extends State<HomeView> {
       builder: (_) => AlertDialog(
         title: const Text('Acceso restringido'),
         content: const Text(
-          'Esta funcionalidad requiere una cuenta registrada. Ve a Ajustes para iniciar sesión o registrarte.',
+          'Esta funcionalidad requiere una cuenta registrada. Ve al icono de perfil para iniciar sesión o registrarte.',
         ),
         actions: [
           TextButton(

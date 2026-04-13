@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../utils/auth_validators.dart';
 import '../viewmodels/auth_viewmodel.dart';
 
 class AuthScreen extends StatefulWidget {
@@ -136,7 +137,7 @@ class _AuthScreenState extends State<AuthScreen> {
                   labelText: 'Email o usuario',
                   border: OutlineInputBorder(),
                 ),
-                validator: _validateLoginIdentifier,
+                validator: AuthValidators.validateLoginIdentifier,
               ),
               const SizedBox(height: 12),
               TextFormField(
@@ -146,7 +147,7 @@ class _AuthScreenState extends State<AuthScreen> {
                   labelText: 'Contraseña',
                   border: OutlineInputBorder(),
                 ),
-                validator: _validatePassword,
+                validator: AuthValidators.validatePassword,
               ),
               const SizedBox(height: 16),
               ElevatedButton(
@@ -199,7 +200,7 @@ class _AuthScreenState extends State<AuthScreen> {
                   labelText: 'Email',
                   border: OutlineInputBorder(),
                 ),
-                validator: _validateEmail,
+                validator: AuthValidators.validateEmail,
               ),
               const SizedBox(height: 12),
               TextFormField(
@@ -208,7 +209,7 @@ class _AuthScreenState extends State<AuthScreen> {
                   labelText: 'Nombre de usuario',
                   border: OutlineInputBorder(),
                 ),
-                validator: _validateUsername,
+                validator: AuthValidators.validateUsername,
               ),
               const SizedBox(height: 12),
               TextFormField(
@@ -219,7 +220,7 @@ class _AuthScreenState extends State<AuthScreen> {
                   border: OutlineInputBorder(),
                   helperText: 'Mínimo 8 caracteres, con letras y números',
                 ),
-                validator: _validatePassword,
+                validator: AuthValidators.validatePassword,
               ),
               const SizedBox(height: 16),
               ElevatedButton(
@@ -259,52 +260,4 @@ class _AuthScreenState extends State<AuthScreen> {
     );
   }
 
-  String? _validateLoginIdentifier(String? value) {
-    final text = value?.trim() ?? '';
-    if (text.isEmpty) {
-      return 'Introduce email o usuario';
-    }
-    return null;
-  }
-
-  String? _validateEmail(String? value) {
-    final text = value?.trim() ?? '';
-    if (text.isEmpty) {
-      return 'Introduce tu email';
-    }
-    final emailRegex = RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$');
-    if (!emailRegex.hasMatch(text)) {
-      return 'Email no válido';
-    }
-    return null;
-  }
-
-  String? _validateUsername(String? value) {
-    final text = value?.trim() ?? '';
-    if (text.length < 3) {
-      return 'Mínimo 3 caracteres';
-    }
-    if (text.length > 20) {
-      return 'Máximo 20 caracteres';
-    }
-    final usernameRegex = RegExp(r'^[A-Za-zÁÉÍÓÚáéíóúÑñ0-9_ ]+$');
-    if (!usernameRegex.hasMatch(text)) {
-      return 'Usa solo letras, números, espacios o _';
-    }
-    return null;
-  }
-
-  String? _validatePassword(String? value) {
-    final text = value ?? '';
-    if (text.length < 8) {
-      return 'Mínimo 8 caracteres';
-    }
-    if (!RegExp(r'[A-Za-z]').hasMatch(text)) {
-      return 'Debe incluir letras';
-    }
-    if (!RegExp(r'[0-9]').hasMatch(text)) {
-      return 'Debe incluir números';
-    }
-    return null;
-  }
 }

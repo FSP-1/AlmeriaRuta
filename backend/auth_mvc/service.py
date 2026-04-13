@@ -116,6 +116,77 @@ class AuthService:
 
         return {'id': user['id'], 'email': user['email'], 'username': user['username'], 'guest': False}, 200
 
+    def update_profile(self, auth_data: dict, body: dict):
+        user_id = auth_data.get('uid')
+        if not user_id:
+            return {'error': 'Usuario no autenticado'}, 401
+
+        email = str(body.get('email', '')).strip().lower()
+        username = str(body.get('username', '')).strip().lower()
+
+        if not self.is_valid_email(email):
+            return {'error': 'Email no válido'}, 400
+
+        if not self.is_valid_username(username):
+            return {'error': 'Usuario inválido: usa 3 a 20 letras, números, espacios o guiones bajos'}, 400
+
+        if self.repo.email_exists_for_other_user(email, user_id):
+            return {'error': 'El email ya está en uso'}, 409
+
+        if self.repo.username_exists_for_other_user(username, user_id):
+            return {'error': 'El nombre de usuario ya está en uso'}, 409
+
+        self.repo.update_user_profile(user_id, email, username)
+        updated_user = self.repo.find_user_by_id(user_id)
+        if not updated_user:
+            return {'error': 'Usuario no encontrado'}, 404
+
+        token = self.issue_token(
+            {
+                'uid': updated_user['id'],
+                'email': updated_user['email'],
+                'username': updated_user['username'],
+                'guest': False,
+            }
+        )
+
+        return {
+            'token': token,
+            'user': {
+                'id': updated_user['id'],
+                'email': updated_user['email'],
+                'username': updated_user['username'],
+                'guest': False,
+            },
+        }, 200
+
+    def change_password(self, auth_data: dict, body: dict):
+        user_id = auth_data.get('uid')
+        if not user_id:
+            return {'error': 'Usuario no autenticado'}, 401
+
+        current_password = str(body.get('currentPassword', ''))
+        new_password = str(body.get('newPassword', ''))
+
+        if not current_password or not new_password:
+            return {'error': 'Contraseña actual y nueva requeridas'}, 400
+
+        if not self.is_strong_password(new_password):
+            return {'error': 'Contraseña inválida: mínimo 8 caracteres y debe incluir letras y números'}, 400
+
+        user = self.repo.find_user_by_id(user_id)
+        if not user:
+            return {'error': 'Usuario no encontrado'}, 404
+
+        if not self.verify_password(current_password, user['password_hash']):
+            return {'error': 'Contraseña actual incorrecta'}, 401
+
+        if self.verify_password(new_password, user['password_hash']):
+            return {'error': 'La nueva contraseña debe ser distinta a la actual'}, 400
+
+        self.repo.update_user_password(user_id, self.hash_password(new_password))
+        return {'success': True}, 200
+
     def purchase_ticket(self, auth_data: dict, body: dict):
         sender_id = auth_data.get('uid')
         sender_username = auth_data.get('username') or 'Usuario'

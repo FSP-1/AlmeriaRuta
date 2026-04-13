@@ -76,6 +76,33 @@ def create_auth_blueprint(auth_service):
         payload, status = auth_service.me(request.auth)
         return jsonify(payload), status
 
+    @auth_bp.route('/auth/me', methods=['PATCH'])
+    @auth_required(allow_guest=False)
+    def auth_update_me():
+        try:
+            body = request.get_json(silent=True) or {}
+            payload, status = auth_service.update_profile(request.auth, body)
+            return jsonify(payload), status
+        except pymysql.err.IntegrityError as e:
+            raw = str(e).lower()
+            if 'email' in raw:
+                return jsonify({'error': 'El email ya está en uso'}), 409
+            if 'username' in raw:
+                return jsonify({'error': 'El nombre de usuario ya está en uso'}), 409
+            return jsonify({'error': 'Email o nombre de usuario ya en uso'}), 409
+        except Exception as e:
+            return jsonify({'error': f'No se pudo actualizar el perfil: {e}'}), 500
+
+    @auth_bp.route('/auth/me/password', methods=['POST'])
+    @auth_required(allow_guest=False)
+    def auth_change_password():
+        try:
+            body = request.get_json(silent=True) or {}
+            payload, status = auth_service.change_password(request.auth, body)
+            return jsonify(payload), status
+        except Exception as e:
+            return jsonify({'error': f'No se pudo cambiar la contraseña: {e}'}), 500
+
     @auth_bp.route('/auth/tickets/purchase', methods=['POST'])
     @auth_required(allow_guest=False)
     def auth_purchase_ticket():
