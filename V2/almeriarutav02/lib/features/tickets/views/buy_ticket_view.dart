@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import '../../../shared/services/ticket_validation_flow_service.dart';
 import '../../auth/viewmodels/auth_viewmodel.dart';
 import '../widgets/buy_ticket_widgets.dart';
-import '../services/ticket_purchase_api_service.dart';
+import '../services/ticket_purchase_flow_service.dart';
 import '../viewmodels/ticket_viewmodel.dart';
 import '../../../core/theme/app_theme.dart';
 
@@ -19,7 +19,7 @@ class BuyTicketView extends StatefulWidget {
 
 class _BuyTicketViewState extends State<BuyTicketView> {
   final _recipientController = TextEditingController();
-  final _purchaseApi = TicketPurchaseApiService();
+  final _purchaseFlow = TicketPurchaseFlowService();
   final _validationFlow = TicketValidationFlowService();
   late final TicketViewModel _ticketViewModel;
   late final bool _ownsTicketViewModel;
@@ -148,36 +148,53 @@ class _BuyTicketViewState extends State<BuyTicketView> {
     final auth = context.read<AuthViewModel>();
     final recipient = _recipientController.text.trim();
 
-    if (_giftMode) {
-      if (!auth.isAuthenticated || auth.isGuest || auth.token == null) {
-        if (!context.mounted) return;
-        await showDialog<void>(
-          context: context,
-          builder: (dialogContext) => AlertDialog(
-            title: const Text('Necesitas iniciar sesión'),
-            content: const Text('Para comprar un ticket a otro usuario debes iniciar sesión o registrarte.'),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(dialogContext),
-                child: const Text('Cerrar'),
-              ),
-            ],
-          ),
-        );
-        return;
-      }
+    final checkResult = _purchaseFlow.checkGiftPurchasePreconditions(
+      isGiftMode: _giftMode,
+      isAuthenticated: auth.isAuthenticated,
+      isGuest: auth.isGuest,
+      token: auth.token,
+      recipient: recipient,
+    );
 
-      if (recipient.isEmpty) {
+    if (checkResult.needsAuth) {
+      if (!context.mounted) return;
+      await showDialog<void>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('Necesitas iniciar sesión'),
+          content: Text(checkResult.message ?? ''),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Cerrar'),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
+    if (_giftMode && checkResult.message != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(checkResult.message!)),
+      );
+      return;
+    }
+
+    if (_giftMode) {
+      final token = auth.token;
+      if (token == null) {
+        if (!context.mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Introduce el email o usuario del destinatario')),
+          const SnackBar(content: Text('Debes iniciar sesión para completar el envío')),
         );
         return;
       }
 
       try {
-        await _purchaseApi.validateRecipient(
-          token: auth.token!,
-          recipientIdentifier: recipient,
+        await _purchaseFlow.validateGiftRecipient(
+          token: token,
+          recipient: recipient,
         );
       } catch (e) {
         if (!context.mounted) return;
@@ -194,10 +211,19 @@ class _BuyTicketViewState extends State<BuyTicketView> {
     }
 
     if (_giftMode) {
+      final token = auth.token;
+      if (token == null) {
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Debes iniciar sesión para completar el envío')),
+        );
+        return;
+      }
+
       try {
-        await _purchaseApi.notifyTicketPurchase(
-          token: auth.token!,
-          recipientIdentifier: recipient,
+        await _purchaseFlow.notifyGiftPurchase(
+          token: token,
+          recipient: recipient,
           type: vm.selectedType,
           quantity: vm.selectedType == 'Multiple' ? vm.quantity : 1,
           amount: vm.totalPrice,
@@ -251,11 +277,11 @@ class _BuyTicketViewState extends State<BuyTicketView> {
     if (!context.mounted) return;
 
     if (result.wasUsed) {
-      if (result.isExhausted) {
-        await vm.useTicket(ticket.id);
-      } else {
-        await vm.persistTicketsState();
-      }
+      await _purchaseFlow.syncTicketAfterValidation(
+        vm: vm,
+        ticket: ticket,
+        result: result,
+      );
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Billete validado')),
