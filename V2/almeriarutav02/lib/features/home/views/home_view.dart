@@ -15,6 +15,7 @@ import 'widgets/coming_soon_dialog.dart';
 import 'widgets/home_accessibility_info_card.dart';
 import 'widgets/home_info_card.dart';
 import 'widgets/home_section_card.dart';
+import 'widgets/home_user_profile_badge.dart';
 
 class HomeView extends StatefulWidget {
   const HomeView({super.key});
@@ -118,35 +119,27 @@ class _HomeViewState extends State<HomeView> {
         centerTitle: true,
         backgroundColor: AppTheme.primaryRed,
         foregroundColor: Colors.white,
-        leadingWidth: auth.isAuthenticated ? 150 : null,
-        leading: auth.isAuthenticated
-            ? InkWell(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const ProfileView(),
-                    ),
-                  );
-                },
-                child: Padding(
-                  padding: const EdgeInsets.only(left: 20),
-                  child: Row(
-                    children: [
-                      Icon(auth.avatarIcon),
-                      const SizedBox(width: 6),
-                      Expanded(
-                        child: Text(
-                          auth.user?.username ?? 'Usuario',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
+        flexibleSpace: auth.isAuthenticated
+            ? SafeArea(
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Padding(
+                    padding: const EdgeInsets.only(left: 10),
+                    child: SizedBox(
+                      width: 150,
+                      child: HomeUserProfileBadge(
+                        avatarIcon: auth.avatarIcon,
+                        username: auth.user?.username ?? 'Usuario',
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const ProfileView(),
+                            ),
+                          );
+                        },
                       ),
-                    ],
+                    ),
                   ),
                 ),
               )
