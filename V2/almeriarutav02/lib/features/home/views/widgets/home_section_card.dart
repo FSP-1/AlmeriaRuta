@@ -23,62 +23,69 @@ class HomeSectionCard extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(16),
-        child: Container(
-          padding: const EdgeInsets.all(20),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: service.color.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(
-                  service.icon,
-                  size: 32,
-                  color: service.color,
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      service.title,
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: AppTheme.darkRed,
-                          ),
+        child: Stack(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(20),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: service.color.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                    if (service.subtitle != null) ...[
-                      const SizedBox(height: 4),
-                      Text(
-                        service.subtitle!,
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: service.color,
-                              fontWeight: FontWeight.w600,
-                            ),
-                      ),
-                    ],
-                    const SizedBox(height: 4),
-                    Text(
-                      service.description,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Colors.grey[600],
-                          ),
+                    child: Icon(
+                      service.icon,
+                      size: 32,
+                      color: service.color,
                     ),
-                  ],
-                ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          service.title,
+                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: AppTheme.darkRed,
+                              ),
+                        ),
+                        if (service.subtitle != null) ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            service.subtitle!,
+                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                  color: service.color,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                          ),
+                        ],
+                        const SizedBox(height: 4),
+                        Text(
+                          service.description,
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: Colors.grey[600],
+                              ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Icon(
+                    Icons.arrow_forward_ios,
+                    color: Colors.grey[400],
+                    size: 16,
+                  ),
+                ],
               ),
-              Icon(
-                Icons.arrow_forward_ios,
-                color: Colors.grey[400],
-                size: 16,
-              ),
-              if (service.id == 'notifications' && unreadNotificationsCount > 0)
-                Container(
-                  margin: const EdgeInsets.only(left: 8),
+            ),
+            if (service.id == 'notifications' && unreadNotificationsCount > 0)
+              Positioned(
+                top: 8,
+                right: 8,
+                child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
                     color: Colors.red,
@@ -93,8 +100,8 @@ class HomeSectionCard extends StatelessWidget {
                     ),
                   ),
                 ),
-            ],
-          ),
+              ),
+          ],
         ),
       ),
     );
