@@ -118,10 +118,10 @@ class _HomeViewState extends State<HomeView> {
         centerTitle: true,
         backgroundColor: AppTheme.primaryRed,
         foregroundColor: Colors.white,
+        leadingWidth: auth.isAuthenticated ? 150 : null,
         leading: auth.isAuthenticated
-            ? IconButton(
-                icon: Icon(auth.avatarIcon),
-                onPressed: () {
+            ? InkWell(
+                onTap: () {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
@@ -129,6 +129,26 @@ class _HomeViewState extends State<HomeView> {
                     ),
                   );
                 },
+                child: Padding(
+                  padding: const EdgeInsets.only(left: 20),
+                  child: Row(
+                    children: [
+                      Icon(auth.avatarIcon),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          auth.user?.username ?? 'Usuario',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               )
             : null,
         actions: [
