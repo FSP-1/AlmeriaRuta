@@ -4,6 +4,7 @@ import '../viewmodels/recharge_viewmodel.dart';
 import '../models/recharge_profile_model.dart';
 import '../models/transport_card_model.dart';
 import '../../../core/theme/app_theme.dart';
+import 'widgets/recharge_widgets.dart';
 
 class RechargeView extends StatefulWidget {
   final String? token;
@@ -107,27 +108,10 @@ class _RechargeViewState extends State<RechargeView> {
           actions: [
             Consumer<RechargeViewModel>(
               builder: (_, vm, _) {
-                return PopupMenuButton<String>(
-                  icon: const Icon(Icons.tune),
-                  tooltip: 'Tarjetas activas',
+                return CardOptionsMenuButton(
+                  options: vm.cardOptions,
+                  selectedKey: vm.selectedCardOption.key,
                   onSelected: vm.toggleCardOption,
-                  itemBuilder: (context) {
-                    return vm.cardOptions
-                        .where((option) => option.key != 'saldo_virtual')
-                        .map((option) {
-                      final selected = vm.selectedCardOption.key == option.key;
-                      return PopupMenuItem<String>(
-                        value: option.key,
-                        child: Row(
-                          children: [
-                            Expanded(child: Text(option.title)),
-                            if (selected)
-                              const Icon(Icons.check, color: AppTheme.primaryRed),
-                          ],
-                        ),
-                      );
-                    }).toList();
-                  },
                 );
               },
             ),
@@ -167,240 +151,59 @@ class _RechargeViewState extends State<RechargeView> {
             return Column(
               children: [
                 if (vm.loadingProfile)
-                  const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 12),
-                    child: LinearProgressIndicator(minHeight: 2),
-                  ),
+                  const RechargeLoadingIndicator(),
                 if (vm.profileError != null)
-                  Padding(
-                    padding: const EdgeInsets.all(12),
-                    child: Text(
-                      vm.profileError!,
-                      style: const TextStyle(color: Colors.red),
-                    ),
-                  ),
+                  RechargeErrorBanner(error: vm.profileError!),
                 Expanded(
                   child: ListView(
                     padding: const EdgeInsets.all(12),
                     children: [
                       if (selectedTransportCard != null && vm.isExpiringSoon(selectedTransportCard)) ...[
-                        _buildExpirationWarning(selectedTransportCard),
+                        ExpirationWarningCard(
+                          card: selectedTransportCard,
+                          formattedExpiration: _format(selectedTransportCard.expirationDate!),
+                        ),
                         const SizedBox(height: 12),
                       ],
                       if (vm.hasSaldoCard)
-                        _buildSaldoCard(context, vm, selectedCard)
+                        SaldoCard(
+                          card: selectedCard,
+                          isExpired: vm.isExpired(selectedCard),
+                          onAddSaldo: () => _showRechargeDialog(context, vm, selectedCard),
+                        )
                       else
-                        _buildSaldoSetupCard(context, vm),
+                        SaldoSetupCard(
+                          onCreate: () {
+                            final option = vm.cardOptions.firstWhere((o) => o.key == 'saldo_virtual');
+                            vm.setSelectedCardOption(option);
+                            final saldoCard = vm.myCards.firstWhere((c) => c.name == 'Tarjeta Saldo Virtual');
+                            _showRechargeDialog(context, vm, saldoCard);
+                          },
+                        ),
                       if (selectedTransportCard != null) ...[
                         const SizedBox(height: 12),
-                        _buildTransportCard(context, vm, selectedTransportCard),
+                        TransportCard(
+                          card: selectedTransportCard,
+                          isExpired: vm.isExpired(selectedTransportCard),
+                          canRecharge: vm.canRecharge(selectedTransportCard),
+                          amount: vm.getRechargeAmount(selectedTransportCard),
+                          expirationText: selectedTransportCard.expirationDate != null
+                              ? 'Caduca: ${_format(selectedTransportCard.expirationDate!)}'
+                              : 'Sin caducidad marcada',
+                          onRenew: () => _showRechargeDialog(context, vm, selectedTransportCard),
+                        ),
                       ] else ...[
                         const SizedBox(height: 12),
-                        const Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 4),
-                          child: Text(
-                            'Activa una tarjeta adicional desde el menú superior derecho.',
-                            style: TextStyle(color: Colors.grey),
-                          ),
-                        ),
+                        const AdditionalCardHint(),
                       ],
                       if (selectedCard.history.isEmpty)
-                        const Padding(
-                          padding: EdgeInsets.only(top: 8),
-                          child: Text(
-                            'Primera recarga: introduce el importe que quieres añadir.',
-                            style: TextStyle(fontSize: 12, color: Colors.grey),
-                          ),
-                        ),
+                        const FirstRechargeHint(),
                     ],
                   ),
                 ),
               ],
             );
           },
-        ),
-      ),
-    );
-  }
-
-  Widget _buildExpirationWarning(TransportCardModel card) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.orange[50],
-        border: Border.all(color: Colors.orange[300]!),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(Icons.warning_amber_rounded, color: Colors.orange[700]),
-              const SizedBox(width: 8),
-              Text(
-                'Tarjeta próxima a caducar',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: Colors.orange[800],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          Text(
-            '${card.name}: ${_format(card.expirationDate!)}',
-            style: TextStyle(color: Colors.orange[800]),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSaldoSetupCard(BuildContext context, RechargeViewModel vm) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Tarjeta saldo no creada',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 6),
-            const Text('Crea tu tarjeta saldo para poder recargar y pagar billetes con saldo.'),
-            const SizedBox(height: 12),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.primaryRed,
-                  foregroundColor: Colors.white,
-                ),
-                onPressed: () {
-                  final option = vm.cardOptions.firstWhere((o) => o.key == 'saldo_virtual');
-                  vm.setSelectedCardOption(option);
-                  final saldoCard = vm.myCards.firstWhere((c) => c.name == 'Tarjeta Saldo Virtual');
-                  _showRechargeDialog(context, vm, saldoCard);
-                },
-                child: const Text('Crear tarjeta saldo'),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSaldoCard(BuildContext context, RechargeViewModel vm, card) {
-    final expired = vm.isExpired(card);
-
-    return Card(
-      color: expired ? Colors.grey[300] : null,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(
-                  Icons.account_balance_wallet,
-                  color: expired ? Colors.grey : AppTheme.primaryRed,
-                ),
-                const SizedBox(width: 10),
-                const Expanded(
-                  child: Text(
-                    'Tarjeta Saldo',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 10),
-            Text('Saldo actual: ${card.balance.toStringAsFixed(2)} €'),
-            const SizedBox(height: 4),
-            const Text(
-              'Recarga libre para añadir saldo a tu tarjeta.',
-              style: TextStyle(color: Colors.grey),
-            ),
-            const SizedBox(height: 12),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.primaryRed,
-                  foregroundColor: Colors.white,
-                ),
-                onPressed: () => _showRechargeDialog(context, vm, card),
-                child: const Text('Añadir saldo'),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTransportCard(BuildContext context, RechargeViewModel vm, card) {
-    final expired = vm.isExpired(card);
-    final amount = vm.getRechargeAmount(card);
-
-    return Card(
-      color: expired ? Colors.grey[300] : null,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(
-                  Icons.credit_card,
-                  color: expired ? Colors.grey : AppTheme.primaryRed,
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    card.name,
-                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 10),
-            Text('Importe fijo: ${amount.toStringAsFixed(2)} €'),
-            const SizedBox(height: 4),
-            Text(
-              card.expirationDate != null
-                  ? 'Caduca: ${_format(card.expirationDate!)}'
-                  : 'Sin caducidad marcada',
-              style: TextStyle(color: expired ? Colors.red : Colors.grey[700]),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              card.type == CardType.monthly
-                  ? 'Recarga mensual activa.'
-                  : 'Recarga por usos o bonificación aplicada.',
-              style: const TextStyle(color: Colors.grey),
-            ),
-            const SizedBox(height: 12),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: vm.canRecharge(card) ? AppTheme.primaryRed : Colors.grey,
-                  foregroundColor: Colors.white,
-                ),
-                onPressed: vm.canRecharge(card)
-                    ? () => _showRechargeDialog(context, vm, card)
-                    : null,
-                child: const Text('Renovar'),
-              ),
-            ),
-          ],
         ),
       ),
     );
