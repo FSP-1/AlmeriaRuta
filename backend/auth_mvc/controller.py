@@ -143,4 +143,23 @@ def create_auth_blueprint(auth_service):
         except Exception as e:
             return jsonify({'error': f'No se pudo eliminar la notificación: {e}'}), 500
 
+    @auth_bp.route('/auth/me/transport-profile', methods=['GET'])
+    @auth_required(allow_guest=False)
+    def auth_get_transport_profile():
+        try:
+            payload, status = auth_service.get_transport_profile(request.auth)
+            return jsonify(payload), status
+        except Exception as e:
+            return jsonify({'error': f'No se pudo cargar el perfil de tarjeta: {e}'}), 500
+
+    @auth_bp.route('/auth/me/transport-profile', methods=['PUT'])
+    @auth_required(allow_guest=False)
+    def auth_update_transport_profile():
+        try:
+            body = request.get_json(silent=True) or {}
+            payload, status = auth_service.update_transport_profile(request.auth, body)
+            return jsonify(payload), status
+        except Exception as e:
+            return jsonify({'error': f'No se pudo guardar el perfil de tarjeta: {e}'}), 500
+
     return auth_bp

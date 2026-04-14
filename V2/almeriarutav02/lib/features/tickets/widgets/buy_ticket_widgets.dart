@@ -164,6 +164,7 @@ class QuantitySelector extends StatelessWidget {
 
 class PaymentMethodsSection extends StatelessWidget {
   final bool isRegisteredUser;
+  final bool hasSaldoCard;
   final String paymentMethod;
   final ValueChanged<String> onPaymentMethodChanged;
   final double balance;
@@ -172,6 +173,7 @@ class PaymentMethodsSection extends StatelessWidget {
   const PaymentMethodsSection({
     super.key,
     required this.isRegisteredUser,
+    required this.hasSaldoCard,
     required this.paymentMethod,
     required this.onPaymentMethodChanged,
     required this.balance,
@@ -191,13 +193,21 @@ class PaymentMethodsSection extends StatelessWidget {
         Column(
           children: [
             if (isRegisteredUser)
-              _PaymentOption(
-                value: 'Saldo',
-                groupValue: paymentMethod,
-                onChanged: onPaymentMethodChanged,
-                icon: Icons.account_balance_wallet,
-                title: 'Saldo: ${balance.toStringAsFixed(2)} €',
-                subtitle: hasInsufficientBalance ? 'Saldo insuficiente' : null,
+              Opacity(
+                opacity: hasSaldoCard ? 1 : 0.55,
+                child: IgnorePointer(
+                  ignoring: !hasSaldoCard,
+                  child: _PaymentOption(
+                    value: 'Saldo',
+                    groupValue: paymentMethod,
+                    onChanged: onPaymentMethodChanged,
+                    icon: Icons.account_balance_wallet,
+                    title: 'Saldo: ${balance.toStringAsFixed(2)} €',
+                    subtitle: hasSaldoCard
+                        ? (hasInsufficientBalance ? 'Saldo insuficiente' : null)
+                        : 'Crea la tarjeta saldo en Recarga para habilitar este método',
+                  ),
+                ),
               ),
             _PaymentOption(
               value: 'Google Pay',

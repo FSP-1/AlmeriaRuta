@@ -121,6 +121,69 @@ class AuthRepository:
                 if not column_exists:
                     cur.execute("ALTER TABLE app_notifications ADD COLUMN payload_json LONGTEXT NULL")
 
+                cur.execute(
+                    """
+                    CREATE TABLE IF NOT EXISTS user_transport_profile (
+                        id BIGINT PRIMARY KEY AUTO_INCREMENT,
+                        user_id BIGINT NOT NULL,
+                        card_key VARCHAR(60) NOT NULL,
+                        card_label VARCHAR(120) NOT NULL,
+                        recharge_mode VARCHAR(30) NOT NULL,
+                        age_group VARCHAR(30) NULL,
+                        travel_count INT NULL,
+                        payment_method VARCHAR(40) NULL,
+                        saldo_balance DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+                        has_saldo_card TINYINT(1) NOT NULL DEFAULT 0,
+                        card_state VARCHAR(20) NOT NULL DEFAULT 'active',
+                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                        UNIQUE KEY uq_transport_profile_user (user_id),
+                        CONSTRAINT fk_transport_profile_user FOREIGN KEY (user_id) REFERENCES users(id)
+                            ON DELETE CASCADE
+                    )
+                    """
+                )
+
+                cur.execute(
+                    """
+                    SELECT COUNT(*) AS idx_count
+                    FROM information_schema.STATISTICS
+                    WHERE TABLE_SCHEMA = DATABASE()
+                      AND TABLE_NAME = 'user_transport_profile'
+                      AND INDEX_NAME = 'uq_transport_profile_user'
+                    """
+                )
+                has_unique_user = cur.fetchone()['idx_count'] > 0
+                if not has_unique_user:
+                    cur.execute(
+                        "ALTER TABLE user_transport_profile ADD UNIQUE INDEX uq_transport_profile_user (user_id)"
+                    )
+
+                cur.execute(
+                    """
+                    SELECT COUNT(*) AS column_count
+                    FROM information_schema.COLUMNS
+                    WHERE TABLE_SCHEMA = DATABASE()
+                      AND TABLE_NAME = 'user_transport_profile'
+                      AND COLUMN_NAME = 'saldo_balance'
+                    """
+                )
+                has_saldo_balance = cur.fetchone()['column_count'] > 0
+                if not has_saldo_balance:
+                    cur.execute("ALTER TABLE user_transport_profile ADD COLUMN saldo_balance DECIMAL(10,2) NOT NULL DEFAULT 0.00")
+
+                cur.execute(
+                    """
+                    SELECT COUNT(*) AS column_count
+                    FROM information_schema.COLUMNS
+                    WHERE TABLE_SCHEMA = DATABASE()
+                      AND TABLE_NAME = 'user_transport_profile'
+                      AND COLUMN_NAME = 'has_saldo_card'
+                    """
+                )
+                has_saldo_card = cur.fetchone()['column_count'] > 0
+                if not has_saldo_card:
+                    cur.execute("ALTER TABLE user_transport_profile ADD COLUMN has_saldo_card TINYINT(1) NOT NULL DEFAULT 0")
+
     def create_user(self, email, username, password_hash):
         with self._conn() as conn:
             with conn.cursor() as cur:
@@ -248,5 +311,70 @@ class AuthRepository:
                 cur.execute(
                     "DELETE FROM app_notifications WHERE id=%s AND user_id=%s",
                     (notification_id, user_id),
+                )
+                return cur.rowcount
+
+    def get_transport_profile(self, user_id):
+        with self._conn() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "SELECT card_key, card_label, recharge_mode, age_group, travel_count, payment_method, saldo_balance, has_saldo_card, card_state, updated_at "
+                    "FROM user_transport_profile WHERE user_id=%s LIMIT 1",
+                    (user_id,),
+                )
+                return cur.fetchone()
+
+    def upsert_transport_profile(
+        self,
+        user_id,
+        card_key,
+        card_label,
+        recharge_mode,
+        age_group,
+        travel_count,
+        payment_method,
+        saldo_balance,
+        has_saldo_card,
+        card_state,
+    ):
+        with self._conn() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    INSERT INTO user_transport_profile (
+                        user_id,
+                        card_key,
+                        card_label,
+                        recharge_mode,
+                        age_group,
+                        travel_count,
+                        payment_method,
+                        saldo_balance,
+                        has_saldo_card,
+                        card_state
+                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    ON DUPLICATE KEY UPDATE
+                        card_key=VALUES(card_key),
+                        card_label=VALUES(card_label),
+                        recharge_mode=VALUES(recharge_mode),
+                        age_group=VALUES(age_group),
+                        travel_count=VALUES(travel_count),
+                        payment_method=VALUES(payment_method),
+                        saldo_balance=VALUES(saldo_balance),
+                        has_saldo_card=VALUES(has_saldo_card),
+                        card_state=VALUES(card_state)
+                    """,
+                    (
+                        user_id,
+                        card_key,
+                        card_label,
+                        recharge_mode,
+                        age_group,
+                        travel_count,
+                        payment_method,
+                        saldo_balance,
+                        has_saldo_card,
+                        card_state,
+                    ),
                 )
                 return cur.rowcount

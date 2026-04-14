@@ -49,6 +49,21 @@ class AuthService:
         has_number = re.search(r'[0-9]', password)
         return bool(has_letter and has_number)
 
+    @staticmethod
+    def _default_transport_profile() -> dict:
+        return {
+            'cardKey': 'mensual_ordinaria',
+            'cardLabel': 'Mensual Ordinaria',
+            'rechargeMode': 'mensual',
+            'ageGroup': 'general',
+            'travelCount': None,
+            'paymentMethod': 'Saldo',
+            'saldoBalance': 0.0,
+            'hasSaldoCard': False,
+            'cardState': 'active',
+            'configured': False,
+        }
+
     def register(self, email: str, username: str, password: str):
         normalized_username = username.lower()
 
@@ -291,3 +306,90 @@ class AuthService:
         if deleted == 0:
             return {'error': 'Notificación no encontrada'}, 404
         return {'success': True}, 200
+
+    def get_transport_profile(self, auth_data: dict):
+        user_id = auth_data.get('uid')
+        if not user_id:
+            return {'error': 'Usuario no autenticado'}, 401
+
+        profile = self.repo.get_transport_profile(user_id)
+        if not profile:
+            return {'profile': self._default_transport_profile()}, 200
+
+        return {
+            'profile': {
+                'cardKey': profile['card_key'],
+                'cardLabel': profile['card_label'],
+                'rechargeMode': profile['recharge_mode'],
+                'ageGroup': profile['age_group'],
+                'travelCount': profile['travel_count'],
+                'paymentMethod': profile['payment_method'],
+                'saldoBalance': float(profile.get('saldo_balance') or 0),
+                'hasSaldoCard': bool(profile.get('has_saldo_card') or 0),
+                'cardState': profile['card_state'],
+                'configured': True,
+            }
+        }, 200
+
+    def update_transport_profile(self, auth_data: dict, body: dict):
+        user_id = auth_data.get('uid')
+        if not user_id:
+            return {'error': 'Usuario no autenticado'}, 401
+
+        card_key = str(body.get('cardKey', '')).strip().lower()
+        card_label = str(body.get('cardLabel', '')).strip()
+        recharge_mode = str(body.get('rechargeMode', '')).strip().lower()
+        age_group_raw = body.get('ageGroup')
+        age_group = str(age_group_raw).strip().lower() if age_group_raw is not None else None
+        travel_count_raw = body.get('travelCount')
+        payment_method = str(body.get('paymentMethod', '')).strip()
+        saldo_balance_raw = body.get('saldoBalance', 0)
+        has_saldo_card = bool(body.get('hasSaldoCard', card_key == 'saldo_virtual'))
+        card_state = str(body.get('cardState', 'active')).strip().lower() or 'active'
+
+        if not card_key or not card_label:
+            return {'error': 'cardKey y cardLabel son obligatorios'}, 400
+
+        allowed_modes = {'saldo', 'mensual', 'bonobus', 'gratis'}
+        if recharge_mode not in allowed_modes:
+            return {'error': 'rechargeMode no válido'}, 400
+
+        allowed_payments = {'Saldo', 'Android Pay', 'Visa'}
+        if payment_method and payment_method not in allowed_payments:
+            return {'error': 'paymentMethod no válido'}, 400
+
+        allowed_states = {'active', 'paused', 'expired'}
+        if card_state not in allowed_states:
+            return {'error': 'cardState no válido'}, 400
+
+        travel_count = None
+        if travel_count_raw is not None and str(travel_count_raw).strip() != '':
+            try:
+                travel_count = int(travel_count_raw)
+            except (ValueError, TypeError):
+                return {'error': 'travelCount debe ser numérico'}, 400
+            if travel_count < 0:
+                return {'error': 'travelCount no puede ser negativo'}, 400
+
+        try:
+            saldo_balance = float(saldo_balance_raw or 0)
+        except (ValueError, TypeError):
+            return {'error': 'saldoBalance debe ser numérico'}, 400
+
+        if saldo_balance < 0:
+            return {'error': 'saldoBalance no puede ser negativo'}, 400
+
+        self.repo.upsert_transport_profile(
+            user_id=user_id,
+            card_key=card_key,
+            card_label=card_label,
+            recharge_mode=recharge_mode,
+            age_group=age_group,
+            travel_count=travel_count,
+            payment_method=payment_method or None,
+            saldo_balance=saldo_balance,
+            has_saldo_card=has_saldo_card,
+            card_state=card_state,
+        )
+
+        return self.get_transport_profile(auth_data)

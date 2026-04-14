@@ -116,7 +116,12 @@ class _TicketsHubContentState extends State<_TicketsHubContent> {
                 ? () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (_) => const RechargeView()),
+                      MaterialPageRoute(
+                        builder: (_) => RechargeView(
+                          token: authVm.token,
+                          isGuest: authVm.isGuest,
+                        ),
+                      ),
                     );
                   }
                 : null,

@@ -31,6 +31,11 @@ class _BuyTicketViewState extends State<BuyTicketView> {
     _ticketViewModel = widget.ticketViewModel ?? TicketViewModel();
     _ownsTicketViewModel = widget.ticketViewModel == null;
     _ticketViewModel.loadTickets();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final auth = context.read<AuthViewModel>();
+      _ticketViewModel.syncBalanceFromTransportProfile(token: auth.token);
+    });
   }
 
   @override
@@ -67,7 +72,7 @@ class _BuyTicketViewState extends State<BuyTicketView> {
               });
             }
 
-            if (!isRegisteredUser && vm.paymentMethod == 'Saldo') {
+            if ((!isRegisteredUser || !vm.hasSaldoCard) && vm.paymentMethod == 'Saldo') {
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 vm.setPaymentMethod('Google Pay');
               });
@@ -106,6 +111,7 @@ class _BuyTicketViewState extends State<BuyTicketView> {
 
                   PaymentMethodsSection(
                     isRegisteredUser: isRegisteredUser,
+                    hasSaldoCard: vm.hasSaldoCard,
                     paymentMethod: vm.paymentMethod,
                     onPaymentMethodChanged: vm.setPaymentMethod,
                     balance: vm.balance,
@@ -205,7 +211,10 @@ class _BuyTicketViewState extends State<BuyTicketView> {
       }
     }
 
-    final success = await vm.buyTicket(createLocalTicket: !_giftMode);
+    final success = await vm.buyTicket(
+      createLocalTicket: !_giftMode,
+      token: auth.token,
+    );
     if (!success || !context.mounted) {
       return;
     }

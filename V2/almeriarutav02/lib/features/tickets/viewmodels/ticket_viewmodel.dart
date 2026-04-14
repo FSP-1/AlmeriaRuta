@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import '../models/ticket_model.dart';
 import 'dart:math';
+import '../../recharge/services/recharge_api_service.dart';
 
 class TicketViewModel extends ChangeNotifier {
   static const _ticketsKey = 'local_tickets';
@@ -12,7 +13,9 @@ class TicketViewModel extends ChangeNotifier {
   bool _isLoading = false;
   String? _errorMessage;
   double _balance = 15.50; // Saldo simulado
+  bool _hasSaldoCard = false;
   bool _ticketsLoaded = false;
+  final RechargeApiService _rechargeApi = RechargeApiService();
 
   final List<TicketModel> _tickets = [];
 
@@ -24,6 +27,7 @@ class TicketViewModel extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
   double get balance => _balance;
+  bool get hasSaldoCard => _hasSaldoCard;
 
   double get totalPrice {
     switch (_selectedType) {
@@ -90,8 +94,26 @@ class TicketViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> syncBalanceFromTransportProfile({String? token}) async {
+    if (token == null) return;
+    final profile = await _rechargeApi.fetchProfileOrNull(token: token);
+    if (profile == null) return;
+
+    _balance = profile.saldoBalance;
+    _hasSaldoCard = profile.hasSaldoCard;
+
+    if (!_hasSaldoCard && _paymentMethod == 'Saldo') {
+      _paymentMethod = 'Google Pay';
+    }
+
+    notifyListeners();
+  }
+
   // Simular compra. En modo regalo puede procesar pago sin crear ticket local.
-  Future<bool> buyTicket({bool createLocalTicket = true}) async {
+  Future<bool> buyTicket({
+    bool createLocalTicket = true,
+    String? token,
+  }) async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
@@ -113,6 +135,12 @@ class TicketViewModel extends ChangeNotifier {
       // Descontar del saldo si se paga con saldo
       if (_paymentMethod == 'Saldo') {
         _balance -= totalPrice;
+        if (token != null) {
+          await _rechargeApi.updateSaldoBalance(
+            token: token,
+            saldoBalance: _balance,
+          );
+        }
       }
 
       if (createLocalTicket) {
