@@ -4,7 +4,9 @@ import '../../../core/constants/app_constants.dart';
 import '../models/app_user.dart';
 
 class AuthApiService {
-  final http.Client _client = http.Client();
+  final http.Client _client;
+
+  AuthApiService({http.Client? client}) : _client = client ?? http.Client();
 
   Future<(String, AppUser)> login({
     required String identifier,
@@ -26,6 +28,7 @@ class AuthApiService {
     required String email,
     required String username,
     required String password,
+    required String recoveryPin,
   }) async {
     final response = await _client.post(
       Uri.parse('${AppConstants.authApiBaseUrl}/auth/register'),
@@ -34,10 +37,31 @@ class AuthApiService {
         'email': email,
         'username': username,
         'password': password,
+        'recoveryPin': recoveryPin,
       }),
     );
 
     return _parseAuthResponse(response);
+  }
+
+  Future<String> recoverPassword({
+    required String email,
+    required String recoveryPin,
+  }) async {
+    final response = await _client.post(
+      Uri.parse('${AppConstants.authApiBaseUrl}/auth/recover/password'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'email': email,
+        'recoveryPin': recoveryPin,
+      }),
+    );
+
+    final data = jsonDecode(response.body) as Map<String, dynamic>;
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception(data['error']?.toString() ?? 'No se pudo recuperar la contraseña');
+    }
+    return data['temporaryPassword']?.toString() ?? '';
   }
 
   Future<(String, AppUser)> guest() async {

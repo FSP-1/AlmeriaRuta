@@ -3,7 +3,7 @@ from flask_cors import CORS
 import os
 import zipfile
 import pandas as pd
-from datetime import datetime
+from datetime import datetime, timezone
 
 app = Flask(__name__)
 CORS(app)
@@ -203,12 +203,12 @@ class BusMapsClient:
         return lines
 
     def _now_seconds_service_day(self):
-        now = datetime.now()
+        now = datetime.now(timezone.utc)
         return now.hour * 3600 + now.minute * 60 + now.second
 
     def get_line_arrivals(self, line_id):
         """Devuelve próxima llegada programada por parada para una línea (GTFS estático)."""
-        cache_key = (line_id, datetime.now().strftime('%Y%m%d%H%M'))
+        cache_key = (line_id, datetime.now(timezone.utc).strftime('%Y%m%d%H%M'))
         if cache_key in self.line_arrivals_cache:
             return self.line_arrivals_cache[cache_key]
 
@@ -226,7 +226,7 @@ class BusMapsClient:
 
         result = {
             "lineId": line_id,
-            "generatedAt": datetime.now().isoformat(),
+            "generatedAt": datetime.now(timezone.utc).isoformat(),
             "arrivals": [
                 {"stopId": str(row['stop_id_norm']), "minutes": int(row['minutes'])}
                 for _, row in min_by_stop.iterrows()

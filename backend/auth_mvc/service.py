@@ -1,9 +1,10 @@
 import hashlib
 import hmac
+import html
 import json
 import re
 import secrets
-from datetime import datetime
+from datetime import datetime, timezone
 
 from itsdangerous import URLSafeTimedSerializer
 
@@ -13,6 +14,10 @@ class AuthService:
         self.repo = repository
         self.token_ttl_seconds = token_ttl_seconds
         self._token_serializer = URLSafeTimedSerializer(secret_key)
+
+    @staticmethod
+    def _sanitize(value: str) -> str:
+        return html.escape(str(value).strip())
 
     def hash_password(self, password: str) -> str:
         salt = secrets.token_hex(16)
@@ -50,6 +55,24 @@ class AuthService:
         return bool(has_letter and has_number)
 
     @staticmethod
+    def is_valid_recovery_pin(pin: str) -> bool:
+        return bool(re.fullmatch(r'\d{4}', pin or ''))
+
+    @staticmethod
+    def hash_pin(pin: str) -> str:
+        salt = secrets.token_hex(16)
+        digest = hashlib.pbkdf2_hmac('sha256', pin.encode('utf-8'), salt.encode('utf-8'), 100_000)
+        return f"{salt}${digest.hex()}"
+
+    def verify_pin(self, pin: str, encoded: str) -> bool:
+        try:
+            salt, hex_digest = encoded.split('$', 1)
+        except ValueError:
+            return False
+        digest = hashlib.pbkdf2_hmac('sha256', pin.encode('utf-8'), salt.encode('utf-8'), 100_000).hex()
+        return hmac.compare_digest(digest, hex_digest)
+
+    @staticmethod
     def _default_transport_profile() -> dict:
         return {
             'cardKey': 'mensual_ordinaria',
@@ -64,7 +87,9 @@ class AuthService:
             'configured': False,
         }
 
-    def register(self, email: str, username: str, password: str):
+    def register(self, email: str, username: str, password: str, recovery_pin: str):
+        email = self._sanitize(email).lower()
+        username = self._sanitize(username)
         normalized_username = username.lower()
 
         if not self.is_valid_email(email):
@@ -76,11 +101,19 @@ class AuthService:
         if not self.is_strong_password(password):
             return {'error': 'Contraseña inválida: mínimo 8 caracteres y debe incluir letras y números'}, 400
 
+        if not self.is_valid_recovery_pin(recovery_pin):
+            return {'error': 'PIN de recuperación inválido: usa exactamente 4 dígitos'}, 400
+
         exists = self.repo.find_user_by_email_or_username(email) or self.repo.find_user_by_email_or_username(normalized_username)
         if exists:
             return {'error': 'Usuario ya existe'}, 409
 
-        user_id = self.repo.create_user(email, normalized_username, self.hash_password(password))
+        user_id = self.repo.create_user(
+            email,
+            normalized_username,
+            self.hash_password(password),
+            self.hash_pin(recovery_pin),
+        )
         token = self.issue_token({'uid': user_id, 'email': email, 'username': normalized_username, 'guest': False})
 
         return {
@@ -89,6 +122,7 @@ class AuthService:
         }, 200
 
     def login(self, identifier: str, password: str):
+        identifier = self._sanitize(identifier)
         if not identifier or not password:
             return {'error': 'Credenciales requeridas'}, 400
 
@@ -202,13 +236,43 @@ class AuthService:
         self.repo.update_user_password(user_id, self.hash_password(new_password))
         return {'success': True}, 200
 
+    def recover_password(self, body: dict):
+        email = str(body.get('email', '')).strip().lower()
+        recovery_pin = str(body.get('recoveryPin', '')).strip()
+
+        if not email or not recovery_pin:
+            return {'error': 'Email y PIN son requeridos'}, 400
+
+        if not self.is_valid_email(email):
+            return {'error': 'Email no válido'}, 400
+
+        if not self.is_valid_recovery_pin(recovery_pin):
+            return {'error': 'PIN de recuperación inválido: usa exactamente 4 dígitos'}, 400
+
+        user = self.repo.find_user_by_email(email)
+        if not user:
+            return {'error': 'Correo no registrado'}, 404
+
+        stored_pin = user.get('recovery_pin_hash')
+        if not stored_pin or not self.verify_pin(recovery_pin, stored_pin):
+            return {'error': 'PIN incorrecto'}, 401
+
+        # La contraseña original no es recuperable porque se guarda con hash.
+        # Generamos una temporal segura y la devolvemos una sola vez.
+        temporary_password = f"AR{secrets.token_hex(4)}9"
+        self.repo.update_user_password(user['id'], self.hash_password(temporary_password))
+        return {
+            'success': True,
+            'temporaryPassword': temporary_password,
+        }, 200
+
     def purchase_ticket(self, auth_data: dict, body: dict):
         sender_id = auth_data.get('uid')
-        sender_username = auth_data.get('username') or 'Usuario'
-        recipient_identifier = str(body.get('recipientIdentifier', '')).strip()
+        sender_username = self._sanitize(auth_data.get('username') or 'Usuario')
+        recipient_identifier = self._sanitize(body.get('recipientIdentifier', ''))
         validate_only = str(body.get('validateOnly', 'false')).lower() in {'1', 'true', 'yes'}
-        ticket_type = str(body.get('type', 'Individual')).strip() or 'Individual'
-        payment_method = str(body.get('paymentMethod', 'Google Pay')).strip() or 'Google Pay'
+        ticket_type = self._sanitize(body.get('type', 'Individual')) or 'Individual'
+        payment_method = self._sanitize(body.get('paymentMethod', 'Google Pay')) or 'Google Pay'
         quantity = int(body.get('quantity', 1) or 1)
         amount = float(body.get('amount', 0) or 0)
 
@@ -245,7 +309,7 @@ class AuthService:
                     'type': ticket_type,
                     'quantity': quantity,
                     'remainingUses': quantity,
-                    'purchaseDate': datetime.now().isoformat(),
+                    'purchaseDate': datetime.now(timezone.utc).isoformat(),
                     'amount': amount,
                     'status': 'Activo',
                 },

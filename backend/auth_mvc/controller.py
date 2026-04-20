@@ -45,8 +45,14 @@ def create_auth_blueprint(auth_service):
             email = str(body.get('email', '')).strip().lower()
             username = str(body.get('username', '')).strip()
             password = str(body.get('password', ''))
+            recovery_pin = str(body.get('recoveryPin', '')).strip()
 
-            payload, status = auth_service.register(email=email, username=username, password=password)
+            payload, status = auth_service.register(
+                email=email,
+                username=username,
+                password=password,
+                recovery_pin=recovery_pin,
+            )
             return jsonify(payload), status
         except pymysql.err.IntegrityError:
             return jsonify({'error': 'Usuario ya existe (email o username en uso)'}), 409
@@ -102,6 +108,15 @@ def create_auth_blueprint(auth_service):
             return jsonify(payload), status
         except Exception as e:
             return jsonify({'error': f'No se pudo cambiar la contraseña: {e}'}), 500
+
+    @auth_bp.route('/auth/recover/password', methods=['POST'])
+    def auth_recover_password():
+        try:
+            body = request.get_json(silent=True) or {}
+            payload, status = auth_service.recover_password(body)
+            return jsonify(payload), status
+        except Exception as e:
+            return jsonify({'error': f'No se pudo recuperar la contraseña: {e}'}), 500
 
     @auth_bp.route('/auth/tickets/purchase', methods=['POST'])
     @auth_required(allow_guest=False)

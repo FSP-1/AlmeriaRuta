@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/app_user.dart';
@@ -10,7 +9,9 @@ class AuthViewModel extends ChangeNotifier {
   static const _userKey = 'auth_user';
   static const _avatarIconKey = 'auth_avatar_icon';
 
-  final AuthApiService _api = AuthApiService();
+  final AuthApiService _api;
+
+  AuthViewModel({AuthApiService? api}) : _api = api ?? AuthApiService();
 
   bool _initialized = false;
   bool _loading = false;
@@ -76,12 +77,17 @@ class AuthViewModel extends ChangeNotifier {
     }
   }
 
-  Future<bool> register(String email, String username, String password) async {
+  Future<bool> register(String email, String username, String password, String recoveryPin) async {
     _error = null;
     _loading = true;
     notifyListeners();
     try {
-      final (token, user) = await _api.register(email: email, username: username, password: password);
+      final (token, user) = await _api.register(
+        email: email,
+        username: username,
+        password: password,
+        recoveryPin: recoveryPin,
+      );
       _token = token;
       _user = user;
       await _saveSession(token, user);
@@ -181,6 +187,29 @@ class AuthViewModel extends ChangeNotifier {
     } catch (e) {
       _error = e.toString().replaceFirst('Exception: ', '');
       return false;
+    } finally {
+      _loading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<String?> recoverPassword({
+    required String email,
+    required String recoveryPin,
+  }) async {
+    _error = null;
+    _loading = true;
+    notifyListeners();
+
+    try {
+      final temporaryPassword = await _api.recoverPassword(
+        email: email,
+        recoveryPin: recoveryPin,
+      );
+      return temporaryPassword;
+    } catch (e) {
+      _error = e.toString().replaceFirst('Exception: ', '');
+      return null;
     } finally {
       _loading = false;
       notifyListeners();

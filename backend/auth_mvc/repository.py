@@ -32,6 +32,7 @@ class AuthRepository:
                         email VARCHAR(255) NOT NULL UNIQUE,
                         username VARCHAR(80) NOT NULL UNIQUE,
                         password_hash VARCHAR(255) NOT NULL,
+                        recovery_pin_hash VARCHAR(255) NULL,
                         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                     )
                     """
@@ -91,6 +92,19 @@ class AuthRepository:
                             f"No se puede aplicar unicidad de username: hay duplicados ({duplicate_username['value']})"
                         )
                     cur.execute("ALTER TABLE users ADD UNIQUE INDEX uq_users_username (username)")
+
+                cur.execute(
+                    """
+                    SELECT COUNT(*) AS column_count
+                    FROM information_schema.COLUMNS
+                    WHERE TABLE_SCHEMA = DATABASE()
+                      AND TABLE_NAME = 'users'
+                      AND COLUMN_NAME = 'recovery_pin_hash'
+                    """
+                )
+                has_recovery_pin_hash = cur.fetchone()['column_count'] > 0
+                if not has_recovery_pin_hash:
+                    cur.execute("ALTER TABLE users ADD COLUMN recovery_pin_hash VARCHAR(255) NULL")
 
                 cur.execute(
                     """
@@ -184,12 +198,12 @@ class AuthRepository:
                 if not has_saldo_card:
                     cur.execute("ALTER TABLE user_transport_profile ADD COLUMN has_saldo_card TINYINT(1) NOT NULL DEFAULT 0")
 
-    def create_user(self, email, username, password_hash):
+    def create_user(self, email, username, password_hash, recovery_pin_hash=None):
         with self._conn() as conn:
             with conn.cursor() as cur:
                 cur.execute(
-                    "INSERT INTO users (email, username, password_hash) VALUES (%s, %s, %s)",
-                    (email, username, password_hash),
+                    "INSERT INTO users (email, username, password_hash, recovery_pin_hash) VALUES (%s, %s, %s, %s)",
+                    (email, username, password_hash, recovery_pin_hash),
                 )
                 return cur.lastrowid
 
@@ -262,6 +276,24 @@ class AuthRepository:
                     (new_password_hash, user_id),
                 )
                 return cur.rowcount
+
+    def update_user_recovery_pin(self, user_id, recovery_pin_hash):
+        with self._conn() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "UPDATE users SET recovery_pin_hash=%s WHERE id=%s",
+                    (recovery_pin_hash, user_id),
+                )
+                return cur.rowcount
+
+    def find_user_by_email(self, email):
+        with self._conn() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "SELECT id, email, username, password_hash, recovery_pin_hash FROM users WHERE LOWER(email)=LOWER(%s) LIMIT 1",
+                    (email,),
+                )
+                return cur.fetchone()
 
     def create_notification(self, user_id, title, body, payload_json=None):
         with self._conn() as conn:

@@ -49,6 +49,17 @@ class AuthValidators {
     return null;
   }
 
+  static String? validateRecoveryPin(String? value) {
+    final text = value?.trim() ?? '';
+    if (text.isEmpty) {
+      return 'Introduce un PIN de 4 dígitos';
+    }
+    if (!RegExp(r'^\d{4}$').hasMatch(text)) {
+      return 'El PIN debe tener exactamente 4 dígitos';
+    }
+    return null;
+  }
+
   static String? validateCurrentPassword(String? value) {
     final text = value ?? '';
     if (text.isEmpty) {
