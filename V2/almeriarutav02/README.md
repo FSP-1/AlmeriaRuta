@@ -56,3 +56,7 @@ dart run flutter_launcher_icons
 ## Documentación completa
 
 Consulta el README raíz del repositorio para detalles funcionales y de arquitectura.
+
+Documentación puntual de los cambios recientes:
+
+- [Cambios de turismo, rutas y caché](documentacion/CAMBIOS_TURISMO_RUTAS_Y_CACHE.md)

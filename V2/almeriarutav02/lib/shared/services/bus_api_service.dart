@@ -2,21 +2,30 @@ import 'dart:convert';
 import 'dart:async';
 import 'dart:io';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 import 'line_models.dart';
 import '../../core/constants/app_constants.dart';
 
 class BusApiService {
   static final http.Client _client = http.Client();
+  static const Duration _staticDataCacheTtl = Duration(hours: 24);
+  static const String _linesCacheKey = 'bus_lines_cache_v1';
+  static const String _stopsCacheKey = 'bus_stops_cache_v1';
+  static const String _staticCacheUpdatedAtKey = 'bus_static_cache_updated_at_v1';
 
   static List<LineModel>? _linesCache;
   static Future<List<LineModel>>? _inFlightLines;
   static final Map<String, List<StopModel>> _stopsCache = {};
+  static bool _diskCacheLoaded = false;
+  static Future<void>? _inFlightDiskCacheLoad;
   static final Map<String, Future<List<StopModel>>> _inFlightStops = {};
   static final Map<String, Map<String, int>> _lineArrivalsCache = {};
   static final Map<String, DateTime> _lineArrivalsFetchedAt = {};
   static final Map<String, Future<Map<String, int>>> _inFlightLineArrivals = {};
 
   Future<List<LineModel>> getLines({bool forceRefresh = false}) async {
+    await _ensureDiskCacheLoaded();
+
     if (!forceRefresh && _linesCache != null) {
       return _linesCache!;
     }
@@ -30,6 +39,7 @@ class BusApiService {
     try {
       final lines = await future;
       _linesCache = lines;
+      await _persistStaticCaches();
       return lines;
     } finally {
       _inFlightLines = null;
@@ -37,6 +47,8 @@ class BusApiService {
   }
 
   Future<List<StopModel>> getLineStops(String lineId, {bool forceRefresh = false}) async {
+    await _ensureDiskCacheLoaded();
+
     if (!forceRefresh && _stopsCache.containsKey(lineId)) {
       return _stopsCache[lineId]!;
     }
@@ -50,6 +62,7 @@ class BusApiService {
     try {
       final stops = await future;
       _stopsCache[lineId] = stops;
+      await _persistStaticCaches();
       return stops;
     } finally {
       _inFlightStops.remove(lineId);
@@ -174,5 +187,96 @@ class BusApiService {
     }
 
     throw Exception('Error de red en $uri: $lastError');
+  }
+
+  Future<void> _ensureDiskCacheLoaded() async {
+    if (_diskCacheLoaded) return;
+
+    if (_inFlightDiskCacheLoad != null) {
+      await _inFlightDiskCacheLoad;
+      return;
+    }
+
+    final future = _loadStaticCachesFromDisk();
+    _inFlightDiskCacheLoad = future;
+    try {
+      await future;
+    } finally {
+      _inFlightDiskCacheLoad = null;
+    }
+  }
+
+  Future<void> _loadStaticCachesFromDisk() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final updatedAtMs = prefs.getInt(_staticCacheUpdatedAtKey);
+
+      if (updatedAtMs != null) {
+        final updatedAt = DateTime.fromMillisecondsSinceEpoch(updatedAtMs);
+        final isExpired = DateTime.now().difference(updatedAt) > _staticDataCacheTtl;
+        if (isExpired) {
+          await prefs.remove(_linesCacheKey);
+          await prefs.remove(_stopsCacheKey);
+          await prefs.remove(_staticCacheUpdatedAtKey);
+        }
+      }
+
+      final linesRaw = prefs.getString(_linesCacheKey);
+      if (linesRaw != null && linesRaw.isNotEmpty) {
+        final parsed = json.decode(linesRaw);
+        if (parsed is List) {
+          _linesCache = parsed
+              .whereType<Map<String, dynamic>>()
+              .map(LineModel.fromJson)
+              .toList();
+        }
+      }
+
+      final stopsRaw = prefs.getString(_stopsCacheKey);
+      if (stopsRaw != null && stopsRaw.isNotEmpty) {
+        final parsed = json.decode(stopsRaw);
+        if (parsed is Map<String, dynamic>) {
+          _stopsCache.clear();
+          for (final entry in parsed.entries) {
+            final value = entry.value;
+            if (value is List) {
+              _stopsCache[entry.key] = value
+                  .whereType<Map<String, dynamic>>()
+                  .map(StopModel.fromJson)
+                  .toList();
+            }
+          }
+        }
+      }
+    } catch (_) {
+      // Si falla la lectura del cache persistente seguimos con cache en memoria/red.
+    } finally {
+      _diskCacheLoaded = true;
+    }
+  }
+
+  Future<void> _persistStaticCaches() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+
+      if (_linesCache != null) {
+        final linesJson = _linesCache!.map((line) => line.toJson()).toList();
+        await prefs.setString(_linesCacheKey, json.encode(linesJson));
+      }
+
+      final stopsJson = _stopsCache.map(
+        (lineId, stops) => MapEntry(
+          lineId,
+          stops.map((stop) => stop.toJson()).toList(),
+        ),
+      );
+      await prefs.setString(_stopsCacheKey, json.encode(stopsJson));
+      await prefs.setInt(
+        _staticCacheUpdatedAtKey,
+        DateTime.now().millisecondsSinceEpoch,
+      );
+    } catch (_) {
+      // El cache en disco es una optimizacion: ignorar errores de persistencia.
+    }
   }
 }

@@ -37,6 +37,21 @@ class LineModel {
       stops: (json['stops'] as List?)?.map((s) => StopModel.fromJson(s)).toList() ?? [],
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'fullName': fullName,
+      'description': description,
+      'color': color,
+      'frequency': frequency,
+      'firstService': firstService,
+      'lastService': lastService,
+      'totalStops': totalStops,
+      'stops': stops.map((stop) => stop.toJson()).toList(),
+    };
+  }
 }
 
 class StopModel {
@@ -57,13 +72,30 @@ class StopModel {
   });
 
   factory StopModel.fromJson(Map<String, dynamic> json) {
+    final rawLineIds = json['lineIds'];
+    final lineIds = rawLineIds is List
+        ? rawLineIds.map((id) => id.toString()).toSet()
+        : <String>{};
+
     return StopModel(
       id: json['id'] ?? '',
       name: json['name'] ?? '',
       lat: (json['lat'] ?? 0.0).toDouble(),
       lon: (json['lon'] ?? 0.0).toDouble(),
       zone: json['zone'] ?? 'A',
+      lineIds: lineIds,
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'lat': lat,
+      'lon': lon,
+      'zone': zone,
+      'lineIds': lineIds.toList(),
+    };
   }
 
   StopModel copyWith({

@@ -4,6 +4,7 @@ import 'package:almeriarutav02/features/map/models/filter_mode.dart';
 import 'package:almeriarutav02/features/map/models/location_model.dart';
 import 'package:almeriarutav02/features/map/models/zone_model.dart';
 import 'package:almeriarutav02/features/map/tourism/models/tourist_place.dart';
+import 'package:almeriarutav02/features/map/tourism/utils/tourist_bus_route_planner.dart';
 import 'package:almeriarutav02/features/map/viewmodels/map_viewmodel.dart';
 import 'package:almeriarutav02/shared/services/line_models.dart';
 
@@ -229,6 +230,75 @@ void main() {
       expect(vm.routeDistanceMeters, 700);
       expect(vm.routeDurationMinutes, 9);
       expect(vm.isRouteFallback, isTrue);
+    });
+
+    test('applyTouristBusRoutePlan exposes active plan and clearRoute resets it', () {
+      final vm = MapViewModel();
+      final place = TouristPlace(
+        id: 'tp1',
+        name: 'Alcazaba',
+        location: const LatLng(36.841, -2.467),
+        description: 'Monumento',
+        category: TouristCategory.monument,
+      );
+
+      final line = LineModel(
+        id: 'L1',
+        name: 'L1',
+        fullName: 'Linea 1',
+        description: 'Centro',
+        frequency: '15 min',
+        firstService: '06:30',
+        lastService: '22:30',
+        totalStops: 3,
+        stops: [
+          StopModel(id: 's1', name: 'Origen', lat: 36.8380, lon: -2.4600, zone: 'A', lineIds: const {'L1'}),
+          StopModel(id: 's2', name: 'Intermedia', lat: 36.8390, lon: -2.4630, zone: 'A', lineIds: const {'L1'}),
+          StopModel(id: 's3', name: 'Destino', lat: 36.8405, lon: -2.4660, zone: 'A', lineIds: const {'L1'}),
+        ],
+      );
+
+      final plan = TouristBusRoutePlan(
+        place: place,
+        destinationStop: line.stops[2],
+        line: line,
+        boardingStop: line.stops[0],
+        segments: [
+          TouristBusSegment(
+            line: line,
+            boardingStop: line.stops[0],
+            destinationStop: line.stops[2],
+            routeStops: line.stops,
+          ),
+        ],
+        routeStops: line.stops,
+        routePoints: const [
+          LatLng(36.838, -2.460),
+          LatLng(36.839, -2.463),
+          LatLng(36.8405, -2.466),
+          LatLng(36.841, -2.467),
+        ],
+        walkToBoardMeters: 120,
+        walkToBoardMinutes: 2,
+        walkFromStopToPlaceMeters: 95,
+        walkFromStopToPlaceMinutes: 1,
+        busRideMinutes: 6,
+        totalDistanceMeters: 1200,
+        totalDurationMinutes: 9,
+      );
+
+      vm.applyTouristBusRoutePlan(plan);
+
+      expect(vm.isTouristBusRouteOnlyMode, isTrue);
+      expect(vm.activeTouristBusRoutePlan, isNotNull);
+      expect(vm.activeTouristBusRoutePlan?.line.id, 'L1');
+      expect(vm.touristBusRouteStops.map((s) => s.id), ['s1', 's2', 's3']);
+
+      vm.clearRoute();
+
+      expect(vm.isTouristBusRouteOnlyMode, isFalse);
+      expect(vm.activeTouristBusRoutePlan, isNull);
+      expect(vm.touristBusRouteStops, isEmpty);
     });
   });
 }
