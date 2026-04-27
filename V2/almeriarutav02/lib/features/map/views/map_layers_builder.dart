@@ -35,13 +35,7 @@ class MapLayersBuilder {
       // Active route polyline
       if (mapViewModel.activeRoute.isNotEmpty)
         PolylineLayer(
-          polylines: [
-            Polyline(
-              points: mapViewModel.activeRoute,
-              strokeWidth: 4,
-              color: Colors.blue,
-            ),
-          ],
+          polylines: _buildRoutePolylines(mapViewModel),
         ),
 
       // Stop markers and user location
@@ -75,6 +69,60 @@ class MapLayersBuilder {
     ];
   }
 
+  static List<Polyline> _buildRoutePolylines(MapViewModel mapViewModel) {
+    if (mapViewModel.activeTouristBusRoutePlan != null) {
+      final polylines = <Polyline>[];
+
+      if (mapViewModel.touristWalkToBoardRoute.isNotEmpty) {
+        polylines.add(
+          Polyline(
+            points: mapViewModel.touristWalkToBoardRoute,
+            strokeWidth: 4,
+            color: Colors.deepOrange,
+            borderColor: Colors.white,
+            borderStrokeWidth: 1,
+          ),
+        );
+      }
+
+      if (mapViewModel.touristBusRoute.isNotEmpty) {
+        polylines.add(
+          Polyline(
+            points: mapViewModel.touristBusRoute,
+            strokeWidth: 5,
+            color: Colors.blue,
+            borderColor: Colors.white,
+            borderStrokeWidth: 1.5,
+          ),
+        );
+      }
+
+      if (mapViewModel.touristWalkToPlaceRoute.isNotEmpty) {
+        polylines.add(
+          Polyline(
+            points: mapViewModel.touristWalkToPlaceRoute,
+            strokeWidth: 4,
+            color: Colors.green,
+            borderColor: Colors.white,
+            borderStrokeWidth: 1,
+          ),
+        );
+      }
+
+      return polylines;
+    }
+
+    return [
+      Polyline(
+        points: mapViewModel.activeRoute,
+        strokeWidth: 4,
+        color: Colors.blue,
+        borderColor: Colors.white,
+        borderStrokeWidth: 1,
+      ),
+    ];
+  }
+
   /// Builds the active zone polygon layer.
   static Widget _buildActiveZoneLayer(
     MapViewModel mapViewModel,
@@ -104,30 +152,48 @@ class MapLayersBuilder {
     required VoidCallback onTouristPlaceMarkerTap,
   }) {
     final markers = <Marker>[];
+    final hasTouristBusPlan = mapViewModel.activeTouristBusRoutePlan != null;
 
     // Stop markers
-    for (final stop in markersToRender) {
+    for (var index = 0; index < markersToRender.length; index++) {
+      final stop = markersToRender[index];
+      final isTouristRouteStop = isTouristBusRouteOnlyMode && hasTouristBusPlan;
+      final isFirstRouteStop = isTouristRouteStop && index == 0;
+      final isLastRouteStop = isTouristRouteStop && index == markersToRender.length - 1;
+      final isIntermediateRouteStop = isTouristRouteStop && !isFirstRouteStop && !isLastRouteStop;
+
+      final markerSize = isIntermediateRouteStop ? 12.0 : 30.0;
+      final iconSize = isIntermediateRouteStop ? 8.0 : 16.0;
+      final markerColor = isIntermediateRouteStop
+          ? Colors.blue.withValues(alpha: 0.75)
+          : (isFirstRouteStop
+              ? Colors.deepOrange
+              : (isLastRouteStop ? Colors.green : (stop.lineIds.length > 1 ? Colors.purple : AppTheme.primaryRed)));
+
       markers.add(
         Marker(
           point: LatLng(stop.lat, stop.lon),
-          width: 30,
-          height: 30,
+          width: markerSize,
+          height: markerSize,
           child: GestureDetector(
             onTap: () => onStopMarkerTap(stop),
             child: Container(
               decoration: BoxDecoration(
-                color: isTouristBusRouteOnlyMode
-                    ? Colors.blue
-                    : (stop.lineIds.length > 1
-                        ? Colors.purple
-                        : AppTheme.primaryRed),
+                color: markerColor,
                 shape: BoxShape.circle,
-                border: Border.all(color: Colors.white, width: 2),
+                border: Border.all(
+                  color: Colors.white,
+                  width: isIntermediateRouteStop ? 1 : 2,
+                ),
               ),
-              child: const Icon(
-                Icons.directions_bus,
+              child: Icon(
+                isIntermediateRouteStop
+                    ? Icons.circle
+                    : (isFirstRouteStop
+                        ? Icons.fmd_good
+                        : (isLastRouteStop ? Icons.flag : Icons.directions_bus)),
                 color: Colors.white,
-                size: 16,
+                size: iconSize,
               ),
             ),
           ),

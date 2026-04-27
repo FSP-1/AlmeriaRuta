@@ -50,6 +50,9 @@ class MapViewModel extends ChangeNotifier {
   TouristBusRoutePlan? _activeTouristBusRoutePlan;
   bool _isTouristBusRouteOnlyMode = false;
   List<LatLng> _activeRoute = [];
+  List<LatLng> _touristWalkToBoardRoute = [];
+  List<LatLng> _touristBusRoute = [];
+  List<LatLng> _touristWalkToPlaceRoute = [];
   double _routeDistanceMeters = 0;
   int _routeDurationMinutes = 0;
   bool _isRouteFallback = false;
@@ -79,6 +82,9 @@ class MapViewModel extends ChangeNotifier {
   TouristBusRoutePlan? get activeTouristBusRoutePlan => _activeTouristBusRoutePlan;
   bool get isTouristBusRouteOnlyMode => _isTouristBusRouteOnlyMode;
   List<LatLng> get activeRoute => _activeRoute;
+  List<LatLng> get touristWalkToBoardRoute => _touristWalkToBoardRoute;
+  List<LatLng> get touristBusRoute => _touristBusRoute;
+  List<LatLng> get touristWalkToPlaceRoute => _touristWalkToPlaceRoute;
   double get routeDistanceMeters => _routeDistanceMeters;
   int get routeDurationMinutes => _routeDurationMinutes;
   bool get isRouteFallback => _isRouteFallback;
@@ -218,6 +224,9 @@ class MapViewModel extends ChangeNotifier {
     _activeTouristBusRoutePlan = null;
     _isTouristBusRouteOnlyMode = false;
     _activeRoute = route;
+    _touristWalkToBoardRoute = [];
+    _touristBusRoute = [];
+    _touristWalkToPlaceRoute = [];
     _routeDistanceMeters = 0;
     _routeDurationMinutes = 0;
     _isRouteFallback = false;
@@ -231,6 +240,9 @@ class MapViewModel extends ChangeNotifier {
     _activeTouristBusRoutePlan = null;
     _isTouristBusRouteOnlyMode = false;
     _activeRoute = result.points;
+    _touristWalkToBoardRoute = [];
+    _touristBusRoute = [];
+    _touristWalkToPlaceRoute = [];
     _routeDistanceMeters = result.distanceMeters;
     _routeDurationMinutes = result.durationMinutes;
     _isRouteFallback = result.isFallback;
@@ -244,6 +256,9 @@ class MapViewModel extends ChangeNotifier {
     _activeTouristBusRoutePlan = null;
     _isTouristBusRouteOnlyMode = false;
     _activeRoute = [];
+    _touristWalkToBoardRoute = [];
+    _touristBusRoute = [];
+    _touristWalkToPlaceRoute = [];
     _routeDistanceMeters = 0;
     _routeDurationMinutes = 0;
     _isRouteFallback = false;
@@ -284,7 +299,7 @@ class MapViewModel extends ChangeNotifier {
       _userLocation!.latitude, _userLocation!.longitude,
       place.location.latitude, place.location.longitude,
     );
-    return isBusWorthIt(plan, directWalkMeters) ? plan : null;
+    return isBusWorthIt(plan, directWalkMeters, minSavingMinutes: 2) ? plan : null;
   }
 
   Future<void> applyTouristBusRoutePlan(TouristBusRoutePlan plan) async {
@@ -292,7 +307,8 @@ class MapViewModel extends ChangeNotifier {
     _isLoading = true;
     notifyListeners();
 
-    final polyline = await _polylineBuilder.build(plan, _userLocation!);
+    final parts = await _polylineBuilder.buildParts(plan, _userLocation!);
+    final polyline = parts.combined.isEmpty ? plan.routePoints : parts.combined;
 
     _targetStop = null;
     _selectedTouristPlace = plan.place;
@@ -300,10 +316,19 @@ class MapViewModel extends ChangeNotifier {
     _activeTouristBusRoutePlan = plan;
     _isTouristBusRouteOnlyMode = true;
     _activeRoute = polyline;
+    _touristWalkToBoardRoute = parts.walkToBoard;
+    _touristBusRoute = parts.busRoute;
+    _touristWalkToPlaceRoute = parts.walkToPlace;
     _routeDistanceMeters = plan.totalDistanceMeters;
     _routeDurationMinutes = plan.totalDurationMinutes;
     _isRouteFallback = false;
     _isLoading = false;
+
+    debugPrint('[MapViewModel] Applying tourist plan: place=${plan.place.name} '
+      'segments=${plan.segments.length} routeStops=${plan.routeStops.length} '
+      'polylinePoints=${_activeRoute.length} busPoints=${_touristBusRoute.length} '
+      'walkToBoardPoints=${_touristWalkToBoardRoute.length} walkToPlacePoints=${_touristWalkToPlaceRoute.length}');
+
     notifyListeners();
   }
 

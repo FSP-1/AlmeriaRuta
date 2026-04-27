@@ -2,51 +2,95 @@ import 'package:latlong2/latlong.dart';
 import '../tourism/utils/tourist_bus_route_planner.dart';
 import 'osrm_routing_service.dart';
 
-/// Builds a full OSRM polyline for a TouristBusRoutePlan:
-/// walk to boarding (walking) + bus legs (driving) + walk to place (walking).
+class TouristBusRoutePolylineParts {
+  final List<LatLng> walkToBoard;
+  final List<LatLng> busRoute;
+  final List<LatLng> walkToPlace;
+
+  const TouristBusRoutePolylineParts({
+    required this.walkToBoard,
+    required this.busRoute,
+    required this.walkToPlace,
+  });
+
+  List<LatLng> get combined {
+    final points = <LatLng>[];
+    void append(List<LatLng> segment) {
+      if (segment.isEmpty) return;
+      if (points.isEmpty) {
+        points.addAll(segment);
+        return;
+      }
+      final last = points.last;
+      final next = segment.first;
+      if (last == next) {
+        points.addAll(segment.skip(1));
+      } else {
+        points.addAll(segment);
+      }
+    }
+
+    append(walkToBoard);
+    append(busRoute);
+    append(walkToPlace);
+    return points;
+  }
+}
+
+/// Builds polyline parts for a TouristBusRoutePlan:
+/// walk to boarding (walking via OSRM) + bus legs (exact line stop sequence)
+/// + walk to place (walking via OSRM).
 class BusRoutePolylineBuilder {
   final OsrmRoutingService _routing;
 
   BusRoutePolylineBuilder({OsrmRoutingService? routing})
       : _routing = routing ?? OsrmRoutingService();
 
-  Future<List<LatLng>> build(TouristBusRoutePlan plan, LatLng userLocation) async {
-    final points = <LatLng>[];
+  Future<TouristBusRoutePolylineParts> buildParts(
+    TouristBusRoutePlan plan,
+    LatLng userLocation,
+  ) async {
+    final walkToBoard = <LatLng>[];
+    final busRoute = <LatLng>[];
+    final walkToPlace = <LatLng>[];
 
     // 1. Walk: user → first boarding stop
     final boarding = plan.segments.first.boardingStop;
-    points.addAll(await _routing.getSegmentPoints(
+    walkToBoard.addAll(await _routing.getSegmentPoints(
       userLocation,
       LatLng(boarding.lat, boarding.lon),
       profile: 'walking',
     ));
 
-    // 2. Bus legs: each consecutive stop pair in every segment
+    // 2. Bus legs: follow the planned line stop sequence exactly.
+    // This avoids OSRM road shortcuts that can diverge from the selected line.
     for (final segment in plan.segments) {
       final stops = segment.routeStops;
-      for (var i = 0; i < stops.length - 1; i++) {
-        final leg = await _routing.getSegmentPoints(
-          LatLng(stops[i].lat, stops[i].lon),
-          LatLng(stops[i + 1].lat, stops[i + 1].lon),
-          profile: 'driving',
-        );
-        if (points.isNotEmpty && leg.isNotEmpty) {
-          points.addAll(leg.skip(1));
-        } else {
-          points.addAll(leg);
+      for (final stop in stops) {
+        final busPoint = LatLng(stop.lat, stop.lon);
+        if (busRoute.isEmpty || busRoute.last != busPoint) {
+          busRoute.add(busPoint);
         }
       }
     }
 
     // 3. Walk: last stop → tourist place
     final lastStop = plan.segments.last.destinationStop;
-    final walkToPlace = await _routing.getSegmentPoints(
+    walkToPlace.addAll(await _routing.getSegmentPoints(
       LatLng(lastStop.lat, lastStop.lon),
       plan.place.location,
       profile: 'walking',
-    );
-    if (walkToPlace.isNotEmpty) points.addAll(walkToPlace.skip(1));
+    ));
 
-    return points.isEmpty ? plan.routePoints : points;
+    return TouristBusRoutePolylineParts(
+      walkToBoard: walkToBoard,
+      busRoute: busRoute,
+      walkToPlace: walkToPlace,
+    );
+  }
+
+  Future<List<LatLng>> build(TouristBusRoutePlan plan, LatLng userLocation) async {
+    final parts = await buildParts(plan, userLocation);
+    return parts.combined.isEmpty ? plan.routePoints : parts.combined;
   }
 }

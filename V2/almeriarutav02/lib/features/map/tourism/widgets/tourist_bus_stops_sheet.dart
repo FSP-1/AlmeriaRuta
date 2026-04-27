@@ -29,20 +29,6 @@ Future<void> showTouristBusStopsSheet({
   );
   final directWalkMinutes = estimateWalkingMinutes(directWalkMeters);
 
-  // If walking is already fast (under 12 min), suggest walking directly
-  if (directWalkMinutes <= 12) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          '${place.name} está a $directWalkMinutes min caminando (${directWalkMeters.round()} m). '
-          'No merece la pena coger el bus.',
-        ),
-        duration: const Duration(seconds: 4),
-      ),
-    );
-    return;
-  }
-
   final nearbyStops = mapViewModel.getNearbyTouristStops(place);
   if (nearbyStops.isEmpty) {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -50,6 +36,29 @@ Future<void> showTouristBusStopsSheet({
     );
     return;
   }
+
+  final evaluatedStops = nearbyStops
+      .map((option) => (option: option, plan: mapViewModel.buildTouristBusRoutePlan(place, option.stop)))
+      .toList();
+
+  // Prioritize actual best routes to the tourist point:
+  // valid plan first, then shorter total time, fewer transfers, and closer stop to place.
+  evaluatedStops.sort((a, b) {
+    final aPlan = a.plan;
+    final bPlan = b.plan;
+
+    if (aPlan == null && bPlan != null) return 1;
+    if (aPlan != null && bPlan == null) return -1;
+    if (aPlan != null && bPlan != null) {
+      final byDuration = aPlan.totalDurationMinutes.compareTo(bPlan.totalDurationMinutes);
+      if (byDuration != 0) return byDuration;
+
+      final byTransfers = (aPlan.segments.length - 1).compareTo(bPlan.segments.length - 1);
+      if (byTransfers != 0) return byTransfers;
+    }
+
+    return a.option.distanceToPlaceMeters.compareTo(b.option.distanceToPlaceMeters);
+  });
 
   await showModalBottomSheet<void>(
     context: context,
@@ -100,18 +109,18 @@ Future<void> showTouristBusStopsSheet({
               constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(context).height * 0.5),
               child: ListView.separated(
                 shrinkWrap: true,
-                itemCount: nearbyStops.length,
+                itemCount: evaluatedStops.length,
                 separatorBuilder: (_, _) => const Divider(height: 1),
                 itemBuilder: (_, index) {
-                  final option = nearbyStops[index];
+                  final evaluated = evaluatedStops[index];
+                  final option = evaluated.option;
+                  final plan = evaluated.plan;
                   final linesText = option.servingLines.isEmpty
                       ? 'Sin líneas detectadas'
                       : option.servingLines.map((l) => l.name).take(4).join(' · ');
 
-                  // Pre-calculate plan to show estimated time
-                  final plan = mapViewModel.buildTouristBusRoutePlan(place, option.stop);
                   final busTimeText = plan != null
-                      ? '🚌 ${plan.totalDurationMinutes} min en bus'
+                      ? '🚌 ${plan.totalDurationMinutes} min en bus · ${plan.routeStops.length} paradas'
                       : null;
                   final savingText = plan != null
                       ? '(ahorras ${directWalkMinutes - plan.totalDurationMinutes} min vs caminar)'

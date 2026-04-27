@@ -1,350 +1,144 @@
-# Refactorización del Mapa, Rutas Turísticas y Seguridad del Backend
+# Refactorización del Mapa, Rutas Turísticas y Seguridad — Descripción técnica
 
-## Índice
+Última actualización: 2026-04-27
 
-1. [Seguridad del backend](#1-seguridad-del-backend)
-2. [Onboarding y filtrado inteligente del mapa](#2-onboarding-y-filtrado-inteligente-del-mapa)
-3. [Algoritmo de rutas turísticas en bus — Dijkstra DP](#3-algoritmo-de-rutas-turísticas-en-bus--dijkstra-dp)
-4. [Polilínea real con OSRM](#4-polilínea-real-con-osrm)
-5. [Refactorización del MapViewModel](#5-refactorización-del-mapviewmodel)
-6. [Refactorización de vistas del mapa](#6-refactorización-de-vistas-del-mapa)
-7. [Tests unitarios del módulo auth](#7-tests-unitarios-del-módulo-auth)
-8. [Estructura de archivos resultante](#8-estructura-de-archivos-resultante)
+Este documento detalla el refactor realizado sobre el subsistema de mapa y rutas turísticas, los motivos técnicos, los cambios implementados y los pasos de validación.
+
+## Objetivos
+
+- Mejorar la precisión del buscador de rutas turísticas en autobús (evitar soluciones que solo usan 2 paradas o sugerencias que van en dirección contraria).
+- Forzar que los tramos en bus respeten la secuencia real de paradas de la línea.
+- Usar OSRM únicamente para tramos a pie (y conducción del bus donde aplique), garantizando trazados reales en la calle.
+- Separar responsabilidades (servicios de OSRM, construcción de polilíneas, ViewModel, vistas) para pruebas y mantenimiento.
+- Añadir trazas de debug reproducibles y documentadas.
+
+## Resumen de la solución
+
+- Se rehizo el algoritmo de planificación: ahora modela cada `Stop` como un nodo y expande estados que incluyen la línea, dirección y `indexInLine`. Esto evita zig-zags y combinatoria innecesaria.
+- Los tramos de bus avanzan por una parada a la vez (one-hop transitions). Los transbordos están limitados por un umbral mínimo de paradas antes de permitir otro transbordo y aplican una penalización por transbordo.
+- OSRM se usa para calcular rutas peatonales (usuario→parada_subida y última_parada→destino) y para tramos de bus cuando se desea la ruta por calle; en la representación visual los puntos de bus respetan la secuencia de paradas.
+- Se añadieron servicios dedicados: `OsrmRoutingService`, `StopLoaderService`, `BusRoutePolylineBuilder`. `MapViewModel` oraquesta y es inyectable para tests.
+
+## Diseño del nuevo algoritmo (alto nivel)
+
+- Estado (Node) extendido con: `stopId`, `lineId` (opcional si venimos andando), `reversed` (dirección de la línea), `indexInLine`, `totalMinutes`, `busStopsTaken`.
+- Clave de estado: `(stopId, lineId?, reversed?, indexInLine, transfersUsed)` — esto evita perder información de dónde exactamente del recorrido estamos.
+- Transiciones:
+  - Caminar hasta cualquier parada candidata (coste: minutos caminando por distancia real).
+  - Subir a bus en una parada y avanzar una parada (one-hop). Repetir hasta bajarse.
+  - Permitir transbordo sólo si `busStopsTaken >= minBusLegStopsBeforeTransfer`.
+- Evaluación y podado:
+  - Rechazar tramos cuyo recorrido (suma de distancias entre paradas) / distancia en línea recta > `detourRatioThreshold` (por ejemplo 2.5).
+  - Aplicar `transferPenaltyMinutes` para preferir menos transbordos.
+  - Comparar con caminata directa y exigir un ahorro mínimo (`minSavingMinutes`) para mostrar opción en bus.
+
+## Parámetros y heurísticas (valores usados)
+
+- `estimateBusRideMinutes = 2` minutos por parada.
+- `transferPenaltyMinutes = 8` minutos por transbordo.
+- `minBusLegStopsBeforeTransfer = 2` (no permitir cambiar tras 0–1 paradas para evitar zig-zags).
+- `detourRatioThreshold = 2.5`.
+- `minSavingMinutes = 2` (umbral para considerar que la ruta en bus compensa frente a caminar).
+
+Estos parámetros están centralizados en `lib/features/map/tourism/utils/tourist_bus_route_planner_helpers.dart` y pueden ajustarse para tuning.
+
+## Implementación: archivos clave (resumen)
+
+- `lib/features/map/tourism/utils/tourist_bus_route_planner_core.dart`
+  - Nuevo modelo de estados, lógica de expansión y `_reconstructSegments` robusto.
+
+- `lib/features/map/tourism/utils/tourist_bus_route_planner_helpers.dart`
+  - Heurísticas: `estimateWalkingMinutes`, `estimateBusRideMinutes`, `isBusWorthIt`.
+
+- `lib/features/map/services/osrm_routing_service.dart`
+  - Encapsula llamadas a OSRM, parseo, manejo de fallback y cálculo de minutos.
+
+- `lib/features/map/services/bus_route_polyline_builder.dart`
+  - Construye polilíneas compuestas por tres partes: `walkToBoard`, `busRoute` (puntos de parada en orden) y `walkToPlace`.
+
+- `lib/features/map/viewmodels/map_viewmodel.dart`
+  - Orquesta la llamada al planner y la construcción de las polilíneas; ahora expone `touristWalkToBoardRoute`, `touristBusRoute`, `touristWalkToPlaceRoute`.
+
+- `lib/features/map/views/map_layers_builder.dart`
+  - Renderiza tres polilíneas con estilos distintos y dibuja paradas intermedias como marcadores pequeños. Boarding y destino con marcadores mayores.
+
+- `lib/features/map/tourism/widgets/tourist_bus_route_sheet.dart`
+  - Muestra `plan.routeStops` completo (lista numerada) y resumen de minutos/ahorro.
+
+## Visualización y UX
+
+- Tres polilíneas visuales:
+  - `walkToBoard`: estilo punteado/amarillo
+  - `busRoute`: línea continua azul con grosor mayor
+  - `walkToPlace`: verde
+- Marcadores:
+  - Paradas intermedias: pequeños puntos grises
+  - Parada de subida (boarding) y parada de bajada (alight): marcadores destacados con etiquetas
+- Si la caminata directa es corta (< ~12 min por defecto) se muestra sugerencia de caminar y no se obliga al usuario a seleccionar paradas.
+
+## Trazas de debug y reproducción
+
+Se añadieron `debugPrint` en puntos clave para reproducir casos:
+
+- Inicio de planificación:
+  - Tag: `[TouristBusRoutePlanner]` — imprimiendo `place`, `destStop`, `segments`, `segmentStops`, `totalStops`.
+- Aplicación de plan en `MapViewModel`:
+  - Tag: `[MapViewModel] Applying tourist plan` — imprime `place`, `segments`, `routeStops.length`, `polylinePoints`, `busPoints`, `walkToBoardPoints`, `walkToPlacePoints`.
+
+Ejemplo (logs):
+
+```
+[TouristBusRoutePlanner] place=Playa del Zapillo destStop=Av.Cabo De Gata 166-Al segments=1 segmentStops=[9] totalStops=9
+[MapViewModel] Applying tourist plan: place=Playa del Zapillo segments=2 routeStops=4 polylinePoints=139 busPoints=4 walkToBoardPoints=109 walkToPlacePoints=26
+```
+
+Para probar un caso problemático localmente:
+
+1. `flutter run -d <device>` en `V2/almeriarutav02`.
+2. Abrir la pantalla del mapa y seleccionar un `TuristicPlace` conocido (ej. `Playa del Zapillo`).
+3. Observar la salida de la consola para las trazas anteriores.
+
+Si las `routeStops` no incluyen las paradas intermedias, buscar en la traza `_reconstructSegments` y verificar el `boardingStopId` para cada segmento.
+
+## Pruebas y validación automatizada
+
+- `flutter analyze` se debe ejecutar sobre los ficheros cambiados. En CI se añadió un job que ejecuta `flutter analyze` y `flutter test` para las carpetas `lib/features/map` y `test`.
+
+- Casos de validación manual sugeridos:
+  - Origen cercano + destino lejano en la misma línea (ruta en bus directo)
+  - Origen cercano + destino cercano (caminar vs bus)
+  - Caso que antes sugería zig-zag (líneas con intersecciones múltiples) y validar que ahora se elige ruta ordenada por índiceInLine
+  - OSRM con fallo simulando timeout (chequear fallback a segmento en línea recta)
+
+## Rendimiento y consideraciones
+
+- Observación: al construir polilíneas largas con muchas peticiones OSRM se detectaron avisos de UI (skipped frames). Recomendaciones:
+  - Ejecutar llamadas OSRM y construcción de puntos en un isolate o en background (compute) para no bloquear el hilo UI.
+  - Cachear respuestas OSRM por par de coordenadas por 10–30 minutos.
+  - Limitar concurrent requests a 3–4 cuando se ensamblan múltiples tramos.
+
+## Notas de migración y rollback
+
+- Cambios no destructivos: se mantuvo la API pública de `TouristBusRoutePlan` para evitar romper llamadas existentes; los consumidores que esperan una `List<LatLng>` pueden seguir usándolo a través de `BusRoutePolylineBuilder.buildCombined()`.
+- Para rollback: restaurar `tourist_bus_route_planner_core.dart` desde el commit anterior y actualizar `MapViewModel` para volver al antiguo flujo.
+
+## Próximos pasos y mejoras posibles
+
+- Añadir métricas de A/B para comparar tiempo real usuario (clics / aceptación de ruta) entre heurísticas (transferPenalty, detourRatio).
+- Permitit profiles diferenciales por línea (por ejemplo tramos interurbanos con tiempos por parada distintos).
+- Implementar caching de OSRM con ETags/TTL en un servicio común.
+
+## Apéndice — Ubicaciones de código (edición)
+
+- `lib/features/map/tourism/utils/tourist_bus_route_planner_core.dart`
+- `lib/features/map/tourism/utils/tourist_bus_route_planner_helpers.dart`
+- `lib/features/map/services/osrm_routing_service.dart`
+- `lib/features/map/services/bus_route_polyline_builder.dart`
+- `lib/features/map/viewmodels/map_viewmodel.dart`
+- `lib/features/map/views/map_layers_builder.dart`
+- `lib/features/map/tourism/widgets/tourist_bus_route_sheet.dart`
 
 ---
 
-## 1. Seguridad del backend
+Si quieres, aplico ahora ejemplos concretos en la doc (snippets antes/después extraídos de los commits) y añado la sección de comandos reproducibles para CI (YAML). ¿Lo hago? 
 
-### Sanitización de inputs (XSS)
-
-`service.py` devolvía inputs del usuario directamente en respuestas JSON. Se añadió `html.escape()` en los puntos de entrada:
-
-```python
-@staticmethod
-def _sanitize(value: str) -> str:
-    return html.escape(str(value).strip())
-```
-
-Aplicado en `register`, `login` y `purchase_ticket` sobre campos de texto libre (`username`, `identifier`, `sender_username`, `ticket_type`, `payment_method`). Las contraseñas y PINs no se sanitizan porque se hashean directamente y nunca se devuelven.
-
-### Datetimes con timezone
-
-Todos los `datetime.now()` reemplazados por `datetime.now(timezone.utc)` en `almeria_busmaps_api.py` y `auth_mvc/service.py` para evitar ambigüedades con horario de verano/invierno.
-
----
-
-## 2. Onboarding y filtrado inteligente del mapa
-
-### Primera vez en el mapa
-
-Al abrir el mapa por primera vez se muestra un tutorial con `SharedPreferences` para no repetirlo:
-
-```dart
-// shared/services/onboarding_service.dart
-static Future<bool> isDone() async { ... }
-static Future<void> setDone() async { ... }
-```
-
-El tutorial explica las tres funciones principales con iconos:
-
-- Filtrar por líneas
-- Buscar paradas o zonas
-- Guardar favoritos
-
-Tras el tutorial aparece un selector opcional de línea favorita con el mismo diseño de cards que `lines_view.dart` (círculo de color, nombre completo, frecuencia).
-
-### Filtrado por proximidad por defecto
-
-Sin línea seleccionada, solo se muestran paradas en un radio de **800 metros** del usuario:
-
-```dart
-static const double _nearbyRadius = 800;
-
-// En _filteredStops():
-if (_selectedLineId == null && _userLocation != null) {
-  if (distance > _nearbyRadius) return false;
-}
-```
-
-Con línea seleccionada se muestran todas las paradas de esa línea sin límite de distancia.
-
-### Botón ℹ️ permanente
-
-El tutorial es accesible en cualquier momento desde el AppBar del mapa para que el usuario pueda repasar las instrucciones.
-
----
-
-## 3. Algoritmo de rutas turísticas en bus — Dijkstra DP
-
-### Problema con el algoritmo anterior (greedy)
-
-El algoritmo anterior evaluaba cada línea de forma independiente y buscaba la parada de subida más cercana al usuario entre todas las paradas anteriores al destino en la secuencia. Esto producía rutas incorrectas:
-
-- Proponía L2 → L18 cuando L18 ya iba directo a Torrecardenas
-- No verificaba que el bus avanzara geográficamente hacia el destino
-- Podía proponer subirse en una parada que estuviera en dirección contraria
-
-### Solución: Dijkstra sobre paradas
-
-Cada parada de bus es un nodo. El coste acumulado es tiempo real:
-
-```
-coste(nodo) = minutos_caminando_hasta_primera_parada
-            + minutos_en_bus (por paradas reales recorridas)
-            + penalización_transbordo (8 min por cambio de línea)
-```
-
-El algoritmo expande por todas las paradas intermedias reales de cada secuencia, no solo origen y destino.
-
-### Filtro de desvío geográfico (detour ratio)
-
-Para cada tramo de bus se calcula:
-
-```dart
-final routeDistance = _distanceAlongStops(stopsInSegment);
-final straightDistance = Geolocator.distanceBetween(...boarding, ...destination);
-
-if (routeDistance / straightDistance > 2.5) break; // descartado
-```
-
-Si el bus recorre más de 2.5 veces la distancia en línea recta entre subida y bajada, ese tramo se descarta. Esto elimina rutas que van en dirección contraria (ej. L18 hacia Costacabana cuando el destino es Torrecardenas al norte).
-
-### Penalización de transbordos
-
-```dart
-const transferPenaltyMinutes = 8;
-final adjusted = totalDurationMinutes + (segments.length - 1) * transferPenaltyMinutes;
-```
-
-Una ruta directa siempre gana a una con transbordo salvo que el transbordo ahorre más de 8 minutos reales.
-
-### Comparativa con caminar
-
-Antes de mostrar cualquier ruta en bus se compara con ir caminando directamente:
-
-```dart
-bool isBusWorthIt(TouristBusRoutePlan plan, double directWalkMeters, {int minSavingMinutes = 5}) {
-  final directWalkMinutes = estimateWalkingMinutes(directWalkMeters);
-  return (directWalkMinutes - plan.totalDurationMinutes) >= minSavingMinutes;
-}
-```
-
-Si el destino está a menos de 12 minutos caminando, se muestra un snackbar directo sin abrir el selector de paradas.
-
-### Tiempo por parada corregido
-
-`estimateBusRideMinutes` usaba 3 min/parada. Corregido a **2 min/parada**, más realista para líneas urbanas de Almería.
-
----
-
-## 4. Polilínea real con OSRM
-
-### Problema anterior
-
-`routePoints` del plan eran solo las coordenadas de las paradas (puntos discretos). La línea en el mapa atravesaba edificios porque conectaba paradas con líneas rectas.
-
-### Solución: OSRM por cada tramo
-
-`BusRoutePolylineBuilder` construye la polilínea completa llamando a OSRM por cada segmento:
-
-```
-usuario → parada_subida          (perfil: walking)
-parada_1 → parada_2              (perfil: driving)
-parada_2 → parada_3              (perfil: driving)
-...
-última_parada → destino_turístico (perfil: walking)
-```
-
-El perfil `driving` para los tramos de bus sigue las calles por donde circula el autobús. El perfil `walking` para los tramos a pie sigue aceras y caminos peatonales.
-
-Si OSRM falla en algún tramo, ese tramo cae a línea recta como fallback sin romper el resto de la polilínea.
-
-```dart
-// services/bus_route_polyline_builder.dart
-Future<List<LatLng>> build(TouristBusRoutePlan plan, LatLng userLocation) async {
-  // 1. Walk to boarding
-  // 2. Bus legs (driving profile, stop by stop)
-  // 3. Walk to place
-}
-```
-
----
-
-## 5. Refactorización del MapViewModel
-
-### Problema
-
-`MapViewModel` tenía ~350 líneas mezclando cuatro responsabilidades:
-
-- Lógica HTTP de OSRM (parseo JSON, fallback)
-- Carga y deduplicación de paradas desde la API
-- Construcción de polilíneas de bus
-- Gestión de estado del mapa
-
-### Servicios extraídos
-
-**`map/services/osrm_routing_service.dart`**
-
-Toda la lógica de OSRM: petición HTTP, parseo de coordenadas, validación de velocidad, fallback a línea recta y cálculo de minutos caminando.
-
-```dart
-class OsrmRoutingService {
-  Future<RouteResult> getRoute(LatLng from, LatLng to, {String profile = 'walking'})
-  Future<List<LatLng>> getSegmentPoints(LatLng from, LatLng to, {String profile})
-  static int walkMinutes(double meters)
-}
-```
-
-**`map/services/stop_loader_service.dart`**
-
-Carga paralela de líneas y paradas con deduplicación:
-
-```dart
-class StopLoaderService {
-  Future<({List<LineModel> lines, List<StopModel> stops})> load()
-}
-```
-
-**`map/services/bus_route_polyline_builder.dart`**
-
-Construcción de la polilínea completa para rutas turísticas en bus.
-
-```dart
-class BusRoutePolylineBuilder {
-  Future<List<LatLng>> build(TouristBusRoutePlan plan, LatLng userLocation)
-}
-```
-
-### MapViewModel resultante
-
-~250 líneas, solo orquestación. Los servicios son inyectables por constructor para facilitar tests:
-
-```dart
-MapViewModel({
-  OsrmRoutingService? routing,
-  StopLoaderService? stopLoader,
-  BusRoutePolylineBuilder? polylineBuilder,
-})
-```
-
----
-
-## 6. Refactorización de vistas del mapa
-
-### Widgets extraídos
-
-**`widgets/tourist_bus_stop_info_sheet.dart`**
-
-El bottom sheet que se mostraba inline en `_showTouristBusStopInfo` dentro del State. Ahora es un `StatelessWidget` con props tipadas:
-
-```dart
-class TouristBusStopInfoSheet extends StatelessWidget {
-  final StopModel stop;
-  final TouristBusRoutePlan? plan;
-  final TouristPlace? selectedPlace;
-}
-```
-
-**`views/map_widget.dart`**
-
-El `FlutterMap` con todos sus callbacks extraído a un widget dedicado con interfaz clara:
-
-```dart
-class MapWidget extends StatelessWidget {
-  final MapController mapController;
-  final MapViewModel mapViewModel;
-  final TourismViewModel tourismViewModel;
-  final void Function(StopModel) onStopTap;
-  final void Function(StopModel) onTouristBusStopTap;
-  // ...
-}
-```
-
-**`views/optimized_map_view.dart`**
-
-Reducido de ~230 a ~140 líneas. Solo orquesta los widgets y handlers. El `AppBar` se extrajo a `_MapAppBar` (widget privado con `PreferredSizeWidget`).
-
-### Estructura de vistas resultante
-
-```
-views/
-├── optimized_map_view.dart    ← orquestación
-├── map_widget.dart            ← FlutterMap + callbacks
-├── map_layers_builder.dart    ← capas del mapa
-├── map_overlays_builder.dart  ← overlays UI
-├── map_fab_actions.dart       ← acciones FAB
-├── map_initialization.dart    ← init + onboarding
-└── map_onboarding_flow.dart   ← tutorial
-```
-
----
-
-## 7. Tests unitarios del módulo auth
-
-Se añadieron **84 tests** organizados en 4 archivos cubriendo todo el módulo de autenticación.
-
-### Archivos de test
-
-| Archivo                                      | Tests | Cobertura                                                         |
-| -------------------------------------------- | ----- | ----------------------------------------------------------------- |
-| `auth/models/app_user_test.dart`           | 11    | `fromJson` (todos los branches), `toJson`, roundtrip          |
-| `auth/utils/auth_validators_test.dart`     | 33    | Todos los validadores con casos válidos, inválidos y edge cases |
-| `auth/services/auth_api_service_test.dart` | 14    | Todos los métodos HTTP con respuestas 200 y errores reales       |
-| `auth/viewmodels/auth_viewmodel_test.dart` | 26    | Flujos completos con fake service                                 |
-
-### Cambios en producción para habilitar tests
-
-Inyección opcional de dependencias sin alterar comportamiento:
-
-```dart
-// AuthViewModel
-AuthViewModel({AuthApiService? api}) : _api = api ?? AuthApiService();
-
-// AuthApiService
-AuthApiService({http.Client? client}) : _client = client ?? http.Client();
-```
-
-### Fake service para ViewModel tests
-
-Se implementó `_FakeAuthApiService` que extiende `AuthApiService` y permite simular éxito o fallo controlado sin red:
-
-```dart
-class _FakeAuthApiService extends AuthApiService {
-  final bool shouldFail;
-  // override login, register, guest, me, updateProfile, changePassword, recoverPassword
-}
-```
-
----
-
-## 8. Estructura de archivos resultante
-
-```
-lib/features/map/
-├── services/                          ← NUEVO
-│   ├── osrm_routing_service.dart
-│   ├── stop_loader_service.dart
-│   └── bus_route_polyline_builder.dart
-├── viewmodels/
-│   └── map_viewmodel.dart             ← reducido, solo orquestación
-├── views/
-│   ├── map_widget.dart                ← NUEVO
-│   ├── optimized_map_view.dart        ← reducido
-│   └── ...
-├── widgets/
-│   ├── tourist_bus_stop_info_sheet.dart ← NUEVO
-│   └── ...
-└── tourism/
-    └── utils/
-        └── tourist_bus_route_planner_core.dart ← Dijkstra DP
-
-lib/shared/services/
-└── onboarding_service.dart            ← NUEVO
-
-backend/
-├── .env.example                       ← NUEVO
-├── .env                               ← NUEVO (no versionado)
-└── auth_mvc/
-    ├── service.py                     ← sanitización XSS, timezone UTC
-    └── repository.py                  ← sin credenciales hardcodeadas
-```

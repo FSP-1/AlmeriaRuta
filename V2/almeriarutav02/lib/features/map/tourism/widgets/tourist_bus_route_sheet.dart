@@ -68,6 +68,34 @@ Future<void> showTouristBusRouteSheet({
                 style: TextStyle(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 8),
+              ...List.generate(plan.routeStops.length, (i) {
+                final stop = plan.routeStops[i];
+                final isFirst = i == 0;
+                final isLast = i == plan.routeStops.length - 1;
+                final label = isFirst
+                    ? 'Subida'
+                    : (isLast ? 'Bajada' : 'Intermedia');
+
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 4),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      SizedBox(
+                        width: 22,
+                        child: Text(
+                          '${i + 1}.',
+                          style: const TextStyle(fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                      Expanded(
+                        child: Text('${stop.name} ($label)'),
+                      ),
+                    ],
+                  ),
+                );
+              }),
+              const SizedBox(height: 10),
               Wrap(
                 spacing: 8,
                 runSpacing: 8,

@@ -1,5 +1,6 @@
 import 'dart:collection';
 
+import 'package:flutter/foundation.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 
@@ -9,14 +10,22 @@ import 'tourist_bus_route_planner_helpers.dart';
 import 'tourist_bus_route_planner_models.dart';
 
 // ─── Internal DP node ────────────────────────────────────────────────────────
+// Each node represents arriving at a stop via a specific line.
+// boardingStopId = the stop where the user boarded this line leg.
+// This lets reconstruction extract ALL intermediate stops from the real sequence.
 
 class _Node {
   final String stopId;
-  final double costMinutes;   // accumulated time so far
-  final double walkMeters;    // walk to first boarding stop
+  final double costMinutes;
+  final double walkMeters;       // walk distance to the very first boarding stop
   final _Node? prev;
-  final LineModel? lineUsed;  // line taken to arrive at this node
-  final int transfers;        // number of line changes so far
+  final LineModel? lineUsed;
+  final String? boardingStopId;  // where this bus leg started
+  final bool reversed;           // which direction of the line sequence was used
+  final int indexInLine;         // current index in the active line direction sequence
+  final int busStopsTaken;       // total count of bus hops taken so far
+  final int legStopsRidden;      // stops ridden in the current line leg
+  final int transfers;
 
   const _Node({
     required this.stopId,
@@ -24,7 +33,34 @@ class _Node {
     required this.walkMeters,
     this.prev,
     this.lineUsed,
+    this.boardingStopId,
+    this.reversed = false,
+    this.indexInLine = -1,
+    this.busStopsTaken = 0,
+    this.legStopsRidden = 0,
     this.transfers = 0,
+  });
+}
+
+class _LineDirection {
+  final LineModel line;
+  final bool reversed;
+  final List<StopModel> sequence;
+
+  const _LineDirection({
+    required this.line,
+    required this.reversed,
+    required this.sequence,
+  });
+}
+
+class _StopOccurrence {
+  final _LineDirection direction;
+  final int index;
+
+  const _StopOccurrence({
+    required this.direction,
+    required this.index,
   });
 }
 
@@ -32,13 +68,6 @@ class _Node {
 
 class TouristBusRoutePlanner {
 
-  /// Dijkstra-based planner.
-  ///
-  /// Nodes = bus stops reachable from [userLocation].
-  /// Edges = bus legs along real stop sequences (all intermediate stops included).
-  /// Cost  = walk_to_board_minutes + bus_ride_minutes + transfer_penalty.
-  ///
-  /// Returns null if no bus route saves at least [minSavingMinutes] vs walking.
   static TouristBusRoutePlan? buildPlan({
     required TouristPlace place,
     required LatLng userLocation,
@@ -46,9 +75,10 @@ class TouristBusRoutePlanner {
     required List<LineModel> allLines,
     double maxWalkToBoardMeters = 1200,
     int maxTransfers = 1,
-    int minSavingMinutes = 5,
+    int minBusLegStopsBeforeTransfer = 2,
+    int minSavingMinutes = 2,
   }) {
-    // Build stop index for fast lookup
+    // Index stops by id for fast lookup
     final stopById = <String, StopModel>{};
     for (final line in allLines) {
       for (final stop in line.stops) {
@@ -56,48 +86,80 @@ class TouristBusRoutePlanner {
       }
     }
 
-    // Direct walk time as baseline
+    // Precompute directed line sequences and stop occurrences to avoid
+    // expensive index lookups on every explored node.
+    final stopOccurrences = <String, List<_StopOccurrence>>{};
+    for (final line in allLines) {
+      if (line.stops.length < 2) continue;
+
+      final forward = _LineDirection(
+        line: line,
+        reversed: false,
+        sequence: line.stops,
+      );
+      final backward = _LineDirection(
+        line: line,
+        reversed: true,
+        sequence: line.stops.reversed.toList(),
+      );
+      for (final direction in [forward, backward]) {
+        for (var idx = 0; idx < direction.sequence.length; idx++) {
+          final stopId = direction.sequence[idx].id;
+          stopOccurrences
+              .putIfAbsent(stopId, () => <_StopOccurrence>[])
+              .add(_StopOccurrence(direction: direction, index: idx));
+        }
+      }
+    }
+
     final directWalkMeters = Geolocator.distanceBetween(
       userLocation.latitude, userLocation.longitude,
       place.location.latitude, place.location.longitude,
     );
     final directWalkMinutes = estimateWalkingMinutes(directWalkMeters).toDouble();
 
-    // ── Dijkstra ──────────────────────────────────────────────────────────────
-    // Priority queue ordered by costMinutes (min-heap via SplayTreeMap)
-    final dist = <String, double>{};          // stopId → best cost so far
-    final best = <String, _Node>{};           // stopId → best node
+    // For far places, allow a bit more initial walking to reach a useful line.
+    final effectiveMaxWalkToBoardMeters = maxWalkToBoardMeters
+        .clamp(0, (directWalkMeters * 0.55).clamp(1200, 2200));
+
+    // Best-known cost per transit state: (stop, current line, transfers).
+    final distByState = <String, double>{};
     final queue = SplayTreeMap<double, Queue<_Node>>();
 
-    void enqueue(_Node node) {
-      final key = node.costMinutes;
-      queue.putIfAbsent(key, Queue.new).add(node);
-      if ((dist[node.stopId] ?? double.infinity) > node.costMinutes) {
-        dist[node.stopId] = node.costMinutes;
-        best[node.stopId] = node;
-      }
+    String stateKey(_Node node) {
+      final lineId = node.lineUsed?.id ?? 'walk';
+      final dir = node.reversed ? 'rev' : 'fwd';
+      final transferReady = node.legStopsRidden >= minBusLegStopsBeforeTransfer ? 1 : 0;
+      return '${node.stopId}|$lineId|$dir|${node.indexInLine}|${node.transfers}|$transferReady';
     }
 
-    // Seed: all stops reachable on foot from user within maxWalkToBoardMeters
+    void enqueue(_Node node) {
+      final key = stateKey(node);
+      if (node.costMinutes >= (distByState[key] ?? double.infinity)) return;
+      distByState[key] = node.costMinutes;
+      queue.putIfAbsent(node.costMinutes, Queue.new).add(node);
+    }
+
+    // Seed: all stops reachable on foot from user
     for (final line in allLines) {
       for (final stop in line.stops) {
         final walkM = Geolocator.distanceBetween(
           userLocation.latitude, userLocation.longitude,
           stop.lat, stop.lon,
         );
-        if (walkM > maxWalkToBoardMeters) continue;
-
+        if (walkM > effectiveMaxWalkToBoardMeters) continue;
         final walkMin = estimateWalkingMinutes(walkM).toDouble();
-        final node = _Node(
+        enqueue(_Node(
           stopId: stop.id,
           costMinutes: walkMin,
           walkMeters: walkM,
           lineUsed: null,
+          boardingStopId: null,
+          indexInLine: -1,
+          busStopsTaken: 0,
+          legStopsRidden: 0,
           transfers: 0,
-        );
-        if (walkMin < (dist[stop.id] ?? double.infinity)) {
-          enqueue(node);
-        }
+        ));
       }
     }
 
@@ -109,70 +171,103 @@ class TouristBusRoutePlanner {
       final current = bucket.removeFirst();
       if (bucket.isEmpty) queue.remove(minKey);
 
-      // Skip stale entries
-      if (current.costMinutes > (dist[current.stopId] ?? double.infinity)) continue;
+      // Stale entry
+      if (current.costMinutes > (distByState[stateKey(current)] ?? double.infinity)) continue;
 
-      // Reached destination stop
       if (current.stopId == destinationStop.id) {
+        if (current.busStopsTaken == 0) continue;
         destinationNode = current;
         break;
       }
 
-      if (current.transfers >= maxTransfers && current.lineUsed != null) continue;
-
-      // Expand: for each line passing through this stop, ride forward
-      // along the real stop sequence to every reachable stop.
       final currentStop = stopById[current.stopId];
       if (currentStop == null) continue;
 
-      for (final line in allLines) {
-        if (line.stops.isEmpty) continue;
+      final occurrences = stopOccurrences[current.stopId];
+      if (occurrences == null || occurrences.isEmpty) continue;
 
-        // Try both directions of the line
-        for (final sequence in [line.stops, line.stops.reversed.toList()]) {
-          final boardIdx = sequence.indexWhere((s) => s.id == current.stopId);
-          if (boardIdx < 0 || boardIdx == sequence.length - 1) continue;
+      for (final occurrence in occurrences) {
+        final direction = occurrence.direction;
+        final boardIdx = occurrence.index;
+        final sequence = direction.sequence;
+        if (boardIdx >= sequence.length - 1) continue;
 
-          final isTransfer = current.lineUsed != null && current.lineUsed!.id != line.id;
-          if (isTransfer && current.transfers >= maxTransfers) continue;
+        final nextIdx = boardIdx + 1;
+        final nextStop = sequence[nextIdx];
+        const busHopMinutes = 2.0;
 
-          final newTransfers = current.transfers + (isTransfer ? 1 : 0);
-          final transferPenalty = isTransfer ? 8.0 : 0.0;
+        // Continue on the current bus line only by advancing to the next stop.
+        final sameLine = current.lineUsed?.id == direction.line.id;
+        final sameDirection = current.reversed == direction.reversed;
+        final canContinueCurrentLeg =
+            current.lineUsed != null &&
+            sameLine &&
+            sameDirection &&
+            current.indexInLine == boardIdx;
 
-          // Ride forward stop by stop — each stop is a candidate node
-          for (var i = boardIdx + 1; i < sequence.length; i++) {
-            final nextStop = sequence[i];
-            final stopsRidden = i - boardIdx; // number of stops on bus
-            final busMin = estimateBusRideMinutes(stopsRidden + 1).toDouble();
+        if (canContinueCurrentLeg) {
+          final newCost = current.costMinutes + busHopMinutes;
+          enqueue(_Node(
+            stopId: nextStop.id,
+            costMinutes: newCost,
+            walkMeters: current.walkMeters,
+            prev: current,
+            lineUsed: direction.line,
+            boardingStopId: current.boardingStopId,
+            reversed: direction.reversed,
+            indexInLine: nextIdx,
+            busStopsTaken: current.busStopsTaken + 1,
+            legStopsRidden: current.legStopsRidden + 1,
+            transfers: current.transfers,
+          ));
+          continue;
+        }
 
-            // Detour guard: route distance vs straight line from boarding to here
-            final segment = sequence.sublist(boardIdx, i + 1);
-            final routeDist = _distanceAlongStops(segment);
-            final straightDist = Geolocator.distanceBetween(
-              currentStop.lat, currentStop.lon,
-              nextStop.lat, nextStop.lon,
-            );
-            if (straightDist > 0 && routeDist / straightDist > 2.5) break;
+        // Boarding from walking state.
+        if (current.lineUsed == null) {
+          final newCost = current.costMinutes + busHopMinutes;
+          enqueue(_Node(
+            stopId: nextStop.id,
+            costMinutes: newCost,
+            walkMeters: current.walkMeters,
+            prev: current,
+            lineUsed: direction.line,
+            boardingStopId: current.stopId,
+            reversed: direction.reversed,
+            indexInLine: nextIdx,
+            busStopsTaken: current.busStopsTaken + 1,
+            legStopsRidden: 1,
+            transfers: current.transfers,
+          ));
+          continue;
+        }
 
-            final newCost = current.costMinutes + busMin + transferPenalty;
-            if (newCost >= (dist[nextStop.id] ?? double.infinity)) continue;
-
-            enqueue(_Node(
-              stopId: nextStop.id,
-              costMinutes: newCost,
-              walkMeters: current.walkMeters,
-              prev: current,
-              lineUsed: line,
-              transfers: newTransfers,
-            ));
-          }
+        // Transfer only to a different line, with a realistic penalty.
+        if (!sameLine &&
+            current.transfers < maxTransfers &&
+            current.legStopsRidden >= minBusLegStopsBeforeTransfer) {
+          final newTransfers = current.transfers + 1;
+          final transferPenalty = 6.0;
+          final newCost = current.costMinutes + transferPenalty + busHopMinutes;
+          enqueue(_Node(
+            stopId: nextStop.id,
+            costMinutes: newCost,
+            walkMeters: current.walkMeters,
+            prev: current,
+            lineUsed: direction.line,
+            boardingStopId: current.stopId,
+            reversed: direction.reversed,
+            indexInLine: nextIdx,
+            busStopsTaken: current.busStopsTaken + 1,
+            legStopsRidden: 1,
+            transfers: newTransfers,
+          ));
         }
       }
     }
 
     if (destinationNode == null) return null;
 
-    // Walk from destination stop to the place
     final walkFromStopMeters = Geolocator.distanceBetween(
       destinationStop.lat, destinationStop.lon,
       place.location.latitude, place.location.longitude,
@@ -180,35 +275,31 @@ class TouristBusRoutePlanner {
     final walkFromStopMinutes = estimateWalkingMinutes(walkFromStopMeters);
     final totalMinutes = destinationNode.costMinutes.round() + walkFromStopMinutes;
 
-    // Reject if bus doesn't save enough vs walking directly
     if ((directWalkMinutes - totalMinutes) < minSavingMinutes) return null;
 
-    // ── Reconstruct path ──────────────────────────────────────────────────────
-    final segments = _reconstructSegments(destinationNode, stopById);
+    // Reconstruct segments with ALL intermediate stops from the real line sequence
+    final segments = _reconstructSegments(destinationNode, stopById, allLines);
     if (segments.isEmpty) return null;
 
     final allRouteStops = <StopModel>[];
     for (var i = 0; i < segments.length; i++) {
-      if (i == 0) {
-        allRouteStops.addAll(segments[i].routeStops);
-      } else {
-        allRouteStops.addAll(segments[i].routeStops.skip(1));
-      }
+      allRouteStops.addAll(
+        i == 0 ? segments[i].routeStops : segments[i].routeStops.skip(1),
+      );
     }
-
-    final routePoints = <LatLng>[
-      userLocation,
-      ...allRouteStops.map((s) => LatLng(s.lat, s.lon)),
-      place.location,
-    ];
 
     final walkToBoardMeters = destinationNode.walkMeters;
     final walkToBoardMinutes = estimateWalkingMinutes(walkToBoardMeters);
     final busRideMinutes = totalMinutes - walkToBoardMinutes - walkFromStopMinutes;
 
-    final totalDistanceMeters = walkToBoardMeters +
-        walkFromStopMeters +
-        calculateSegmentDistance(allRouteStops);
+    assert(() {
+      final segmentSizes = segments.map((s) => s.routeStops.length).join(',');
+      final stopNames = allRouteStops.map((s) => s.name).join(' -> ');
+      debugPrint('[TouristBusRoutePlanner] place=${place.name} destStop=${destinationStop.name} '
+          'segments=${segments.length} segmentStops=[$segmentSizes] totalStops=${allRouteStops.length}');
+      debugPrint('[TouristBusRoutePlanner] routeStops=$stopNames');
+      return true;
+    }());
 
     return TouristBusRoutePlan(
       place: place,
@@ -217,69 +308,112 @@ class TouristBusRoutePlanner {
       boardingStop: segments.first.boardingStop,
       segments: segments,
       routeStops: allRouteStops,
-      routePoints: routePoints,
+      routePoints: [
+        userLocation,
+        ...allRouteStops.map((s) => LatLng(s.lat, s.lon)),
+        place.location,
+      ],
       walkToBoardMeters: walkToBoardMeters,
       walkToBoardMinutes: walkToBoardMinutes,
       walkFromStopToPlaceMeters: walkFromStopMeters,
       walkFromStopToPlaceMinutes: walkFromStopMinutes,
       busRideMinutes: busRideMinutes.clamp(0, 999),
-      totalDistanceMeters: totalDistanceMeters,
+      totalDistanceMeters: walkToBoardMeters +
+          walkFromStopMeters +
+          calculateSegmentDistance(allRouteStops),
       totalDurationMinutes: totalMinutes,
     );
   }
 
-  // ── Reconstruct segments from DP back-pointers ────────────────────────────
+  // ── Reconstruct segments with full intermediate stops ─────────────────────
+  //
+  // The DP back-pointer chain only stores (boardingStopId → arrivalStopId).
+  // To get ALL intermediate stops we look up the real line sequence and
+  // extract the slice from boardingStopId to arrivalStopId.
 
   static List<TouristBusSegment> _reconstructSegments(
     _Node destinationNode,
     Map<String, StopModel> stopById,
+    List<LineModel> allLines,
   ) {
-    // Walk back through prev pointers collecting (line, stopId) pairs
-    var path = <_Node>[];
-    _Node? n = destinationNode;
-    while (n != null) {
-      path.add(n);
-      n = n.prev;
+    final lineById = {for (final line in allLines) line.id: line};
+
+    // Reconstruct full path from destination back to the origin.
+    final path = <_Node>[];
+    _Node? node = destinationNode;
+    while (node != null) {
+      path.add(node);
+      node = node.prev;
     }
-    path = path.reversed.toList();
+    final nodes = path.reversed.toList();
 
-    // Group consecutive nodes that share the same line into segments
     final segments = <TouristBusSegment>[];
-    var segStart = 0;
+    var i = 0;
+    while (i < nodes.length) {
+      final current = nodes[i];
 
-    for (var i = 1; i <= path.length - 1; i++) {
-      final isLast = i == path.length - 1;
+      // Skip non-bus nodes.
+      if (current.lineUsed == null || current.boardingStopId == null) {
+        i++;
+        continue;
+      }
 
-      if (isLast || (path[i].lineUsed != null &&
-          i + 1 < path.length &&
-          path[i + 1].lineUsed != null &&
-          path[i].lineUsed!.id != path[i + 1].lineUsed!.id)) {
-        // Segment from segStart to i
-        final segNodes = path.sublist(segStart, i + 1);
-        final line = segNodes.last.lineUsed;
-        if (line == null) { segStart = i; continue; }
+      final line = lineById[current.lineUsed!.id];
+      if (line == null) {
+        i++;
+        continue;
+      }
 
-        final stops = segNodes
-            .map((node) => stopById[node.stopId])
-            .whereType<StopModel>()
-            .toList();
+      final boardingStopId = current.boardingStopId!;
+      final reversed = current.reversed;
 
-        if (stops.length < 2) { segStart = i; continue; }
+      // Group all consecutive nodes that belong to the same bus leg.
+      var j = i;
+      while (
+        j + 1 < nodes.length &&
+        nodes[j + 1].lineUsed?.id == current.lineUsed!.id &&
+        nodes[j + 1].boardingStopId == boardingStopId
+      ) {
+        j++;
+      }
 
+      final arrivalStopId = nodes[j].stopId;
+      final sequence = reversed
+          ? line.stops.reversed.toList()
+          : line.stops;
+
+      final fromIdx = sequence.indexWhere((s) => s.id == boardingStopId);
+      final toIdx = sequence.indexWhere((s) => s.id == arrivalStopId);
+
+      if (fromIdx == -1 || toIdx == -1) {
+        i = j + 1;
+        continue;
+      }
+
+        final directionalStops = fromIdx <= toIdx
+          ? sequence.sublist(fromIdx, toIdx + 1)
+          : sequence.sublist(toIdx, fromIdx + 1).reversed.toList();
+
+        final routeStops = directionalStops
+          .map((s) => stopById[s.id] ?? s)
+          .toList();
+
+      if (routeStops.length >= 2) {
         segments.add(TouristBusSegment(
           line: line,
-          boardingStop: stops.first,
-          destinationStop: stops.last,
-          routeStops: stops,
+          boardingStop: routeStops.first,
+          destinationStop: routeStops.last,
+          routeStops: routeStops,
         ));
-        segStart = i;
       }
+
+      i = j + 1;
     }
 
     return segments;
   }
 
-  // ── Nearby stops (unchanged API, uses buildPlan internally) ───────────────
+  // ── Nearby stops ──────────────────────────────────────────────────────────
 
   static List<TouristNearbyStopOption> findNearbyStops({
     required TouristPlace place,
@@ -316,10 +450,9 @@ class TouristBusRoutePlanner {
             userLocation: userLocation,
             destinationStop: stop,
             allLines: [line],
-            maxWalkToBoardMeters: maxWalkToBoardMeters.isInfinite
-                ? 1200
-                : maxWalkToBoardMeters,
-            minSavingMinutes: 0, // show all options in the sheet
+            maxWalkToBoardMeters:
+                maxWalkToBoardMeters.isInfinite ? 1200 : maxWalkToBoardMeters,
+            minSavingMinutes: 0,
           );
           if (plan == null) continue;
           filteredServingLines.add(line);
@@ -341,8 +474,10 @@ class TouristBusRoutePlanner {
     }
 
     options.sort((a, b) {
-      if (a.walkFromUserToBoardMeters != null && b.walkFromUserToBoardMeters != null) {
-        final d = a.walkFromUserToBoardMeters!.compareTo(b.walkFromUserToBoardMeters!);
+      if (a.walkFromUserToBoardMeters != null &&
+          b.walkFromUserToBoardMeters != null) {
+        final d = a.walkFromUserToBoardMeters!
+            .compareTo(b.walkFromUserToBoardMeters!);
         if (d != 0) return d;
       }
       return a.distanceToPlaceMeters.compareTo(b.distanceToPlaceMeters);
@@ -351,16 +486,4 @@ class TouristBusRoutePlanner {
     return options.length <= limit ? options : options.take(limit).toList();
   }
 
-  // ── Helpers ───────────────────────────────────────────────────────────────
-
-  static double _distanceAlongStops(List<StopModel> stops) {
-    var d = 0.0;
-    for (var i = 0; i < stops.length - 1; i++) {
-      d += Geolocator.distanceBetween(
-        stops[i].lat, stops[i].lon,
-        stops[i + 1].lat, stops[i + 1].lon,
-      );
-    }
-    return d;
-  }
 }
