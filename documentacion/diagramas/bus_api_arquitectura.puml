@@ -1,0 +1,69 @@
+@startuml
+left to right direction
+skinparam componentStyle rectangle
+skinparam shadowing false
+skinparam packageStyle rectangle
+skinparam roundcorner 12
+
+package "App Flutter" {
+  [Mapa turístico / bus] as MapView
+  [Líneas] as LinesView
+  [MapViewModel] as MapVM
+  [LinesViewModel] as LinesVM
+  [BusApiService] as BusApiService
+
+  MapView --> MapVM : estado de mapa\n+ rutas turísticas
+  LinesView --> LinesVM : listado y detalle\nde líneas / paradas
+  MapVM --> BusApiService : consulta líneas\nparadas y llegadas
+  LinesVM --> BusApiService : consulta líneas\nparadas y llegadas
+}
+
+node "API de bus\nbackend/almeria_busmaps_api.py" as BusApiBackend {
+  component "GET /lines" as LinesEndpoint
+  component "GET /lines/{line_id}/stops" as StopsByLineEndpoint
+  component "GET /lines/{line_id}/arrivals" as LineArrivalsEndpoint
+  component "GET /stops/{stop_id}" as StopDetailEndpoint
+  component "GET /stops/{stop_id}/arrivals" as StopArrivalsEndpoint
+}
+
+database "GTFS ALSA\nalsa-autobuses.zip" as GtfsData {
+  artifact "routes.txt" as RoutesTxt
+  artifact "stops.txt" as StopsTxt
+  artifact "trips.txt" as TripsTxt
+  artifact "stop_times.txt" as StopTimesTxt
+}
+
+cloud "Base de datos lógica\nparadas, líneas, trips y tiempos" as LogicalData
+
+BusApiService --> BusApiBackend : HTTP JSON\n(baseUrl :5000)
+LinesEndpoint --> LogicalData
+StopsByLineEndpoint --> LogicalData
+LineArrivalsEndpoint --> LogicalData
+StopDetailEndpoint --> LogicalData
+StopArrivalsEndpoint --> LogicalData
+LogicalData --> GtfsData : lee y normaliza
+RoutesTxt --> LogicalData
+StopsTxt --> LogicalData
+TripsTxt --> LogicalData
+StopTimesTxt --> LogicalData
+
+note right of BusApiBackend
+  Endpoints principales:
+  - /lines
+  - /lines/{line_id}/stops
+  - /lines/{line_id}/arrivals
+  - /stops/{stop_id}
+  - /stops/{stop_id}/arrivals
+
+  El cliente Flutter consume estos endpoints
+  a través de BusApiService.
+end note
+
+note bottom of MapVM
+  El cálculo de rutas peatonales usa OSRM
+  desde el lado cliente cuando hace falta.
+  El backend de bus aporta solo datos de red
+  y llegadas programadas.
+end note
+
+@enduml

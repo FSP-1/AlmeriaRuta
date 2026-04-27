@@ -10,6 +10,12 @@ Este documento describe, de forma compacta y sin código, las funcionalidades ge
 
 - Punto de entrada y hub de navegación: presenta accesos rápidos a los módulos principales y el estado general de la aplicación.
 
+### Descripción ampliada
+
+- La pantalla Home actúa como la capa de descubrimiento y acceso rápido: no contiene lógica de negocio compleja, sino atajos que llevan al usuario a módulos concretos (Mapa, Líneas, Tickets, Validación, Recargas). Su responsabilidad es presentar el estado resumido de los servicios (por ejemplo, notificaciones urgentes o accesos directos a funciones recientes) y facilitar la elección del flujo siguiente.
+
+La Home también contiene bloques informativos (por ejemplo, avisos municipales o accesos a favoritos) y manejadores de contexto (usuario logueado, modo turista). El objetivo de diseño es que la Home sea ligera, instantánea y orientada a la acción, delegando la carga y el procesamiento a sus respectivos ViewModels y servicios.
+
 ### Subfuncionalidades clave
 
 - Tarjetas de acceso rápido a módulos (Líneas, Tickets, Validación, Favoritos).
@@ -33,6 +39,12 @@ Este documento describe, de forma compacta y sin código, las funcionalidades ge
 ### Descripción
 
 - Mapa que muestra paradas, puntos turísticos y permite calcular rutas a pie o combinadas con bus.
+
+### Descripción ampliada
+
+- El mapa es el centro operativo de la app: combina datos estáticos (paradas, líneas, POIs turísticos) con datos dinámicos (posición del usuario, llegadas estimadas, alertas). Debe ofrecer distintos niveles de interacción: exploración (buscar y filtrar), planificación (calcular rutas combinadas, ver detalles de paradas) y navegación (seguir una ruta en tiempo real).
+
+El `MapViewModel` es responsable de reconciliar las distintas fuentes de datos y exponer solo el estado necesario para la UI (lista de marcadores filtrados, polilíneas segmentadas, estado de navegación). El servicio de routing (OSRM u otro) se usa únicamente para geometrías de calle y rutas a pie; las rutas en bus se construyen con la secuencia real de paradas para mantener fidelidad visual.
 
 ### Subfuncionalidades clave
 
@@ -60,6 +72,12 @@ Este documento describe, de forma compacta y sin código, las funcionalidades ge
 
 - Consulta y exploración de la red de autobuses: listado de líneas, detalle de cada línea y sus paradas.
 
+### Descripción ampliada
+
+- El módulo de Líneas sirve para entender la topología de la red: cada línea expone su recorrido, número de paradas, horarios y frecuencias. Las paradas contienen metadatos (identificadores, coordenadas, líneas asociadas) y pueden consultarse en detalle para ver tiempos de llegada y opciones de conexión.
+
+Los ViewModels de líneas implementan caching y deduplicación de llamadas al backend, presentando la información de forma reactiva a las vistas. Cuando el usuario selecciona 'ver en mapa', la app debe centrar la vista e indicar la parada seleccionada sin recalcular todo el dataset.
+
 ### Subfuncionalidades clave
 
 - Listado de líneas con información resumida (frecuencia, horario).
@@ -85,6 +103,10 @@ Este documento describe, de forma compacta y sin código, las funcionalidades ge
 
 - Flujo para adquirir billetes o recargas digitales desde la app.
 
+### Descripción ampliada
+
+- El flujo de compra está pensado para ser sencillo y transaccional: seleccionar tipo/cantidad, revisar el precio, confirmar y generar un comprobante digital. El ViewModel valida entradas, calcula totales y delega el proceso de pago al servicio correspondiente. Tras la compra el ticket queda persistido en el historial y, si aplica, se emite una notificación de confirmación.
+
 ### Subfuncionalidades clave
 
 - Selección de tipo de ticket y cantidad.
@@ -109,6 +131,10 @@ Este documento describe, de forma compacta y sin código, las funcionalidades ge
 
 - Validación mediante QR/NFC y control de usos con trazabilidad.
 
+### Descripción ampliada
+
+- La validación gestiona el ciclo de comprobación de un viaje (emisión y verificación de tokens o QR). Debe garantizar idempotencia (evitar validaciones duplicadas) y trazabilidad (registro del resultado con sello temporal). La UI muestra el resultado inmediato y posibles acciones correctivas (rechazar/reintentar).
+
 ### Subfuncionalidades clave
 
 - Emisión de QR por viaje / ticket.
@@ -129,6 +155,10 @@ Este documento describe, de forma compacta y sin código, las funcionalidades ge
 ### Descripción
 
 - Gestión de tarjetas virtuales y recarga/renovación de títulos.
+
+### Descripción ampliada
+
+- Gestiona instrumentos de pago/títulos (tarjeta virtual, perfiles de recarga). Las operaciones críticas (recarga, expiración) deben exponer confirmaciones claras y conservar un registro. Integrar notificaciones de saldo bajo y caducidad mejora la experiencia.
 
 ### Subfuncionalidades clave
 
@@ -152,6 +182,10 @@ Este documento describe, de forma compacta y sin código, las funcionalidades ge
 
 - Módulo compartido para búsqueda normalizada y gestión de favoritos entre pantallas.
 
+### Descripción ampliada
+
+- Módulo transversal que permite búsqueda normalizada (autocompletado, normalización fonética mínima) y guarda accesos recurrentes en favoritos. Debe ofrecer interfaces reutilizables para múltiples vistas y un contrato claro para persistencia local y sincronización.
+
 ### Subfuncionalidades clave
 
 - Campo de búsqueda reutilizable y normalización de texto.
@@ -172,6 +206,10 @@ Este documento describe, de forma compacta y sin código, las funcionalidades ge
 ### Descripción
 
 - Gestión de notificaciones del usuario: subscribirse a avisos de llegada, alarmas de recarga y mensajes remotos.
+
+### Descripción ampliada
+
+- Cobertura completa de notificaciones locales y remotas: configuración de reglas de llegada a paradas, recordatorios de recarga, y despliegue de bandeja remota. La lógica de scheduling se separa del UI y debe considerar permisos nativos, política de throttling y persistencia de estado.
 
 ### Subfuncionalidades clave
 
@@ -195,6 +233,10 @@ Este documento describe, de forma compacta y sin código, las funcionalidades ge
 
 - Servicios de información urbana que no son rutas de transporte pero que complementan la experiencia: parkings, zona azul, estaciones de bikeshare, etc.
 
+### Descripción ampliada
+
+- Contiene fuentes de información urbana complementaria: parkings, zona azul, estaciones de bicicletas, etc. Estos servicios son mayormente informativos y deben integrarse como capas en el mapa o listados, con posibles acciones (navegar, abrir pasarela de pago, ver disponibilidad) cuando la API lo soporte.
+
 ### Subfuncionalidades clave
 
 - Listado y visualización de recursos urbanos por categoría.
@@ -216,6 +258,12 @@ Este documento describe, de forma compacta y sin código, las funcionalidades ge
 ### Descripción
 
 - Patrón de integración entre vistas, viewmodels y servicios que consumen el backend.
+
+### Descripción ampliada
+
+- Patrón técnico de integración: separar responsabilidades entre ViewModels (estado y orquestación), Servicios (comunicación HTTP / parsing) y utilidades (cache, deduplicación, manejo de errores). Para operaciones pesadas (routing, ensamblado de polilíneas) se recomienda offloading a isolates o procesos background y aplicar cache con TTL para reducir latencia y uso de red.
+
+Incluye buenas prácticas: encapsular endpoints en servicios testables, centralizar política de reintento/timeout y exponer contratos de datos estables hacia las vistas.
 
 ### Subfuncionalidades clave
 
@@ -247,3 +295,7 @@ Ejemplo de entrada:
   - Subfuncionalidad: Vista de filtros
     - Captura: documentacion/screenshots/map_filters_panel.png
     - Comentario: muestra filtros por distancia y línea aplicada; útil para validar que el filtrado coincide con las paradas mostradas.
+
+---
+
+He ampliado la descripción de cada bloque para que el documento sea más útil como referencia de producto y guía para desarrolladores. Actualizo la lista TODO a continuación.

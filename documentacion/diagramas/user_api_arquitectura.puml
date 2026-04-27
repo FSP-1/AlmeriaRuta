@@ -1,0 +1,68 @@
+@startuml
+top to bottom direction
+skinparam componentStyle rectangle
+skinparam shadowing false
+skinparam packageStyle rectangle
+skinparam roundcorner 12
+
+package "App Flutter" {
+  [AuthScreen] as AuthScreen
+  [AuthViewModel] as AuthVM
+  [AuthApiService] as AuthApiService
+  [SharedPreferences] as SharedPrefs
+
+  AuthScreen --> AuthVM : login / register / guest\nperfil / contraseña / recuperación
+  AuthVM --> AuthApiService : llamadas HTTP\n+ estado de sesión
+  AuthVM --> SharedPrefs : token, usuario\navatar e hidratación local
+}
+
+node "API de autenticación\nbackend/almeria_auth_api.py" as AuthBackend {
+  component "Blueprint auth" as AuthBlueprint
+  component "AuthService" as AuthService
+  component "AuthRepository" as AuthRepository
+}
+
+database "MySQL" as MySql {
+  folder "users_table" {
+    component "users table" as UsersTable
+  }
+  folder "app_notifications_table" {
+    component "app_notifications table" as AppNotificationsTable
+  }
+  folder "user_transport_profile_table" {
+    component "user transport profile" as UserTransportProfileTable
+  }
+}
+
+cloud "Token firmado\n+ validación de sesión" as TokenCloud
+
+AuthApiService --> AuthBlueprint : HTTP JSON\n(baseUrl :5001)
+AuthBlueprint --> AuthService : valida / transforma\nla petición
+AuthService --> AuthRepository : consulta / guarda\nusuarios, notificaciones\ny perfil de tarjeta
+AuthRepository --> MySql : SQL con PyMySQL
+AuthService --> TokenCloud : genera / parsea token\nitsdangerous
+TokenCloud --> AuthVM : token + usuario\n(session persistida)
+MySql --> AuthRepository : filas y resultados
+
+note right of AuthBlueprint
+  Endpoints principales:
+  - /auth/register
+  - /auth/login
+  - /auth/guest
+  - /auth/me
+  - /auth/me/password
+  - /auth/recover/password
+  - /auth/notifications
+  - /auth/me/transport-profile
+
+  El cliente Flutter consume estos endpoints
+  a través de AuthApiService.
+end note
+
+note bottom of AuthVM
+  AuthViewModel mantiene la sesión local,
+  sincroniza token/usuario con SharedPreferences
+  y valida sesión con /auth/me al iniciar.
+end note
+
+@enduml
