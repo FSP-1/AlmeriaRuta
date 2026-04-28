@@ -7,12 +7,11 @@ import '../../../core/theme/app_theme.dart';
 import '../../../shared/services/line_models.dart';
 import '../models/filter_mode.dart';
 import '../viewmodels/map_viewmodel.dart';
-import '../widgets/line_filter_sheet.dart';
+import '../filters/map_filter_menu_sheet.dart';
 import '../widgets/map_floating_buttons.dart';
 import '../widgets/stop_info_sheet.dart';
 import '../widgets/tourist_bus_stop_info_sheet.dart';
 import '../tourism/viewmodels/tourism_viewmodel.dart';
-import '../tourism/widgets/tourism_category_sheet.dart';
 import 'map_fab_actions.dart';
 import 'map_initialization.dart';
 import 'map_onboarding_flow.dart';
@@ -132,10 +131,11 @@ class _OptimizedMapViewState extends State<OptimizedMapView> {
                   if (!isTouristBusMode)
                     MapOverlaysBuilder.buildFilterBar(
                       mapViewModel,
-                      () => showModalBottomSheet(
+                      tourismViewModel,
+                      () => showMapFilterMenu(
                         context: context,
-                        isScrollControlled: true,
-                        builder: (_) => LineFilterSheet(mapViewModel: mapViewModel),
+                        mapViewModel: mapViewModel,
+                        tourismViewModel: tourismViewModel,
                       ),
                     ),
                   Expanded(
@@ -164,24 +164,16 @@ class _OptimizedMapViewState extends State<OptimizedMapView> {
               ),
               ...MapOverlaysBuilder.buildPositionedOverlays(
                 mapViewModel: mapViewModel,
-                tourismViewModel: tourismViewModel,
                 isFavoritesFilterEmpty: isFavoritesEmpty,
                 isTouristBusRouteOnlyMode: isTouristBusMode,
-                hasActiveZone: mapViewModel.activeZone != null,
-                onClearZoneFilter: mapViewModel.clearZoneFilter,
-                onOpenTourismSelector: () => showTourismCategorySelector(
-                  context: context,
-                  tourismViewModel: tourismViewModel,
-                ),
               ),
             ],
           );
         },
       ),
-      floatingActionButton: Consumer2<MapViewModel, TourismViewModel>(
-        builder: (context, mapViewModel, tourismViewModel, _) => MapFloatingButtons(
+      floatingActionButton: Consumer<MapViewModel>(
+        builder: (context, mapViewModel, _) => MapFloatingButtons(
           hasActiveRoute: mapViewModel.activeRoute.isNotEmpty,
-          touristModeEnabled: tourismViewModel.isEnabled,
           onClearRoute: mapViewModel.clearRoute,
           onMyLocation: () => MapFabActions.centerOnUser(
             mapController: _mapController,
@@ -191,15 +183,6 @@ class _OptimizedMapViewState extends State<OptimizedMapView> {
             context: context,
             mapViewModel: mapViewModel,
             mapController: _mapController,
-          ),
-          onZones: () => MapFabActions.openZones(
-            context: context,
-            mapViewModel: mapViewModel,
-            mapController: _mapController,
-          ),
-          onTouristMode: () => MapFabActions.toggleTouristMode(
-            context: context,
-            tourismViewModel: tourismViewModel,
           ),
         ),
       ),

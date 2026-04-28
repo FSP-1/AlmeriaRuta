@@ -25,6 +25,35 @@ Rutas clave:
 - `lib/features/home/` home y navegación principal
 - `lib/features/notifications/` configuración y scheduling de notificaciones (MVVM)
 
+### Filtros del mapa
+
+El mapa usa un sistema de filtros organizado por carpetas para que sea fácil añadir nuevas capas sin mezclar lógica:
+
+```text
+lib/features/map/filters/
+├── README.md
+├── map_filter_menu_sheet.dart
+├── shared/
+│   └── filter_option_tile.dart
+├── bus/
+│   ├── bus_filter_section.dart
+│   └── line_selector_sheet.dart
+├── tourism/
+│   └── tourism_filter_section.dart
+└── zones/
+	└── zone_filter_section.dart
+```
+
+Regla práctica:
+- Si añades una nueva capa al mapa, crea primero su carpeta dentro de `lib/features/map/filters/`.
+- Después registra esa capa en `map_filter_menu_sheet.dart`.
+- `shared/` es para piezas reutilizables entre filtros.
+
+Ejemplos de futuras capas:
+- `pedestrian/`
+- `scooters/`
+- `bike_lanes/`
+
 ## Ejecución
 
 ```bash

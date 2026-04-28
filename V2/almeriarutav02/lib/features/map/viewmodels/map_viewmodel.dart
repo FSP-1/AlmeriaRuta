@@ -35,6 +35,7 @@ class MapViewModel extends ChangeNotifier {
   List<StopModel> _stops = [];
   List<LineModel> _lines = [];
   LatLng? _userLocation;
+  bool _showBusStops = true;
   MapFilter _currentFilter = const MapFilter.nearby();
   Set<String> _favoriteStopIds = {};
   ZoneModel? _activeZone;
@@ -69,6 +70,7 @@ class MapViewModel extends ChangeNotifier {
   List<StopModel> get filteredStops => _filteredStops();
   List<LineModel> get lines => _lines;
   LatLng? get userLocation => _userLocation;
+  bool get showBusStops => _showBusStops;
   MapFilter get currentFilter => _currentFilter;
   bool get isLoadingStops => _isLoadingStops;
   bool get isLoading => _isLoading;
@@ -169,7 +171,15 @@ class MapViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  void setShowBusStops(bool value) {
+    if (_showBusStops == value) return;
+    _showBusStops = value;
+    notifyListeners();
+  }
+
   List<StopModel> _filteredStops() {
+    if (!_showBusStops) return <StopModel>[];
+
     final byMode = switch (_currentFilter.mode) {
       FilterMode.nearby => _userLocation == null
           ? <StopModel>[]

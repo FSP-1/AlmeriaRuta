@@ -1,23 +1,33 @@
 import 'package:flutter/material.dart';
-import '../viewmodels/map_viewmodel.dart';
-import '../models/filter_mode.dart';
-import '../../../core/theme/app_theme.dart';
-import '../../../shared/services/line_search_utils.dart';
-import '../../../shared/widgets/app_search_field.dart';
 
-class LineFilterSheet extends StatefulWidget {
-  final MapViewModel mapViewModel;
+import '../../models/filter_mode.dart';
+import '../../viewmodels/map_viewmodel.dart';
+import '../../../../shared/services/line_search_utils.dart';
+import '../../../../shared/widgets/app_search_field.dart';
 
-  const LineFilterSheet({
-    super.key,
-    required this.mapViewModel,
-  });
-
-  @override
-  State<LineFilterSheet> createState() => _LineFilterSheetState();
+Future<void> showLineSelectorSheet({
+  required BuildContext context,
+  required MapViewModel mapViewModel,
+}) {
+  return showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    useSafeArea: true,
+    backgroundColor: Colors.white,
+    builder: (_) => _LineSelectorSheet(mapViewModel: mapViewModel),
+  );
 }
 
-class _LineFilterSheetState extends State<LineFilterSheet> {
+class _LineSelectorSheet extends StatefulWidget {
+  final MapViewModel mapViewModel;
+
+  const _LineSelectorSheet({required this.mapViewModel});
+
+  @override
+  State<_LineSelectorSheet> createState() => _LineSelectorSheetState();
+}
+
+class _LineSelectorSheetState extends State<_LineSelectorSheet> {
   final TextEditingController _searchController = TextEditingController();
   String _query = '';
 
@@ -75,10 +85,7 @@ class _LineFilterSheetState extends State<LineFilterSheet> {
                       itemBuilder: (context, index) {
                         final line = filteredLines[index];
                         return ListTile(
-                          leading: const Icon(
-                            Icons.directions_bus,
-                            color: AppTheme.primaryRed,
-                          ),
+                          leading: const Icon(Icons.directions_bus, color: Colors.red),
                           title: Text('Línea ${line.name}'),
                           subtitle: Text(line.fullName),
                           onTap: () {

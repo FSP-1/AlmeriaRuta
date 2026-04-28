@@ -5,8 +5,6 @@ import 'package:latlong2/latlong.dart';
 import '../models/filter_mode.dart';
 import '../viewmodels/map_viewmodel.dart';
 import '../widgets/favorites_sheet.dart';
-import '../widgets/map_selection_sheets.dart';
-import '../tourism/viewmodels/tourism_viewmodel.dart';
 
 class MapFabActions {
   static void centerOnUser({
@@ -47,28 +45,4 @@ class MapFabActions {
     mapViewModel.refreshFavoriteStops();
   }
 
-  static Future<void> openZones({
-    required BuildContext context,
-    required MapViewModel mapViewModel,
-    required MapController mapController,
-  }) {
-    return showZoneSelector(
-      context: context,
-      mapViewModel: mapViewModel,
-      mapController: mapController,
-    );
-  }
-
-  static void toggleTouristMode({
-    required BuildContext context,
-    required TourismViewModel tourismViewModel,
-  }) {
-    tourismViewModel.toggleEnabled();
-    final text = tourismViewModel.isEnabled
-        ? 'Modo turistico activado'
-        : 'Modo turistico desactivado';
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(text), duration: const Duration(seconds: 1)),
-    );
-  }
 }

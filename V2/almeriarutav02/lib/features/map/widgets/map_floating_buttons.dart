@@ -3,22 +3,16 @@ import '../../../core/theme/app_theme.dart';
 
 class MapFloatingButtons extends StatelessWidget {
   final bool hasActiveRoute;
-  final bool touristModeEnabled;
   final VoidCallback onClearRoute;
   final VoidCallback onMyLocation;
   final VoidCallback onFavorites;
-  final VoidCallback onZones;
-  final VoidCallback onTouristMode;
 
   const MapFloatingButtons({
     super.key,
     required this.hasActiveRoute,
-    required this.touristModeEnabled,
     required this.onClearRoute,
     required this.onMyLocation,
     required this.onFavorites,
-    required this.onZones,
-    required this.onTouristMode,
   });
 
   @override
@@ -37,26 +31,6 @@ class MapFloatingButtons extends StatelessWidget {
             iconColor: Colors.white,
             shadowColor: Colors.black.withValues(alpha: 0.2),
             onPressed: onFavorites,
-          ),
-          const SizedBox(height: 12),
-          // Boton de filtro por zonas
-          _buildFloatingButton(
-            heroTag: "zones",
-            backgroundColor: Colors.green,
-            icon: Icons.map,
-            iconColor: Colors.white,
-            shadowColor: Colors.black.withValues(alpha: 0.2),
-            onPressed: onZones,
-          ),
-          const SizedBox(height: 12),
-          // Boton modo turistico
-          _buildFloatingButton(
-            heroTag: "tourist_mode",
-            backgroundColor: touristModeEnabled ? Colors.blue : Colors.white,
-            icon: Icons.camera_alt,
-            iconColor: touristModeEnabled ? Colors.white : Colors.blue,
-            shadowColor: Colors.black.withValues(alpha: 0.2),
-            onPressed: onTouristMode,
           ),
           const SizedBox(height: 12),
           // Botón cerrar ruta (si existe)

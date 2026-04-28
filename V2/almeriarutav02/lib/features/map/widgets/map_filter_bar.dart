@@ -1,107 +1,85 @@
 import 'package:flutter/material.dart';
 import '../viewmodels/map_viewmodel.dart';
+import '../tourism/viewmodels/tourism_viewmodel.dart';
 import '../models/filter_mode.dart';
-import '../../../core/theme/app_theme.dart';
 
 class MapFilterBar extends StatelessWidget {
   final MapViewModel mapViewModel;
-  final VoidCallback onOpenLineSelector;
+  final TourismViewModel tourismViewModel;
+  final VoidCallback onOpenFiltersMenu;
 
   const MapFilterBar({
     super.key,
     required this.mapViewModel,
-    required this.onOpenLineSelector,
+    required this.tourismViewModel,
+    required this.onOpenFiltersMenu,
   });
-
-  static const String _selectedLineValue = '__selected_line__';
 
   @override
   Widget build(BuildContext context) {
-    String? selectedLineName;
-    if (mapViewModel.currentFilter.mode == FilterMode.line &&
-        mapViewModel.currentFilter.lineId != null) {
-      for (final line in mapViewModel.lines) {
-        if (line.id == mapViewModel.currentFilter.lineId) {
-          selectedLineName = line.name;
-          break;
-        }
-      }
-    }
+    final filterLabel = switch (mapViewModel.currentFilter.mode) {
+      FilterMode.nearby => 'Bus: cercanas',
+      FilterMode.all => 'Bus: todas',
+      FilterMode.favorites => 'Bus: favoritas',
+      FilterMode.line => 'Bus: línea ${mapViewModel.currentFilter.lineId ?? '-'}',
+    };
+
+    final tourismLabel = tourismViewModel.isEnabled
+        ? 'Turismo: ${tourismViewModel.selectedCategory == null ? 'todos' : 'categoría'}'
+        : 'Turismo: oculto';
+
+    final zoneLabel = mapViewModel.activeZone == null
+        ? 'Zona: todas'
+        : 'Zona: ${mapViewModel.activeZone!.name}';
 
     return Container(
-      padding: const EdgeInsets.all(8),
-      color: Colors.grey[100],
-      child: DropdownButton<String>(
-        value: mapViewModel.currentFilter.mode == FilterMode.line
-            ? _selectedLineValue
-            : mapViewModel.currentFilter.mode.name,
-        hint: const Text('Filtro'),
-        isExpanded: true,
-        items: [
-          const DropdownMenuItem(
-            value: 'nearby',
-            child: Row(
-              children: [
-                Icon(Icons.near_me, size: 16, color: AppTheme.primaryRed),
-                SizedBox(width: 8),
-                Text('Cercanas'),
-              ],
+      padding: const EdgeInsets.fromLTRB(8, 8, 8, 6),
+      color: Colors.white,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          FilledButton.icon(
+            style: FilledButton.styleFrom(
+              backgroundColor: const Color(0xFFB42318),
+              foregroundColor: Colors.white,
             ),
+            onPressed: onOpenFiltersMenu,
+            icon: const Icon(Icons.tune),
+            label: const Text('Capas y filtros del mapa'),
           ),
-          const DropdownMenuItem(
-            value: 'all',
-            child: Row(
-              children: [
-                Icon(Icons.list, size: 16, color: AppTheme.primaryRed),
-                SizedBox(width: 8),
-                Text('Todas'),
-              ],
-            ),
+          const SizedBox(height: 6),
+          Wrap(
+            spacing: 6,
+            runSpacing: 4,
+            children: [
+              _FilterStatusChip(label: filterLabel),
+              _FilterStatusChip(label: tourismLabel),
+              _FilterStatusChip(label: zoneLabel),
+            ],
           ),
-          const DropdownMenuItem(
-            value: 'favorites',
-            child: Row(
-              children: [
-                Icon(Icons.star, size: 16, color: AppTheme.primaryRed),
-                SizedBox(width: 8),
-                Text('Favoritas'),
-              ],
-            ),
-          ),
-          const DropdownMenuItem(
-            value: 'lines',
-            child: Row(
-              children: [
-                Icon(Icons.view_list, size: 16, color: AppTheme.primaryRed),
-                SizedBox(width: 8),
-                Text('Líneas…'),
-              ],
-            ),
-          ),
-          if (mapViewModel.currentFilter.mode == FilterMode.line)
-            DropdownMenuItem(
-              value: _selectedLineValue,
-              child: Row(
-                children: [
-                  const Icon(Icons.filter_alt, size: 16, color: AppTheme.primaryRed),
-                  const SizedBox(width: 8),
-                  Text('Línea ${selectedLineName ?? mapViewModel.currentFilter.lineId}'),
-                ],
-              ),
-            ),
         ],
-        onChanged: (value) {
-          if (value == 'nearby') {
-            mapViewModel.setFilter(const MapFilter.nearby());
-          } else if (value == 'all') {
-            mapViewModel.setFilter(const MapFilter.all());
-          } else if (value == 'favorites') {
-            mapViewModel.refreshFavoriteStops();
-            mapViewModel.setFilter(const MapFilter.favorites());
-          } else if (value == 'lines') {
-            onOpenLineSelector();
-          }
-        },
+      ),
+    );
+  }
+}
+
+class _FilterStatusChip extends StatelessWidget {
+  final String label;
+
+  const _FilterStatusChip({required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: Colors.grey.shade300),
+      ),
+      child: Text(
+        label,
+        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
       ),
     );
   }

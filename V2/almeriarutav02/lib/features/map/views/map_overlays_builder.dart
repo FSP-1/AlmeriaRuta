@@ -4,18 +4,19 @@ import '../tourism/viewmodels/tourism_viewmodel.dart';
 import '../widgets/map_filter_bar.dart';
 import '../widgets/search_widget.dart';
 import '../widgets/map_overlay_banners.dart';
-import '../tourism/widgets/tourism_category_sheet.dart';
 
 /// Builds overlay UI elements on the map (banners, filter bar, search).
 class MapOverlaysBuilder {
   /// Builds the main filter bar for the map.
   static Widget buildFilterBar(
     MapViewModel mapViewModel,
-    VoidCallback onOpenLineSelector,
+    TourismViewModel tourismViewModel,
+    VoidCallback onOpenFiltersMenu,
   ) {
     return MapFilterBar(
       mapViewModel: mapViewModel,
-      onOpenLineSelector: onOpenLineSelector,
+      tourismViewModel: tourismViewModel,
+      onOpenFiltersMenu: onOpenFiltersMenu,
     );
   }
 
@@ -31,12 +32,8 @@ class MapOverlaysBuilder {
   /// Builds all positioned overlays (banners).
   static List<Widget> buildPositionedOverlays({
     required MapViewModel mapViewModel,
-    required TourismViewModel tourismViewModel,
     required bool isFavoritesFilterEmpty,
     required bool isTouristBusRouteOnlyMode,
-    required bool hasActiveZone,
-    required VoidCallback onClearZoneFilter,
-    required VoidCallback onOpenTourismSelector,
   }) {
     final overlays = <Widget>[];
 
@@ -48,40 +45,6 @@ class MapOverlaysBuilder {
           left: 16,
           right: 16,
           child: FavoritesEmptyBanner(),
-        ),
-      );
-    }
-
-    // Active zone banner
-    if (hasActiveZone && !isTouristBusRouteOnlyMode) {
-      overlays.add(
-        Positioned(
-          top: isFavoritesFilterEmpty ? 140 : 72,
-          left: 16,
-          right: 16,
-          child: ActiveZoneBanner(
-            zone: mapViewModel.activeZone!,
-            onClear: onClearZoneFilter,
-          ),
-        ),
-      );
-    }
-
-    // Tourism mode banner
-    if (tourismViewModel.isEnabled && !isTouristBusRouteOnlyMode) {
-      overlays.add(
-        Positioned(
-          top: hasActiveZone
-              ? (isFavoritesFilterEmpty ? 234 : 166)
-              : (isFavoritesFilterEmpty ? 140 : 72),
-          left: 16,
-          right: 16,
-          child: TourismModeBanner(
-            title: tourismViewModel.selectedCategory == null
-                ? 'Turismo: todos'
-                : 'Turismo: ${tourismCategoryLabel(tourismViewModel.selectedCategory!)}',
-            onTune: onOpenTourismSelector,
-          ),
         ),
       );
     }

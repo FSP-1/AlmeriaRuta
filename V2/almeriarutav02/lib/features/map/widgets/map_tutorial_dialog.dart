@@ -100,8 +100,8 @@ class MapTutorialDialog extends StatelessWidget {
                   Expanded(
                     child: Text(
                       isFirstTime
-                          ? 'Mostramos paradas cercanas (800m)\nPuedes filtrar por zona y activar modo turistico'
-                          : 'Por defecto se muestran paradas cercanas a tu ubicación (800m)',
+                          ? 'Por defecto se muestran paradas cercanas a tu ubicación (800m).\nDesde el menú de capas puedes activar bus, turismo y zonas.'
+                          : 'La vista inicial muestra paradas cercanas a tu ubicación (800m).',
                       style: const TextStyle(
                         fontSize: 13,
                         color: Color(0xFF1A202C),
@@ -117,22 +117,29 @@ class MapTutorialDialog extends StatelessWidget {
             _buildHelpItem(
               icon: Icons.near_me,
               iconColor: AppTheme.primaryRed,
-              title: 'Filtrar paradas',
-              description: 'Usa el menú superior: Cercanas, Todas, Favoritas o por Línea',
+              title: 'Menú de capas',
+              description: 'Abre el menú principal para decidir qué capas ves: bus, turismo y zonas.',
+            ),
+            const SizedBox(height: 12),
+            _buildHelpItem(
+              icon: Icons.directions_bus,
+              iconColor: AppTheme.primaryRed,
+              title: 'Paradas de bus',
+              description: 'Dentro del menú puedes elegir cercanas, todas, favoritas o una línea concreta.',
+            ),
+            const SizedBox(height: 12),
+            _buildHelpItem(
+              icon: Icons.travel_explore,
+              iconColor: Colors.blue,
+              title: 'Turismo',
+              description: 'Activa o desactiva los puntos turísticos y elige categorías como playas, museos o parques.',
             ),
             const SizedBox(height: 12),
             _buildHelpItem(
               icon: Icons.map,
               iconColor: Colors.green,
-              title: 'Filtrar por zona',
-              description: 'Toca el botón verde para elegir Poniente, Levante, Capital o Interior',
-            ),
-            const SizedBox(height: 12),
-            _buildHelpItem(
-              icon: Icons.tune,
-              iconColor: Colors.teal,
-              title: 'Combinar filtros',
-              description: 'Si eliges zona y filtro (cercanas, favoritas o linea), veras solo paradas de esa zona',
+              title: 'Zonas',
+              description: 'Selecciona una zona geográfica para acotar lo que ves en el mapa.',
             ),
             const SizedBox(height: 12),
             _buildHelpItem(
@@ -147,7 +154,7 @@ class MapTutorialDialog extends StatelessWidget {
               iconColor: Colors.amber,
               title: 'Gestionar favoritos',
               description: isFirstTime
-                  ? 'Toca el botón amarillo en el mapa para ver favoritos'
+                  ? 'Toca el botón amarillo del mapa para ver tus favoritos.'
                   : 'Ve a "Líneas" para marcar líneas favoritas',
             ),
             const SizedBox(height: 12),
@@ -163,13 +170,6 @@ class MapTutorialDialog extends StatelessWidget {
               iconColor: Colors.blue,
               title: 'Cómo llegar',
               description: 'Desde los detalles de una parada, puedes ver la ruta',
-            ),
-            const SizedBox(height: 12),
-            _buildHelpItem(
-              icon: Icons.camera_alt,
-              iconColor: Colors.blue,
-              title: 'Modo turístico',
-              description: 'Activa el botón azul para ver monumentos, museos y puntos destacados',
             ),
                   ],
                 ),
