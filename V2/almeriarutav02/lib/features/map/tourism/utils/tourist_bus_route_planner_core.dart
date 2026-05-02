@@ -100,7 +100,7 @@ class TouristBusRoutePlanner {
   }
 
   // ─────────────────────────────────────────────
-  // 🟡 ALGORITMO PRINCIPAL (SÚPER OPTIMIZADO)
+  // 🟡 ALGORITMO PRINCIPAL
   // ─────────────────────────────────────────────
   static TouristBusRoutePlan? buildPlan({
     required TouristPlace place,
@@ -111,7 +111,6 @@ class TouristBusRoutePlanner {
   }) {
     print('\n========================================================');
     print('📍 INICIANDO RUTEO HACIA DESTINO: ${destinationStop.name}');
-    print('Líneas del destino: ${destinationStop.lineIds}');
     
     double distToUser(StopModel s) => Geolocator.distanceBetween(
         userLocation.latitude, userLocation.longitude, s.lat, s.lon);
@@ -136,7 +135,7 @@ class TouristBusRoutePlanner {
     TouristBusRoutePlan? best;
     final destLineIds = destinationStop.lineIds.toSet();
 
-    // ───────────── DIRECTO (INTERSECCIÓN EXACTA) ─────────────
+    // ───────────── DIRECTO ─────────────
     print('--- BUSCANDO RUTA DIRECTA ---');
     for (final boarding in userNearbyStops) {
       final commonLineIds = boarding.lineIds.toSet().intersection(destLineIds);
@@ -147,7 +146,7 @@ class TouristBusRoutePlanner {
         final line = allLines.firstWhere((l) => l.id == lineId);
         final routeStops = _extractCleanRoute(line.stops, boarding.id, destinationStop.id);
         
-        if (routeStops == null || routeStops.length > 30) continue;
+        if (routeStops == null || routeStops.length > 40) continue;
 
         final plan = _makePlan(
           place: place,
@@ -166,7 +165,7 @@ class TouristBusRoutePlanner {
 
         if (isBetterPlan(plan, best)) {
           best = plan;
-          print('✅ [NUEVO MEJOR DIRECTO] ${line.name} desde ${boarding.name}');
+          print('✅ [NUEVO MEJOR DIRECTO] ${line.name} desde ${boarding.name} (${routeStops.length} paradas)');
         }
       }
     }
@@ -177,14 +176,13 @@ class TouristBusRoutePlanner {
       return best;
     }
 
-    // ───────────── TRANSBORDO (OPTIMIZADO CON SETS) ─────────────
+    // ───────────── TRANSBORDO ─────────────
     print('--- NO HAY DIRECTO, BUSCANDO TRANSBORDOS ---');
     for (final boarding in userNearbyStops.take(15)) {
       
       for (final line1Id in boarding.lineIds) {
         final line1 = allLines.firstWhere((l) => l.id == line1Id);
 
-        // 1. Extraemos paradas únicas de la línea 1 para evitar evaluar la misma parada varias veces
         final uniqueTransferStops = <String, StopModel>{};
         for (final s in line1.stops) {
           if (s.id != boarding.id) {
@@ -192,12 +190,10 @@ class TouristBusRoutePlanner {
           }
         }
 
-        // 2. Iteramos por las paradas candidatas a transbordo
         for (final transfer in uniqueTransferStops.values) {
           
-          // ¿Esta parada comparte alguna línea con el destino?
           final transferToDestLines = transfer.lineIds.toSet().intersection(destLineIds);
-          transferToDestLines.remove(line1.id); // Evitamos "transbordar" a la misma línea
+          transferToDestLines.remove(line1.id);
           
           if (transferToDestLines.isEmpty) continue;
 
@@ -210,7 +206,7 @@ class TouristBusRoutePlanner {
             final seg2 = _extractCleanRoute(line2.stops, transfer.id, destinationStop.id);
             if (seg2 == null) continue;
 
-            if (seg1.length + seg2.length > 35) continue;
+            if (seg1.length + seg2.length > 45) continue;
 
             final plan = _makePlan(
               place: place,
@@ -233,7 +229,6 @@ class TouristBusRoutePlanner {
               distToPlace: distToPlace,
             );
 
-            // SOLO imprime si es mejor que lo que ya teníamos
             if (isBetterPlan(plan, best)) {
               best = plan;
               print('🔄 [NUEVO MEJOR TRANSBORDO]');
@@ -250,53 +245,57 @@ class TouristBusRoutePlanner {
   }
 
   // ─────────────────────────────────────────────
-  // 🛡️ EXTRACTOR LIMPIO (SOPORTA IDA Y VUELTA)
+  // 🛡️ EXTRACTOR LIMPIO (ARRAY CIRCULAR - ORDEN PERFECTO)
   // ─────────────────────────────────────────────
   static List<StopModel>? _extractCleanRoute(List<StopModel> stops, String boardId, String destId) {
-    List<StopModel>? bestRawSegment;
+    if (stops.isEmpty) return null;
+
+    // 🔥 EL TRUCO MAGICO: Duplicar la ruta para simular el ciclo circular 🔥
+    // Esto asegura que SIEMPRE avanzamos hacia adelante y las paradas 
+    // mantienen su orden geográfico exacto en las calles.
+    final extendedStops = [...stops, ...stops];
+    final originalLength = stops.length;
+
+    List<StopModel>? bestCandidate;
     int minLength = 99999;
 
-    for (int i = 0; i < stops.length; i++) {
-      if (stops[i].id == boardId) {
-        for (int j = 0; j < stops.length; j++) {
-          if (stops[j].id == destId && i != j) {
-            
-            List<StopModel> candidate;
-            if (i < j) {
-              candidate = stops.sublist(i, j + 1);
-            } else {
-              candidate = stops.sublist(j, i + 1).reversed.toList();
-            }
-
+    for (int i = 0; i < originalLength; i++) {
+      if (extendedStops[i].id == boardId) {
+        // Buscamos hacia adelante un máximo de 1 vuelta completa
+        for (int j = i + 1; j < i + originalLength; j++) {
+          if (extendedStops[j].id == destId) {
+            final candidate = extendedStops.sublist(i, j + 1);
             if (candidate.length < minLength) {
               minLength = candidate.length;
-              bestRawSegment = candidate;
+              bestCandidate = candidate;
             }
           }
         }
       }
     }
 
-    if (bestRawSegment == null) return null;
+    if (bestCandidate == null) return null;
 
-    final cleaned = <StopModel>[bestRawSegment.first];
+    // Filtro de suavizado (ahora que el orden es real, casi nunca se saltarán paradas)
+    final cleaned = <StopModel>[bestCandidate.first];
     
-    for (int i = 1; i < bestRawSegment.length - 1; i++) {
-      final current = bestRawSegment[i];
+    for (int i = 1; i < bestCandidate.length - 1; i++) {
+      final current = bestCandidate[i];
       final previous = cleaned.last;
       
-      final distToPrev = Geolocator.distanceBetween(
+      final dist = Geolocator.distanceBetween(
         previous.lat, previous.lon,
         current.lat, current.lon,
       );
 
-      if (distToPrev <= 1500) {
+      // 3km de margen. Solo descarta si el GTFS tiene una coordenada muy corrupta.
+      if (dist <= 3000) {
         cleaned.add(current);
       }
     }
 
-    if (bestRawSegment.length > 1) {
-      cleaned.add(bestRawSegment.last);
+    if (bestCandidate.length > 1) {
+      cleaned.add(bestCandidate.last);
     }
 
     return cleaned;

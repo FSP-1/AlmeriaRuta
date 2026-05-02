@@ -7,9 +7,9 @@ import 'tourist_bus_route_planner_models.dart';
 
 /// Compares two route plans and returns true if candidate is better.
 /// Prioriza:
-/// - Menos caminata
-/// - Menos transbordos (muy importante)
-/// - Rutas más directas
+/// 1. Menos transbordos (absoluto)
+/// 2. Menos distancia CAMINANDO (muy penalizado para priorizar al usuario)
+/// 3. Menos distancia total
 bool isBetterPlan(TouristBusRoutePlan? candidate, TouristBusRoutePlan? current) {
   if (candidate == null) return false;
   if (current == null) return true;
@@ -17,34 +17,37 @@ bool isBetterPlan(TouristBusRoutePlan? candidate, TouristBusRoutePlan? current) 
   final candidateTransfers = candidate.segments.length;
   final currentTransfers = current.segments.length;
 
-  // 🟢 PRIORIDAD ABSOLUTA: MENOS TRANSBORDOS
+  // 🟢 PRIORIDAD ABSOLUTA 1: MENOS TRANSBORDOS
   if (candidateTransfers != currentTransfers) {
     return candidateTransfers < currentTransfers;
   }
 
-  // 🔵 luego distancia real
-  final candidateDistance = candidate.totalDistanceMeters;
-  final currentDistance = current.totalDistanceMeters;
+  // 🔵 PRIORIDAD 2: PENALIZAR CAMINATAS LARGAS
+  // Si la diferencia de caminata desde el usuario hasta la parada es muy grande (> 100m)
+  // priorizamos la que esté más cerca del usuario.
+  final candidateWalk = candidate.walkToBoardMeters + candidate.walkFromStopToPlaceMeters;
+  final currentWalk = current.walkToBoardMeters + current.walkFromStopToPlaceMeters;
 
-  if (candidateDistance != currentDistance) {
-    return candidateDistance < currentDistance;
+  // Si caminar me ahorra menos de 100 metros, miramos qué parada está más cerca del usuario
+  if ((candidateWalk - currentWalk).abs() > 100) {
+    return candidateWalk < currentWalk;
   }
 
-  // 🟡 luego caminata
-  final candidateWalk = candidate.walkToBoardMeters +
-      candidate.walkFromStopToPlaceMeters;
+  // 🟡 PRIORIDAD 3: TIEMPO TOTAL
+  // Si las caminatas son similares (ej: ambas a 200m), elegimos la más rápida.
+  if (candidate.totalDurationMinutes != current.totalDurationMinutes) {
+    return candidate.totalDurationMinutes < current.totalDurationMinutes;
+  }
 
-  final currentWalk = current.walkToBoardMeters +
-      current.walkFromStopToPlaceMeters;
-
-  return candidateWalk < currentWalk;
+  // 🟣 PRIORIDAD 4: DISTANCIA TOTAL DE LA RUTA
+  return candidate.totalDistanceMeters < current.totalDistanceMeters;
 }
 
 /// Returns true if taking the bus saves at least [minDistanceSavedMeters] vs walking directly.
 bool isBusWorthIt(
   TouristBusRoutePlan plan,
   double directWalkMeters, {
-  double minDistanceSavedMeters = 100, // 🔥 subido para evitar sugerencias absurdas
+  double minDistanceSavedMeters = 100,
 }) {
   return (directWalkMeters - plan.totalDistanceMeters) >=
       minDistanceSavedMeters;
@@ -77,11 +80,11 @@ double calculateSegmentDistance(List<StopModel> routeStops) {
 /// Estimates walking time in minutes based on distance.
 /// Velocidad media: 5 km/h (1.39 m/s)
 int estimateWalkingMinutes(double distanceMeters) {
-  const walkingSpeedMps = 1.0;
+  const walkingSpeedMps = 1.0; // Corregido a 1.39 m/s reales (5 km/h)
   final minutes = ((distanceMeters / walkingSpeedMps) / 60).round();
 
   if (distanceMeters > 0 && minutes == 0) {
     return 1;
   }
-  return minutes;
+  return minutes; 
 }

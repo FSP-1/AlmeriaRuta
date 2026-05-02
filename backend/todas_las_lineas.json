@@ -1,0 +1,4101 @@
+{
+  "generado_en": "2026-05-02T07:53:51.916Z",
+  "total_lineas": 16,
+  "lineas": [
+    {
+      "linea": "L1",
+      "rutas": [
+        {
+          "ruta": "RAMBLA, CELIA VIÑAS - RAMBLA, CELIA VIÑAS",
+          "paradas": [
+            {
+              "id": "478",
+              "nombre": "Rambla, Celia Viñas"
+            },
+            {
+              "id": "420",
+              "nombre": "Federico García Lorca, 9"
+            },
+            {
+              "id": "406",
+              "nombre": "Puerta del Mar"
+            },
+            {
+              "id": "407",
+              "nombre": "Paseo San Luis, 7"
+            },
+            {
+              "id": "408",
+              "nombre": "Calle la Reina, 17"
+            },
+            {
+              "id": "409",
+              "nombre": "Alcazaba"
+            },
+            {
+              "id": "410",
+              "nombre": "Calle Reducto, 8"
+            },
+            {
+              "id": "411",
+              "nombre": "Calle Reducto, 92"
+            },
+            {
+              "id": "440",
+              "nombre": "Arquímedes"
+            },
+            {
+              "id": "79",
+              "nombre": "Avenida del Mar 39"
+            },
+            {
+              "id": "412",
+              "nombre": "Nicolás Salmerón, 52"
+            },
+            {
+              "id": "413",
+              "nombre": "Calle Nicolás Salmerón, 40"
+            },
+            {
+              "id": "414",
+              "nombre": "Calle Nicolás Salmerón, 20"
+            },
+            {
+              "id": "415",
+              "nombre": "Calle Nicolás Salmerón, 8"
+            },
+            {
+              "id": "292",
+              "nombre": "Estación Intermodal"
+            },
+            {
+              "id": "273",
+              "nombre": "Carretera de Ronda 31"
+            },
+            {
+              "id": "293",
+              "nombre": "Artés de Arcos"
+            },
+            {
+              "id": "479",
+              "nombre": "Calle Hermanos Machado"
+            },
+            {
+              "id": "7",
+              "nombre": "Stella Maris"
+            },
+            {
+              "id": "478",
+              "nombre": "Rambla, Celia Viñas"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "linea": "L2",
+      "rutas": [
+        {
+          "ruta": "RAMBLA, CELIA VIÑAS - HOSPITAL UNIVERSITARIO TORRECÁRDENAS",
+          "paradas": [
+            {
+              "id": "478",
+              "nombre": "Rambla, Celia Viñas"
+            },
+            {
+              "id": "420",
+              "nombre": "Federico García Lorca, 9"
+            },
+            {
+              "id": "400",
+              "nombre": "Calle Canónigo Molina Alonso"
+            },
+            {
+              "id": "292",
+              "nombre": "Estación Intermodal"
+            },
+            {
+              "id": "401",
+              "nombre": "Carretera de Ronda 78"
+            },
+            {
+              "id": "9",
+              "nombre": "Ronda - Sanidad"
+            },
+            {
+              "id": "10",
+              "nombre": "Ronda - Blas Infante"
+            },
+            {
+              "id": "11",
+              "nombre": "Cruz Roja"
+            },
+            {
+              "id": "12",
+              "nombre": "Bola Azul"
+            },
+            {
+              "id": "13",
+              "nombre": "La Magnesita"
+            },
+            {
+              "id": "391",
+              "nombre": "Italia 6"
+            },
+            {
+              "id": "393",
+              "nombre": "Italia - Tito Pedro"
+            },
+            {
+              "id": "61",
+              "nombre": "Avenida Mediterráneo - Centro Comercial"
+            },
+            {
+              "id": "396",
+              "nombre": "Avenida Mediterráneo - Hotel Elba"
+            },
+            {
+              "id": "402",
+              "nombre": "Parroquia Jesucristo Redentor"
+            },
+            {
+              "id": "423",
+              "nombre": "Avenida Mediterráneo - Colegio Europa"
+            },
+            {
+              "id": "19",
+              "nombre": "Carretera de Huércal 24"
+            },
+            {
+              "id": "20",
+              "nombre": "Carretera de Huércal 56"
+            },
+            {
+              "id": "21",
+              "nombre": "Materno Infantil"
+            },
+            {
+              "id": "22",
+              "nombre": "Hospital Universitario Torrecárdenas"
+            }
+          ]
+        },
+        {
+          "ruta": "HOSPITAL UNIVERSITARIO TORRECÁRDENAS - RAMBLA, CELIA VIÑAS",
+          "paradas": [
+            {
+              "id": "22",
+              "nombre": "Hospital Universitario Torrecárdenas"
+            },
+            {
+              "id": "426",
+              "nombre": "Parking Hospital"
+            },
+            {
+              "id": "23",
+              "nombre": "Estadio Municipal Juan Rojas"
+            },
+            {
+              "id": "307",
+              "nombre": "Domingo Artés 20"
+            },
+            {
+              "id": "403",
+              "nombre": "Colegio Almería Norte"
+            },
+            {
+              "id": "67",
+              "nombre": "Centro Comercial Mediterráneo"
+            },
+            {
+              "id": "394",
+              "nombre": "Italia 11"
+            },
+            {
+              "id": "392",
+              "nombre": "Italia - Parque"
+            },
+            {
+              "id": "27",
+              "nombre": "Ronda - la Magnesita"
+            },
+            {
+              "id": "28",
+              "nombre": "Ronda - Bola Azul"
+            },
+            {
+              "id": "29",
+              "nombre": "Ronda - Cruz Roja"
+            },
+            {
+              "id": "30",
+              "nombre": "Ronda - Juzgados"
+            },
+            {
+              "id": "31",
+              "nombre": "Sanidad"
+            },
+            {
+              "id": "32",
+              "nombre": "Gregorio Marañón 45"
+            },
+            {
+              "id": "478",
+              "nombre": "Rambla, Celia Viñas"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "linea": "L3",
+      "rutas": [
+        {
+          "ruta": "NUEVA ALMERÍA - HOSPITAL UNIVERSITARIO TORRECÁRDENAS",
+          "paradas": [
+            {
+              "id": "150",
+              "nombre": "Nueva Almería"
+            },
+            {
+              "id": "151",
+              "nombre": "Quinto Pino"
+            },
+            {
+              "id": "152",
+              "nombre": "Auditorio"
+            },
+            {
+              "id": "154",
+              "nombre": "Avenida Mediterráneo - Auditorio"
+            },
+            {
+              "id": "511",
+              "nombre": "Avenida Mediterráneo - Adolfo Suárez"
+            },
+            {
+              "id": "155",
+              "nombre": "Parque de las Familias"
+            },
+            {
+              "id": "456",
+              "nombre": "Antonio Muñoz Zamora 4"
+            },
+            {
+              "id": "432",
+              "nombre": "Antonio Muñoz Zamora 28"
+            },
+            {
+              "id": "433",
+              "nombre": "Avenida Vega de Acá"
+            },
+            {
+              "id": "454",
+              "nombre": "Vega de Acá - Camino de la Goleta"
+            },
+            {
+              "id": "417",
+              "nombre": "Alcalde Santiago Martínez Cabrejas"
+            },
+            {
+              "id": "483",
+              "nombre": "Espacio Alma"
+            },
+            {
+              "id": "488",
+              "nombre": "Calle Acebo"
+            },
+            {
+              "id": "388",
+              "nombre": "Estadio Mediterráneo - Centro"
+            },
+            {
+              "id": "389",
+              "nombre": "Calle Manuel Azaña, 139"
+            },
+            {
+              "id": "58",
+              "nombre": "Avenida Mediterráneo 298"
+            },
+            {
+              "id": "81",
+              "nombre": "Granja Escuela"
+            },
+            {
+              "id": "82",
+              "nombre": "Los Díaz"
+            },
+            {
+              "id": "116",
+              "nombre": "Mamí - Cauce"
+            },
+            {
+              "id": "126",
+              "nombre": "Mamí - Iglesia"
+            },
+            {
+              "id": "156",
+              "nombre": "Zeus"
+            },
+            {
+              "id": "161",
+              "nombre": "La Fuente"
+            },
+            {
+              "id": "321",
+              "nombre": "Madre María Aznar 6"
+            },
+            {
+              "id": "309",
+              "nombre": "Madre María Aznar 142"
+            },
+            {
+              "id": "306",
+              "nombre": "Colegio Europa"
+            },
+            {
+              "id": "19",
+              "nombre": "Carretera de Huércal 24"
+            },
+            {
+              "id": "20",
+              "nombre": "Carretera de Huércal 56"
+            },
+            {
+              "id": "21",
+              "nombre": "Materno Infantil"
+            },
+            {
+              "id": "22",
+              "nombre": "Hospital Universitario Torrecárdenas"
+            }
+          ]
+        },
+        {
+          "ruta": "HOSPITAL UNIVERSITARIO TORRECÁRDENAS - NUEVA ALMERÍA",
+          "paradas": [
+            {
+              "id": "22",
+              "nombre": "Hospital Universitario Torrecárdenas"
+            },
+            {
+              "id": "426",
+              "nombre": "Parking Hospital"
+            },
+            {
+              "id": "23",
+              "nombre": "Estadio Municipal Juan Rojas"
+            },
+            {
+              "id": "307",
+              "nombre": "Domingo Artés 20"
+            },
+            {
+              "id": "311",
+              "nombre": "Avenida. Madre María Aznar, 151"
+            },
+            {
+              "id": "308",
+              "nombre": "Madre María Aznar 127"
+            },
+            {
+              "id": "395",
+              "nombre": "Avenida. Madre María Aznar - la Salle Chocillas"
+            },
+            {
+              "id": "312",
+              "nombre": "Instituto Alhadra"
+            },
+            {
+              "id": "324",
+              "nombre": "Instituto Albaida"
+            },
+            {
+              "id": "494",
+              "nombre": "Calle Instincion 21"
+            },
+            {
+              "id": "513",
+              "nombre": "Calle Mármoles"
+            },
+            {
+              "id": "514",
+              "nombre": "Pabellón del Mediterráneo"
+            },
+            {
+              "id": "447",
+              "nombre": "Vega de Acá - Glorieta Patatas Salcedo"
+            },
+            {
+              "id": "437",
+              "nombre": "Vega de Acá 133"
+            },
+            {
+              "id": "438",
+              "nombre": "Antonio Muñoz Zamora 29"
+            },
+            {
+              "id": "455",
+              "nombre": "Antonio Muñoz Zamora 1"
+            },
+            {
+              "id": "162",
+              "nombre": "Avenida Mediterráneo 45"
+            },
+            {
+              "id": "510",
+              "nombre": "Avenida Mediterráneo, 29"
+            },
+            {
+              "id": "163",
+              "nombre": "Avenida Mediterráneo 23"
+            },
+            {
+              "id": "136",
+              "nombre": "Paseo Marítimo - Auditorio"
+            },
+            {
+              "id": "137",
+              "nombre": "Paseo Marítimo - Residencia de Mayores"
+            },
+            {
+              "id": "150",
+              "nombre": "Nueva Almería"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "linea": "L4",
+      "rutas": [
+        {
+          "ruta": "HOSPITAL UNIVERSITARIO TORRECÁRDENAS - UNIVERSIDAD",
+          "paradas": [
+            {
+              "id": "22",
+              "nombre": "Hospital Universitario Torrecárdenas"
+            },
+            {
+              "id": "426",
+              "nombre": "Parking Hospital"
+            },
+            {
+              "id": "23",
+              "nombre": "Estadio Municipal Juan Rojas"
+            },
+            {
+              "id": "307",
+              "nombre": "Domingo Artés 20"
+            },
+            {
+              "id": "403",
+              "nombre": "Colegio Almería Norte"
+            },
+            {
+              "id": "67",
+              "nombre": "Centro Comercial Mediterráneo"
+            },
+            {
+              "id": "68",
+              "nombre": "Barrio San Luis"
+            },
+            {
+              "id": "291",
+              "nombre": "Avenida Mediterráneo - Plaza San Luis"
+            },
+            {
+              "id": "69",
+              "nombre": "Jefatura Policía Local"
+            },
+            {
+              "id": "70",
+              "nombre": "Avenida Mediterráneo 233"
+            },
+            {
+              "id": "71",
+              "nombre": "Plaza Nueva Andalucía"
+            },
+            {
+              "id": "459",
+              "nombre": "Avenida Montserrat - Gachas Colorás"
+            },
+            {
+              "id": "470",
+              "nombre": "Avenida Montserrat - Minerales"
+            },
+            {
+              "id": "513",
+              "nombre": "Calle Mármoles"
+            },
+            {
+              "id": "514",
+              "nombre": "Pabellón del Mediterráneo"
+            },
+            {
+              "id": "447",
+              "nombre": "Vega de Acá - Glorieta Patatas Salcedo"
+            },
+            {
+              "id": "437",
+              "nombre": "Vega de Acá 133"
+            },
+            {
+              "id": "448",
+              "nombre": "Avenida Vega de Acá-jardín Legión Española"
+            },
+            {
+              "id": "501",
+              "nombre": "Avenida Vega Aca-adolfo Suarez"
+            },
+            {
+              "id": "450",
+              "nombre": "Avenida Vega de Acá-pilar Miró"
+            },
+            {
+              "id": "451",
+              "nombre": "Avenida Vega de Acá-la Térmica"
+            },
+            {
+              "id": "137",
+              "nombre": "Paseo Marítimo - Residencia de Mayores"
+            },
+            {
+              "id": "138",
+              "nombre": "Paseo Marítimo - Nueva Almería"
+            },
+            {
+              "id": "443",
+              "nombre": "Paseo Marítimo - Parque Andarax"
+            },
+            {
+              "id": "140",
+              "nombre": "Paseo Marítimo - Río Andarax"
+            },
+            {
+              "id": "141",
+              "nombre": "Paseo Marítimo - la Cabaña"
+            },
+            {
+              "id": "143",
+              "nombre": "Paseo Marítimo - Trafariña"
+            },
+            {
+              "id": "144",
+              "nombre": "Universidad"
+            }
+          ]
+        },
+        {
+          "ruta": "UNIVERSIDAD - HOSPITAL UNIVERSITARIO TORRECÁRDENAS",
+          "paradas": [
+            {
+              "id": "144",
+              "nombre": "Universidad"
+            },
+            {
+              "id": "145",
+              "nombre": "Trafariña"
+            },
+            {
+              "id": "147",
+              "nombre": "La Cabaña"
+            },
+            {
+              "id": "444",
+              "nombre": "Parque Andarax"
+            },
+            {
+              "id": "149",
+              "nombre": "Playa"
+            },
+            {
+              "id": "150",
+              "nombre": "Nueva Almería"
+            },
+            {
+              "id": "151",
+              "nombre": "Quinto Pino"
+            },
+            {
+              "id": "449",
+              "nombre": "Vega de Acá-camino del Bobar"
+            },
+            {
+              "id": "452",
+              "nombre": "Vega de Acá-parque Infantil"
+            },
+            {
+              "id": "453",
+              "nombre": "Vega de Acá-jardines 28 de Junio"
+            },
+            {
+              "id": "502",
+              "nombre": "Vega Aca-adolfo Marsillach"
+            },
+            {
+              "id": "433",
+              "nombre": "Avenida Vega de Acá"
+            },
+            {
+              "id": "454",
+              "nombre": "Vega de Acá - Camino de la Goleta"
+            },
+            {
+              "id": "417",
+              "nombre": "Alcalde Santiago Martínez Cabrejas"
+            },
+            {
+              "id": "483",
+              "nombre": "Espacio Alma"
+            },
+            {
+              "id": "488",
+              "nombre": "Calle Acebo"
+            },
+            {
+              "id": "388",
+              "nombre": "Estadio Mediterráneo - Centro"
+            },
+            {
+              "id": "389",
+              "nombre": "Calle Manuel Azaña, 139"
+            },
+            {
+              "id": "58",
+              "nombre": "Avenida Mediterráneo 298"
+            },
+            {
+              "id": "59",
+              "nombre": "Avenida Mediterráneo - Carretera de Níjar"
+            },
+            {
+              "id": "60",
+              "nombre": "Avenida Mediterráneo - San Luis"
+            },
+            {
+              "id": "61",
+              "nombre": "Avenida Mediterráneo - Centro Comercial"
+            },
+            {
+              "id": "396",
+              "nombre": "Avenida Mediterráneo - Hotel Elba"
+            },
+            {
+              "id": "402",
+              "nombre": "Parroquia Jesucristo Redentor"
+            },
+            {
+              "id": "423",
+              "nombre": "Avenida Mediterráneo - Colegio Europa"
+            },
+            {
+              "id": "19",
+              "nombre": "Carretera de Huércal 24"
+            },
+            {
+              "id": "20",
+              "nombre": "Carretera de Huércal 56"
+            },
+            {
+              "id": "21",
+              "nombre": "Materno Infantil"
+            },
+            {
+              "id": "22",
+              "nombre": "Hospital Universitario Torrecárdenas"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "linea": "L5",
+      "rutas": [
+        {
+          "ruta": "LA SALLE - CENTRO COMERCIAL TORRECÁRDENAS",
+          "paradas": [
+            {
+              "id": "50",
+              "nombre": "La Salle"
+            },
+            {
+              "id": "51",
+              "nombre": "Obelisco"
+            },
+            {
+              "id": "52",
+              "nombre": "Plaza Altamira"
+            },
+            {
+              "id": "53",
+              "nombre": "Doctor Carracido"
+            },
+            {
+              "id": "54",
+              "nombre": "Blas Infante"
+            },
+            {
+              "id": "55",
+              "nombre": "Arcipreste de Hita"
+            },
+            {
+              "id": "56",
+              "nombre": "Parque Carrefour"
+            },
+            {
+              "id": "57",
+              "nombre": "Parque del Generalife"
+            },
+            {
+              "id": "58",
+              "nombre": "Avenida Mediterráneo 298"
+            },
+            {
+              "id": "59",
+              "nombre": "Avenida Mediterráneo - Carretera de Níjar"
+            },
+            {
+              "id": "60",
+              "nombre": "Avenida Mediterráneo - San Luis"
+            },
+            {
+              "id": "61",
+              "nombre": "Avenida Mediterráneo - Centro Comercial"
+            },
+            {
+              "id": "396",
+              "nombre": "Avenida Mediterráneo - Hotel Elba"
+            },
+            {
+              "id": "397",
+              "nombre": "Fray Juan de Portocarrero - Costa de la Luz"
+            },
+            {
+              "id": "485",
+              "nombre": "Francisco Perez Company 8"
+            },
+            {
+              "id": "486",
+              "nombre": "Residencial Altamar"
+            },
+            {
+              "id": "484",
+              "nombre": "Centro Comercial Torrecárdenas"
+            }
+          ]
+        },
+        {
+          "ruta": "CENTRO COMERCIAL TORRECÁRDENAS - LA SALLE",
+          "paradas": [
+            {
+              "id": "484",
+              "nombre": "Centro Comercial Torrecárdenas"
+            },
+            {
+              "id": "487",
+              "nombre": "Francisco Perez Company 15"
+            },
+            {
+              "id": "308",
+              "nombre": "Madre María Aznar 127"
+            },
+            {
+              "id": "321",
+              "nombre": "Madre María Aznar 6"
+            },
+            {
+              "id": "299",
+              "nombre": "Villa Blanca - Panificadora"
+            },
+            {
+              "id": "65",
+              "nombre": "Villa Blanca - Parque"
+            },
+            {
+              "id": "66",
+              "nombre": "Costa de Almería 33"
+            },
+            {
+              "id": "325",
+              "nombre": "Manuel Mendizábal"
+            },
+            {
+              "id": "67",
+              "nombre": "Centro Comercial Mediterráneo"
+            },
+            {
+              "id": "68",
+              "nombre": "Barrio San Luis"
+            },
+            {
+              "id": "291",
+              "nombre": "Avenida Mediterráneo - Plaza San Luis"
+            },
+            {
+              "id": "69",
+              "nombre": "Jefatura Policía Local"
+            },
+            {
+              "id": "70",
+              "nombre": "Avenida Mediterráneo 233"
+            },
+            {
+              "id": "71",
+              "nombre": "Plaza Nueva Andalucía"
+            },
+            {
+              "id": "72",
+              "nombre": "IES Azcona"
+            },
+            {
+              "id": "74",
+              "nombre": "Conservatorio de Música"
+            },
+            {
+              "id": "31",
+              "nombre": "Sanidad"
+            },
+            {
+              "id": "32",
+              "nombre": "Gregorio Marañón 45"
+            },
+            {
+              "id": "50",
+              "nombre": "La Salle"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "linea": "L6",
+      "rutas": [
+        {
+          "ruta": "LA BELTRANEJA - PLAZA DE PESCADORES",
+          "paradas": [
+            {
+              "id": "441",
+              "nombre": "La Beltraneja"
+            },
+            {
+              "id": "442",
+              "nombre": "Avenida. Tolerancia, Parque"
+            },
+            {
+              "id": "96",
+              "nombre": "El Ingenio"
+            },
+            {
+              "id": "97",
+              "nombre": "Molino Rojo"
+            },
+            {
+              "id": "98",
+              "nombre": "Carretera de Níjar - los Díaz"
+            },
+            {
+              "id": "99",
+              "nombre": "Carretera de Níjar - Granja Escuela"
+            },
+            {
+              "id": "69",
+              "nombre": "Jefatura Policía Local"
+            },
+            {
+              "id": "70",
+              "nombre": "Avenida Mediterráneo 233"
+            },
+            {
+              "id": "71",
+              "nombre": "Plaza Nueva Andalucía"
+            },
+            {
+              "id": "72",
+              "nombre": "IES Azcona"
+            },
+            {
+              "id": "74",
+              "nombre": "Conservatorio de Música"
+            },
+            {
+              "id": "31",
+              "nombre": "Sanidad"
+            },
+            {
+              "id": "32",
+              "nombre": "Gregorio Marañón 45"
+            },
+            {
+              "id": "478",
+              "nombre": "Rambla, Celia Viñas"
+            },
+            {
+              "id": "420",
+              "nombre": "Federico García Lorca, 9"
+            },
+            {
+              "id": "101",
+              "nombre": "Fuente de los Peces"
+            },
+            {
+              "id": "102",
+              "nombre": "La Curva, Nicolás Salmerón"
+            },
+            {
+              "id": "104",
+              "nombre": "San Roque"
+            },
+            {
+              "id": "75",
+              "nombre": "Plaza de Pescadores"
+            }
+          ]
+        },
+        {
+          "ruta": "PLAZA DE PESCADORES - LA BELTRANEJA",
+          "paradas": [
+            {
+              "id": "75",
+              "nombre": "Plaza de Pescadores"
+            },
+            {
+              "id": "76",
+              "nombre": "Calle Valdivia"
+            },
+            {
+              "id": "77",
+              "nombre": "Avenida. del Mar, 106"
+            },
+            {
+              "id": "78",
+              "nombre": "Avenida. del Mar, 50"
+            },
+            {
+              "id": "79",
+              "nombre": "Avenida del Mar 39"
+            },
+            {
+              "id": "44",
+              "nombre": "Oliveros"
+            },
+            {
+              "id": "7",
+              "nombre": "Stella Maris"
+            },
+            {
+              "id": "50",
+              "nombre": "La Salle"
+            },
+            {
+              "id": "51",
+              "nombre": "Obelisco"
+            },
+            {
+              "id": "52",
+              "nombre": "Plaza Altamira"
+            },
+            {
+              "id": "53",
+              "nombre": "Doctor Carracido"
+            },
+            {
+              "id": "54",
+              "nombre": "Blas Infante"
+            },
+            {
+              "id": "55",
+              "nombre": "Arcipreste de Hita"
+            },
+            {
+              "id": "56",
+              "nombre": "Parque Carrefour"
+            },
+            {
+              "id": "57",
+              "nombre": "Parque del Generalife"
+            },
+            {
+              "id": "58",
+              "nombre": "Avenida Mediterráneo 298"
+            },
+            {
+              "id": "81",
+              "nombre": "Granja Escuela"
+            },
+            {
+              "id": "82",
+              "nombre": "Los Díaz"
+            },
+            {
+              "id": "83",
+              "nombre": "Plaza Fátima"
+            },
+            {
+              "id": "84",
+              "nombre": "Polígono la Mezquita"
+            },
+            {
+              "id": "441",
+              "nombre": "La Beltraneja"
+            }
+          ]
+        },
+        {
+          "ruta": "LA BELTRANEJA - SAN ROQUE",
+          "paradas": [
+            {
+              "id": "441",
+              "nombre": "La Beltraneja"
+            },
+            {
+              "id": "442",
+              "nombre": "Avenida. Tolerancia, Parque"
+            },
+            {
+              "id": "96",
+              "nombre": "El Ingenio"
+            },
+            {
+              "id": "97",
+              "nombre": "Molino Rojo"
+            },
+            {
+              "id": "98",
+              "nombre": "Carretera de Níjar - los Díaz"
+            },
+            {
+              "id": "99",
+              "nombre": "Carretera de Níjar - Granja Escuela"
+            },
+            {
+              "id": "69",
+              "nombre": "Jefatura Policía Local"
+            },
+            {
+              "id": "70",
+              "nombre": "Avenida Mediterráneo 233"
+            },
+            {
+              "id": "71",
+              "nombre": "Plaza Nueva Andalucía"
+            },
+            {
+              "id": "72",
+              "nombre": "IES Azcona"
+            },
+            {
+              "id": "74",
+              "nombre": "Conservatorio de Música"
+            },
+            {
+              "id": "31",
+              "nombre": "Sanidad"
+            },
+            {
+              "id": "32",
+              "nombre": "Gregorio Marañón 45"
+            },
+            {
+              "id": "478",
+              "nombre": "Rambla, Celia Viñas"
+            },
+            {
+              "id": "420",
+              "nombre": "Federico García Lorca, 9"
+            },
+            {
+              "id": "101",
+              "nombre": "Fuente de los Peces"
+            },
+            {
+              "id": "102",
+              "nombre": "La Curva, Nicolás Salmerón"
+            },
+            {
+              "id": "104",
+              "nombre": "San Roque"
+            }
+          ]
+        },
+        {
+          "ruta": "SAN ROQUE - LA BELTRANEJA",
+          "paradas": [
+            {
+              "id": "104",
+              "nombre": "San Roque"
+            },
+            {
+              "id": "44",
+              "nombre": "Oliveros"
+            },
+            {
+              "id": "7",
+              "nombre": "Stella Maris"
+            },
+            {
+              "id": "50",
+              "nombre": "La Salle"
+            },
+            {
+              "id": "51",
+              "nombre": "Obelisco"
+            },
+            {
+              "id": "52",
+              "nombre": "Plaza Altamira"
+            },
+            {
+              "id": "53",
+              "nombre": "Doctor Carracido"
+            },
+            {
+              "id": "54",
+              "nombre": "Blas Infante"
+            },
+            {
+              "id": "55",
+              "nombre": "Arcipreste de Hita"
+            },
+            {
+              "id": "56",
+              "nombre": "Parque Carrefour"
+            },
+            {
+              "id": "57",
+              "nombre": "Parque del Generalife"
+            },
+            {
+              "id": "58",
+              "nombre": "Avenida Mediterráneo 298"
+            },
+            {
+              "id": "81",
+              "nombre": "Granja Escuela"
+            },
+            {
+              "id": "82",
+              "nombre": "Los Díaz"
+            },
+            {
+              "id": "83",
+              "nombre": "Plaza Fátima"
+            },
+            {
+              "id": "84",
+              "nombre": "Polígono la Mezquita"
+            },
+            {
+              "id": "441",
+              "nombre": "La Beltraneja"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "linea": "L7",
+      "rutas": [
+        {
+          "ruta": "CALLE ACEBO - IGLESIA PIEDRAS REDONDAS",
+          "paradas": [
+            {
+              "id": "488",
+              "nombre": "Calle Acebo"
+            },
+            {
+              "id": "367",
+              "nombre": "Árbol de la Seda"
+            },
+            {
+              "id": "434",
+              "nombre": "Camino de la Goleta"
+            },
+            {
+              "id": "447",
+              "nombre": "Vega de Acá - Glorieta Patatas Salcedo"
+            },
+            {
+              "id": "437",
+              "nombre": "Vega de Acá 133"
+            },
+            {
+              "id": "438",
+              "nombre": "Antonio Muñoz Zamora 29"
+            },
+            {
+              "id": "455",
+              "nombre": "Antonio Muñoz Zamora 1"
+            },
+            {
+              "id": "157",
+              "nombre": "Avenida Mediterráneo 104"
+            },
+            {
+              "id": "158",
+              "nombre": "Avenida Mediterráneo - Cortijo Grande"
+            },
+            {
+              "id": "277",
+              "nombre": "Calles Darrícal, Laroles"
+            },
+            {
+              "id": "278",
+              "nombre": "Calles Darrícal, Fiñana"
+            },
+            {
+              "id": "39",
+              "nombre": "Calle Fernández Bueso"
+            },
+            {
+              "id": "40",
+              "nombre": "Calle América"
+            },
+            {
+              "id": "42",
+              "nombre": "Cabo de Gata - San Miguel"
+            },
+            {
+              "id": "108",
+              "nombre": "Residencia Alborán"
+            },
+            {
+              "id": "43",
+              "nombre": "Cabo de Gata - Club Náutico"
+            },
+            {
+              "id": "44",
+              "nombre": "Oliveros"
+            },
+            {
+              "id": "7",
+              "nombre": "Stella Maris"
+            },
+            {
+              "id": "80",
+              "nombre": "Rambla 54"
+            },
+            {
+              "id": "51",
+              "nombre": "Obelisco"
+            },
+            {
+              "id": "117",
+              "nombre": "Vaguada"
+            },
+            {
+              "id": "282",
+              "nombre": "Mercado de los Ángeles"
+            },
+            {
+              "id": "342",
+              "nombre": "Delegación de Educación"
+            },
+            {
+              "id": "421",
+              "nombre": "Avenida. de la Cruz, 24"
+            },
+            {
+              "id": "422",
+              "nombre": "Avenida. de la Cruz, 84"
+            },
+            {
+              "id": "427",
+              "nombre": "Consultorio Avda. de la Cruz"
+            },
+            {
+              "id": "286",
+              "nombre": "Villa María"
+            },
+            {
+              "id": "131",
+              "nombre": "Araceli"
+            },
+            {
+              "id": "424",
+              "nombre": "Antonia Mercé"
+            },
+            {
+              "id": "107",
+              "nombre": "Iglesia Piedras Redondas"
+            }
+          ]
+        },
+        {
+          "ruta": "IGLESIA PIEDRAS REDONDAS - CALLE ACEBO",
+          "paradas": [
+            {
+              "id": "107",
+              "nombre": "Iglesia Piedras Redondas"
+            },
+            {
+              "id": "128",
+              "nombre": "Araceli - Parque"
+            },
+            {
+              "id": "109",
+              "nombre": "Sierra de Gredos"
+            },
+            {
+              "id": "287",
+              "nombre": "Camino de la Cruz-consultorio"
+            },
+            {
+              "id": "111",
+              "nombre": "Maestría"
+            },
+            {
+              "id": "112",
+              "nombre": "Carretera de Granada 213"
+            },
+            {
+              "id": "113",
+              "nombre": "Carretera de Granada 145"
+            },
+            {
+              "id": "114",
+              "nombre": "Rambla - Vaguada"
+            },
+            {
+              "id": "115",
+              "nombre": "Rambla - Obelisco"
+            },
+            {
+              "id": "419",
+              "nombre": "Rambla 47- Concordia"
+            },
+            {
+              "id": "420",
+              "nombre": "Federico García Lorca, 9"
+            },
+            {
+              "id": "47",
+              "nombre": "Club Náutico"
+            },
+            {
+              "id": "94",
+              "nombre": "Terrazas Almadrabillas"
+            },
+            {
+              "id": "48",
+              "nombre": "San Miguel"
+            },
+            {
+              "id": "49",
+              "nombre": "Villa García"
+            },
+            {
+              "id": "37",
+              "nombre": "Estadio de la Juventud"
+            },
+            {
+              "id": "274",
+              "nombre": "Calles Darrical, Oviedo"
+            },
+            {
+              "id": "275",
+              "nombre": "Calles Darrical, Vélez Rubio"
+            },
+            {
+              "id": "456",
+              "nombre": "Antonio Muñoz Zamora 4"
+            },
+            {
+              "id": "432",
+              "nombre": "Antonio Muñoz Zamora 28"
+            },
+            {
+              "id": "433",
+              "nombre": "Avenida Vega de Acá"
+            },
+            {
+              "id": "454",
+              "nombre": "Vega de Acá - Camino de la Goleta"
+            },
+            {
+              "id": "417",
+              "nombre": "Alcalde Santiago Martínez Cabrejas"
+            },
+            {
+              "id": "483",
+              "nombre": "Espacio Alma"
+            },
+            {
+              "id": "488",
+              "nombre": "Calle Acebo"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "linea": "L8",
+      "rutas": [
+        {
+          "ruta": "LA SALLE - CENTRO COMERCIAL TORRECÁRDENAS",
+          "paradas": [
+            {
+              "id": "50",
+              "nombre": "La Salle"
+            },
+            {
+              "id": "51",
+              "nombre": "Obelisco"
+            },
+            {
+              "id": "52",
+              "nombre": "Plaza Altamira"
+            },
+            {
+              "id": "53",
+              "nombre": "Doctor Carracido"
+            },
+            {
+              "id": "54",
+              "nombre": "Blas Infante"
+            },
+            {
+              "id": "55",
+              "nombre": "Arcipreste de Hita"
+            },
+            {
+              "id": "56",
+              "nombre": "Parque Carrefour"
+            },
+            {
+              "id": "57",
+              "nombre": "Parque del Generalife"
+            },
+            {
+              "id": "58",
+              "nombre": "Avenida Mediterráneo 298"
+            },
+            {
+              "id": "81",
+              "nombre": "Granja Escuela"
+            },
+            {
+              "id": "82",
+              "nombre": "Los Díaz"
+            },
+            {
+              "id": "116",
+              "nombre": "Mamí - Cauce"
+            },
+            {
+              "id": "126",
+              "nombre": "Mamí - Iglesia"
+            },
+            {
+              "id": "127",
+              "nombre": "Mamí 140"
+            },
+            {
+              "id": "156",
+              "nombre": "Zeus"
+            },
+            {
+              "id": "161",
+              "nombre": "La Fuente"
+            },
+            {
+              "id": "321",
+              "nombre": "Madre María Aznar 6"
+            },
+            {
+              "id": "309",
+              "nombre": "Madre María Aznar 142"
+            },
+            {
+              "id": "485",
+              "nombre": "Francisco Perez Company 8"
+            },
+            {
+              "id": "486",
+              "nombre": "Residencial Altamar"
+            },
+            {
+              "id": "484",
+              "nombre": "Centro Comercial Torrecárdenas"
+            }
+          ]
+        },
+        {
+          "ruta": "CENTRO COMERCIAL TORRECÁRDENAS - LA SALLE",
+          "paradas": [
+            {
+              "id": "484",
+              "nombre": "Centro Comercial Torrecárdenas"
+            },
+            {
+              "id": "487",
+              "nombre": "Francisco Perez Company 15"
+            },
+            {
+              "id": "308",
+              "nombre": "Madre María Aznar 127"
+            },
+            {
+              "id": "299",
+              "nombre": "Villa Blanca - Panificadora"
+            },
+            {
+              "id": "65",
+              "nombre": "Villa Blanca - Parque"
+            },
+            {
+              "id": "66",
+              "nombre": "Costa de Almería 33"
+            },
+            {
+              "id": "325",
+              "nombre": "Manuel Mendizábal"
+            },
+            {
+              "id": "67",
+              "nombre": "Centro Comercial Mediterráneo"
+            },
+            {
+              "id": "68",
+              "nombre": "Barrio San Luis"
+            },
+            {
+              "id": "291",
+              "nombre": "Avenida Mediterráneo - Plaza San Luis"
+            },
+            {
+              "id": "69",
+              "nombre": "Jefatura Policía Local"
+            },
+            {
+              "id": "70",
+              "nombre": "Avenida Mediterráneo 233"
+            },
+            {
+              "id": "71",
+              "nombre": "Plaza Nueva Andalucía"
+            },
+            {
+              "id": "72",
+              "nombre": "IES Azcona"
+            },
+            {
+              "id": "74",
+              "nombre": "Conservatorio de Música"
+            },
+            {
+              "id": "31",
+              "nombre": "Sanidad"
+            },
+            {
+              "id": "32",
+              "nombre": "Gregorio Marañón 45"
+            },
+            {
+              "id": "50",
+              "nombre": "La Salle"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "linea": "L11",
+      "rutas": [
+        {
+          "ruta": "RAMBLA, CELIA VIÑAS - UNIVERSIDAD",
+          "paradas": [
+            {
+              "id": "478",
+              "nombre": "Rambla, Celia Viñas"
+            },
+            {
+              "id": "420",
+              "nombre": "Federico García Lorca, 9"
+            },
+            {
+              "id": "47",
+              "nombre": "Club Náutico"
+            },
+            {
+              "id": "94",
+              "nombre": "Terrazas Almadrabillas"
+            },
+            {
+              "id": "48",
+              "nombre": "San Miguel"
+            },
+            {
+              "id": "49",
+              "nombre": "Villa García"
+            },
+            {
+              "id": "133",
+              "nombre": "California"
+            },
+            {
+              "id": "313",
+              "nombre": "Cabo de Gata 140"
+            },
+            {
+              "id": "134",
+              "nombre": "Cabo de Gata - Zapillo"
+            },
+            {
+              "id": "135",
+              "nombre": "Paseo Marítimo - el Palmeral"
+            },
+            {
+              "id": "136",
+              "nombre": "Paseo Marítimo - Auditorio"
+            },
+            {
+              "id": "137",
+              "nombre": "Paseo Marítimo - Residencia de Mayores"
+            },
+            {
+              "id": "138",
+              "nombre": "Paseo Marítimo - Nueva Almería"
+            },
+            {
+              "id": "443",
+              "nombre": "Paseo Marítimo - Parque Andarax"
+            },
+            {
+              "id": "140",
+              "nombre": "Paseo Marítimo - Río Andarax"
+            },
+            {
+              "id": "141",
+              "nombre": "Paseo Marítimo - la Cabaña"
+            },
+            {
+              "id": "142",
+              "nombre": "Paseo Marítimo - el Bobar"
+            },
+            {
+              "id": "143",
+              "nombre": "Paseo Marítimo - Trafariña"
+            },
+            {
+              "id": "144",
+              "nombre": "Universidad"
+            }
+          ]
+        },
+        {
+          "ruta": "UNIVERSIDAD - RAMBLA, CELIA VIÑAS",
+          "paradas": [
+            {
+              "id": "144",
+              "nombre": "Universidad"
+            },
+            {
+              "id": "145",
+              "nombre": "Trafariña"
+            },
+            {
+              "id": "147",
+              "nombre": "La Cabaña"
+            },
+            {
+              "id": "444",
+              "nombre": "Parque Andarax"
+            },
+            {
+              "id": "149",
+              "nombre": "Playa"
+            },
+            {
+              "id": "150",
+              "nombre": "Nueva Almería"
+            },
+            {
+              "id": "151",
+              "nombre": "Quinto Pino"
+            },
+            {
+              "id": "152",
+              "nombre": "Auditorio"
+            },
+            {
+              "id": "154",
+              "nombre": "Avenida Mediterráneo - Auditorio"
+            },
+            {
+              "id": "511",
+              "nombre": "Avenida Mediterráneo - Adolfo Suárez"
+            },
+            {
+              "id": "155",
+              "nombre": "Parque de las Familias"
+            },
+            {
+              "id": "456",
+              "nombre": "Antonio Muñoz Zamora 4"
+            },
+            {
+              "id": "432",
+              "nombre": "Antonio Muñoz Zamora 28"
+            },
+            {
+              "id": "433",
+              "nombre": "Avenida Vega de Acá"
+            },
+            {
+              "id": "454",
+              "nombre": "Vega de Acá - Camino de la Goleta"
+            },
+            {
+              "id": "417",
+              "nombre": "Alcalde Santiago Martínez Cabrejas"
+            },
+            {
+              "id": "483",
+              "nombre": "Espacio Alma"
+            },
+            {
+              "id": "488",
+              "nombre": "Calle Acebo"
+            },
+            {
+              "id": "388",
+              "nombre": "Estadio Mediterráneo - Centro"
+            },
+            {
+              "id": "389",
+              "nombre": "Calle Manuel Azaña, 139"
+            },
+            {
+              "id": "58",
+              "nombre": "Avenida Mediterráneo 298"
+            },
+            {
+              "id": "59",
+              "nombre": "Avenida Mediterráneo - Carretera de Níjar"
+            },
+            {
+              "id": "60",
+              "nombre": "Avenida Mediterráneo - San Luis"
+            },
+            {
+              "id": "394",
+              "nombre": "Italia 11"
+            },
+            {
+              "id": "392",
+              "nombre": "Italia - Parque"
+            },
+            {
+              "id": "27",
+              "nombre": "Ronda - la Magnesita"
+            },
+            {
+              "id": "28",
+              "nombre": "Ronda - Bola Azul"
+            },
+            {
+              "id": "29",
+              "nombre": "Ronda - Cruz Roja"
+            },
+            {
+              "id": "30",
+              "nombre": "Ronda - Juzgados"
+            },
+            {
+              "id": "31",
+              "nombre": "Sanidad"
+            },
+            {
+              "id": "32",
+              "nombre": "Gregorio Marañón 45"
+            },
+            {
+              "id": "478",
+              "nombre": "Rambla, Celia Viñas"
+            }
+          ]
+        },
+        {
+          "ruta": "RAMBLA, CELIA VIÑAS - NUEVA ALMERÍA",
+          "paradas": [
+            {
+              "id": "478",
+              "nombre": "Rambla, Celia Viñas"
+            },
+            {
+              "id": "420",
+              "nombre": "Federico García Lorca, 9"
+            },
+            {
+              "id": "47",
+              "nombre": "Club Náutico"
+            },
+            {
+              "id": "94",
+              "nombre": "Terrazas Almadrabillas"
+            },
+            {
+              "id": "48",
+              "nombre": "San Miguel"
+            },
+            {
+              "id": "49",
+              "nombre": "Villa García"
+            },
+            {
+              "id": "133",
+              "nombre": "California"
+            },
+            {
+              "id": "313",
+              "nombre": "Cabo de Gata 140"
+            },
+            {
+              "id": "134",
+              "nombre": "Cabo de Gata - Zapillo"
+            },
+            {
+              "id": "135",
+              "nombre": "Paseo Marítimo - el Palmeral"
+            },
+            {
+              "id": "136",
+              "nombre": "Paseo Marítimo - Auditorio"
+            },
+            {
+              "id": "137",
+              "nombre": "Paseo Marítimo - Residencia de Mayores"
+            },
+            {
+              "id": "150",
+              "nombre": "Nueva Almería"
+            }
+          ]
+        },
+        {
+          "ruta": "NUEVA ALMERÍA - RAMBLA, CELIA VIÑAS",
+          "paradas": [
+            {
+              "id": "150",
+              "nombre": "Nueva Almería"
+            },
+            {
+              "id": "151",
+              "nombre": "Quinto Pino"
+            },
+            {
+              "id": "152",
+              "nombre": "Auditorio"
+            },
+            {
+              "id": "154",
+              "nombre": "Avenida Mediterráneo - Auditorio"
+            },
+            {
+              "id": "511",
+              "nombre": "Avenida Mediterráneo - Adolfo Suárez"
+            },
+            {
+              "id": "155",
+              "nombre": "Parque de las Familias"
+            },
+            {
+              "id": "456",
+              "nombre": "Antonio Muñoz Zamora 4"
+            },
+            {
+              "id": "432",
+              "nombre": "Antonio Muñoz Zamora 28"
+            },
+            {
+              "id": "433",
+              "nombre": "Avenida Vega de Acá"
+            },
+            {
+              "id": "454",
+              "nombre": "Vega de Acá - Camino de la Goleta"
+            },
+            {
+              "id": "417",
+              "nombre": "Alcalde Santiago Martínez Cabrejas"
+            },
+            {
+              "id": "483",
+              "nombre": "Espacio Alma"
+            },
+            {
+              "id": "488",
+              "nombre": "Calle Acebo"
+            },
+            {
+              "id": "388",
+              "nombre": "Estadio Mediterráneo - Centro"
+            },
+            {
+              "id": "389",
+              "nombre": "Calle Manuel Azaña, 139"
+            },
+            {
+              "id": "58",
+              "nombre": "Avenida Mediterráneo 298"
+            },
+            {
+              "id": "59",
+              "nombre": "Avenida Mediterráneo - Carretera de Níjar"
+            },
+            {
+              "id": "60",
+              "nombre": "Avenida Mediterráneo - San Luis"
+            },
+            {
+              "id": "394",
+              "nombre": "Italia 11"
+            },
+            {
+              "id": "392",
+              "nombre": "Italia - Parque"
+            },
+            {
+              "id": "27",
+              "nombre": "Ronda - la Magnesita"
+            },
+            {
+              "id": "28",
+              "nombre": "Ronda - Bola Azul"
+            },
+            {
+              "id": "29",
+              "nombre": "Ronda - Cruz Roja"
+            },
+            {
+              "id": "30",
+              "nombre": "Ronda - Juzgados"
+            },
+            {
+              "id": "31",
+              "nombre": "Sanidad"
+            },
+            {
+              "id": "32",
+              "nombre": "Gregorio Marañón 45"
+            },
+            {
+              "id": "478",
+              "nombre": "Rambla, Celia Viñas"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "linea": "L12",
+      "rutas": [
+        {
+          "ruta": "UNIVERSIDAD - RAMBLA 54",
+          "paradas": [
+            {
+              "id": "144",
+              "nombre": "Universidad"
+            },
+            {
+              "id": "145",
+              "nombre": "Trafariña"
+            },
+            {
+              "id": "147",
+              "nombre": "La Cabaña"
+            },
+            {
+              "id": "444",
+              "nombre": "Parque Andarax"
+            },
+            {
+              "id": "149",
+              "nombre": "Playa"
+            },
+            {
+              "id": "150",
+              "nombre": "Nueva Almería"
+            },
+            {
+              "id": "151",
+              "nombre": "Quinto Pino"
+            },
+            {
+              "id": "152",
+              "nombre": "Auditorio"
+            },
+            {
+              "id": "164",
+              "nombre": "Cabo de Gata - el Palmeral"
+            },
+            {
+              "id": "165",
+              "nombre": "Plaza del Zapillo"
+            },
+            {
+              "id": "314",
+              "nombre": "Cabo de Gata 131"
+            },
+            {
+              "id": "166",
+              "nombre": "Cabo de Gata - California"
+            },
+            {
+              "id": "41",
+              "nombre": "Cabo de Gata - Villa García"
+            },
+            {
+              "id": "42",
+              "nombre": "Cabo de Gata - San Miguel"
+            },
+            {
+              "id": "108",
+              "nombre": "Residencia Alborán"
+            },
+            {
+              "id": "43",
+              "nombre": "Cabo de Gata - Club Náutico"
+            },
+            {
+              "id": "44",
+              "nombre": "Oliveros"
+            },
+            {
+              "id": "7",
+              "nombre": "Stella Maris"
+            },
+            {
+              "id": "80",
+              "nombre": "Rambla 54"
+            }
+          ]
+        },
+        {
+          "ruta": "RAMBLA 54 - UNIVERSIDAD",
+          "paradas": [
+            {
+              "id": "80",
+              "nombre": "Rambla 54"
+            },
+            {
+              "id": "51",
+              "nombre": "Obelisco"
+            },
+            {
+              "id": "398",
+              "nombre": "Parroquia de San José"
+            },
+            {
+              "id": "399",
+              "nombre": "Santa Isabel 58"
+            },
+            {
+              "id": "13",
+              "nombre": "La Magnesita"
+            },
+            {
+              "id": "391",
+              "nombre": "Italia 6"
+            },
+            {
+              "id": "393",
+              "nombre": "Italia - Tito Pedro"
+            },
+            {
+              "id": "68",
+              "nombre": "Barrio San Luis"
+            },
+            {
+              "id": "291",
+              "nombre": "Avenida Mediterráneo - Plaza San Luis"
+            },
+            {
+              "id": "69",
+              "nombre": "Jefatura Policía Local"
+            },
+            {
+              "id": "70",
+              "nombre": "Avenida Mediterráneo 233"
+            },
+            {
+              "id": "71",
+              "nombre": "Plaza Nueva Andalucía"
+            },
+            {
+              "id": "459",
+              "nombre": "Avenida Montserrat - Gachas Colorás"
+            },
+            {
+              "id": "470",
+              "nombre": "Avenida Montserrat - Minerales"
+            },
+            {
+              "id": "513",
+              "nombre": "Calle Mármoles"
+            },
+            {
+              "id": "514",
+              "nombre": "Pabellón del Mediterráneo"
+            },
+            {
+              "id": "447",
+              "nombre": "Vega de Acá - Glorieta Patatas Salcedo"
+            },
+            {
+              "id": "437",
+              "nombre": "Vega de Acá 133"
+            },
+            {
+              "id": "438",
+              "nombre": "Antonio Muñoz Zamora 29"
+            },
+            {
+              "id": "455",
+              "nombre": "Antonio Muñoz Zamora 1"
+            },
+            {
+              "id": "162",
+              "nombre": "Avenida Mediterráneo 45"
+            },
+            {
+              "id": "510",
+              "nombre": "Avenida Mediterráneo, 29"
+            },
+            {
+              "id": "163",
+              "nombre": "Avenida Mediterráneo 23"
+            },
+            {
+              "id": "136",
+              "nombre": "Paseo Marítimo - Auditorio"
+            },
+            {
+              "id": "137",
+              "nombre": "Paseo Marítimo - Residencia de Mayores"
+            },
+            {
+              "id": "138",
+              "nombre": "Paseo Marítimo - Nueva Almería"
+            },
+            {
+              "id": "443",
+              "nombre": "Paseo Marítimo - Parque Andarax"
+            },
+            {
+              "id": "140",
+              "nombre": "Paseo Marítimo - Río Andarax"
+            },
+            {
+              "id": "141",
+              "nombre": "Paseo Marítimo - la Cabaña"
+            },
+            {
+              "id": "142",
+              "nombre": "Paseo Marítimo - el Bobar"
+            },
+            {
+              "id": "143",
+              "nombre": "Paseo Marítimo - Trafariña"
+            },
+            {
+              "id": "144",
+              "nombre": "Universidad"
+            }
+          ]
+        },
+        {
+          "ruta": "NUEVA ALMERÍA - RAMBLA 54",
+          "paradas": [
+            {
+              "id": "150",
+              "nombre": "Nueva Almería"
+            },
+            {
+              "id": "151",
+              "nombre": "Quinto Pino"
+            },
+            {
+              "id": "152",
+              "nombre": "Auditorio"
+            },
+            {
+              "id": "164",
+              "nombre": "Cabo de Gata - el Palmeral"
+            },
+            {
+              "id": "165",
+              "nombre": "Plaza del Zapillo"
+            },
+            {
+              "id": "314",
+              "nombre": "Cabo de Gata 131"
+            },
+            {
+              "id": "166",
+              "nombre": "Cabo de Gata - California"
+            },
+            {
+              "id": "41",
+              "nombre": "Cabo de Gata - Villa García"
+            },
+            {
+              "id": "42",
+              "nombre": "Cabo de Gata - San Miguel"
+            },
+            {
+              "id": "108",
+              "nombre": "Residencia Alborán"
+            },
+            {
+              "id": "43",
+              "nombre": "Cabo de Gata - Club Náutico"
+            },
+            {
+              "id": "44",
+              "nombre": "Oliveros"
+            },
+            {
+              "id": "7",
+              "nombre": "Stella Maris"
+            },
+            {
+              "id": "80",
+              "nombre": "Rambla 54"
+            }
+          ]
+        },
+        {
+          "ruta": "RAMBLA 54 - NUEVA ALMERÍA",
+          "paradas": [
+            {
+              "id": "80",
+              "nombre": "Rambla 54"
+            },
+            {
+              "id": "51",
+              "nombre": "Obelisco"
+            },
+            {
+              "id": "398",
+              "nombre": "Parroquia de San José"
+            },
+            {
+              "id": "399",
+              "nombre": "Santa Isabel 58"
+            },
+            {
+              "id": "13",
+              "nombre": "La Magnesita"
+            },
+            {
+              "id": "391",
+              "nombre": "Italia 6"
+            },
+            {
+              "id": "393",
+              "nombre": "Italia - Tito Pedro"
+            },
+            {
+              "id": "68",
+              "nombre": "Barrio San Luis"
+            },
+            {
+              "id": "291",
+              "nombre": "Avenida Mediterráneo - Plaza San Luis"
+            },
+            {
+              "id": "69",
+              "nombre": "Jefatura Policía Local"
+            },
+            {
+              "id": "70",
+              "nombre": "Avenida Mediterráneo 233"
+            },
+            {
+              "id": "71",
+              "nombre": "Plaza Nueva Andalucía"
+            },
+            {
+              "id": "459",
+              "nombre": "Avenida Montserrat - Gachas Colorás"
+            },
+            {
+              "id": "470",
+              "nombre": "Avenida Montserrat - Minerales"
+            },
+            {
+              "id": "513",
+              "nombre": "Calle Mármoles"
+            },
+            {
+              "id": "514",
+              "nombre": "Pabellón del Mediterráneo"
+            },
+            {
+              "id": "447",
+              "nombre": "Vega de Acá - Glorieta Patatas Salcedo"
+            },
+            {
+              "id": "437",
+              "nombre": "Vega de Acá 133"
+            },
+            {
+              "id": "438",
+              "nombre": "Antonio Muñoz Zamora 29"
+            },
+            {
+              "id": "455",
+              "nombre": "Antonio Muñoz Zamora 1"
+            },
+            {
+              "id": "162",
+              "nombre": "Avenida Mediterráneo 45"
+            },
+            {
+              "id": "510",
+              "nombre": "Avenida Mediterráneo, 29"
+            },
+            {
+              "id": "163",
+              "nombre": "Avenida Mediterráneo 23"
+            },
+            {
+              "id": "136",
+              "nombre": "Paseo Marítimo - Auditorio"
+            },
+            {
+              "id": "137",
+              "nombre": "Paseo Marítimo - Residencia de Mayores"
+            },
+            {
+              "id": "150",
+              "nombre": "Nueva Almería"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "linea": "L15",
+      "rutas": [
+        {
+          "ruta": "RESIDENCIAL ALBORÁN - PLAZA DE COSTACABANA",
+          "paradas": [
+            {
+              "id": "377",
+              "nombre": "Residencial Alborán"
+            },
+            {
+              "id": "221",
+              "nombre": "Residencial los Girasoles"
+            },
+            {
+              "id": "317",
+              "nombre": "Residencial Sol"
+            },
+            {
+              "id": "222",
+              "nombre": "Guardería"
+            },
+            {
+              "id": "316",
+              "nombre": "Camino de los Espejos"
+            },
+            {
+              "id": "223",
+              "nombre": "Camino de la Escuela 20"
+            },
+            {
+              "id": "224",
+              "nombre": "Paseo de Castañeda 122"
+            },
+            {
+              "id": "225",
+              "nombre": "Paseo de Castañeda 92"
+            },
+            {
+              "id": "333",
+              "nombre": "Hospital el Toyo"
+            },
+            {
+              "id": "458",
+              "nombre": "Complejo Deportivo los Pinos"
+            },
+            {
+              "id": "268",
+              "nombre": "Carretera de Níjar 191"
+            },
+            {
+              "id": "195",
+              "nombre": "El Alquián - Almería"
+            },
+            {
+              "id": "196",
+              "nombre": "Kilómetro 9 - Almería"
+            },
+            {
+              "id": "239",
+              "nombre": "Paraje del Cerrillo"
+            },
+            {
+              "id": "240",
+              "nombre": "Carretera Viator - el Alquián 7"
+            },
+            {
+              "id": "245",
+              "nombre": "San Vicente 126"
+            },
+            {
+              "id": "247",
+              "nombre": "Carretera Viator - el Alquián 142"
+            },
+            {
+              "id": "249",
+              "nombre": "López Campillo - la Cañada"
+            },
+            {
+              "id": "253",
+              "nombre": "Venta Gaspar - la Cañada"
+            },
+            {
+              "id": "255",
+              "nombre": "Boticario - Parque"
+            },
+            {
+              "id": "257",
+              "nombre": "Cruce de los Llanos"
+            },
+            {
+              "id": "259",
+              "nombre": "Carretera de Viator 47"
+            },
+            {
+              "id": "204",
+              "nombre": "Los Ángeles"
+            },
+            {
+              "id": "205",
+              "nombre": "Agua Fresca"
+            },
+            {
+              "id": "206",
+              "nombre": "Kilómetro 5"
+            },
+            {
+              "id": "207",
+              "nombre": "Carretera de Níjar 239"
+            },
+            {
+              "id": "208",
+              "nombre": "Plaza de la Cañada - Iglesia"
+            },
+            {
+              "id": "210",
+              "nombre": "La Cañada 51"
+            },
+            {
+              "id": "144",
+              "nombre": "Universidad"
+            },
+            {
+              "id": "294",
+              "nombre": "Las Palomas - Playa"
+            },
+            {
+              "id": "167",
+              "nombre": "El Charco"
+            },
+            {
+              "id": "168",
+              "nombre": "Costacabana - Pistas Deportivas"
+            },
+            {
+              "id": "169",
+              "nombre": "Plaza de Costacabana"
+            }
+          ]
+        },
+        {
+          "ruta": "PLAZA DE COSTACABANA - RESIDENCIAL ALBORÁN",
+          "paradas": [
+            {
+              "id": "169",
+              "nombre": "Plaza de Costacabana"
+            },
+            {
+              "id": "171",
+              "nombre": "Rhin"
+            },
+            {
+              "id": "172",
+              "nombre": "Volga"
+            },
+            {
+              "id": "318",
+              "nombre": "Las Palomas"
+            },
+            {
+              "id": "144",
+              "nombre": "Universidad"
+            },
+            {
+              "id": "177",
+              "nombre": "La Cañada 50"
+            },
+            {
+              "id": "179",
+              "nombre": "Plaza de la Cañada"
+            },
+            {
+              "id": "181",
+              "nombre": "Kilómetro 5 - la Cañada"
+            },
+            {
+              "id": "180",
+              "nombre": "Carretera de Níjar 280"
+            },
+            {
+              "id": "183",
+              "nombre": "IES Portocarrero"
+            },
+            {
+              "id": "258",
+              "nombre": "Carretera de Viator 56"
+            },
+            {
+              "id": "430",
+              "nombre": "Venta Cabrera - Parque"
+            },
+            {
+              "id": "254",
+              "nombre": "Boticario - el Álamo"
+            },
+            {
+              "id": "252",
+              "nombre": "Venta Gaspar - Parque"
+            },
+            {
+              "id": "248",
+              "nombre": "López Campillo - el Alquián"
+            },
+            {
+              "id": "246",
+              "nombre": "Carretera Viator - el Alquián 153"
+            },
+            {
+              "id": "244",
+              "nombre": "San Vicente 32"
+            },
+            {
+              "id": "242",
+              "nombre": "Carretera Viator - el Alquián 11"
+            },
+            {
+              "id": "238",
+              "nombre": "Colegio San Bernardo"
+            },
+            {
+              "id": "192",
+              "nombre": "Kilómetro 9 - Retamar"
+            },
+            {
+              "id": "193",
+              "nombre": "El Alquián - Retamar"
+            },
+            {
+              "id": "194",
+              "nombre": "IES el Alquián"
+            },
+            {
+              "id": "457",
+              "nombre": "Campo de Futbol - el Alquián"
+            },
+            {
+              "id": "333",
+              "nombre": "Hospital el Toyo"
+            },
+            {
+              "id": "431",
+              "nombre": "Juegos del Mediterráneo 31"
+            },
+            {
+              "id": "352",
+              "nombre": "Juegos del Mediterráneo 11"
+            },
+            {
+              "id": "351",
+              "nombre": "Centro de Congresos - Hoteles"
+            },
+            {
+              "id": "350",
+              "nombre": "Juegos de Casablanca - Hoteles"
+            },
+            {
+              "id": "377",
+              "nombre": "Residencial Alborán"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "linea": "L18",
+      "rutas": [
+        {
+          "ruta": "HOSPITAL UNIVERSITARIO TORRECÁRDENAS - PLAZA DE COSTACABANA",
+          "paradas": [
+            {
+              "id": "22",
+              "nombre": "Hospital Universitario Torrecárdenas"
+            },
+            {
+              "id": "426",
+              "nombre": "Parking Hospital"
+            },
+            {
+              "id": "23",
+              "nombre": "Estadio Municipal Juan Rojas"
+            },
+            {
+              "id": "24",
+              "nombre": "Asociación de Vecinos la Torre"
+            },
+            {
+              "id": "25",
+              "nombre": "Acceso Piedras Redondas"
+            },
+            {
+              "id": "26",
+              "nombre": "Fábrica de Azufre"
+            },
+            {
+              "id": "130",
+              "nombre": "Cruz de Caravaca"
+            },
+            {
+              "id": "111",
+              "nombre": "Maestría"
+            },
+            {
+              "id": "112",
+              "nombre": "Carretera de Granada 213"
+            },
+            {
+              "id": "113",
+              "nombre": "Carretera de Granada 145"
+            },
+            {
+              "id": "282",
+              "nombre": "Mercado de los Ángeles"
+            },
+            {
+              "id": "342",
+              "nombre": "Delegación de Educación"
+            },
+            {
+              "id": "343",
+              "nombre": "CEP"
+            },
+            {
+              "id": "18",
+              "nombre": "Ikea"
+            },
+            {
+              "id": "344",
+              "nombre": "Residencia Ballesol"
+            },
+            {
+              "id": "345",
+              "nombre": "Calle Fernando de Rojas, Colegio"
+            },
+            {
+              "id": "346",
+              "nombre": "Calle Genoveses, 29"
+            },
+            {
+              "id": "1",
+              "nombre": "Plaza del Quemadero"
+            },
+            {
+              "id": "2",
+              "nombre": "Avenida. Pablo Iglesias"
+            },
+            {
+              "id": "3",
+              "nombre": "Rambla Alfareros"
+            },
+            {
+              "id": "328",
+              "nombre": "Plaza San Sebastián"
+            },
+            {
+              "id": "329",
+              "nombre": "Santos Zárate"
+            },
+            {
+              "id": "478",
+              "nombre": "Rambla, Celia Viñas"
+            },
+            {
+              "id": "420",
+              "nombre": "Federico García Lorca, 9"
+            },
+            {
+              "id": "47",
+              "nombre": "Club Náutico"
+            },
+            {
+              "id": "94",
+              "nombre": "Terrazas Almadrabillas"
+            },
+            {
+              "id": "48",
+              "nombre": "San Miguel"
+            },
+            {
+              "id": "49",
+              "nombre": "Villa García"
+            },
+            {
+              "id": "133",
+              "nombre": "California"
+            },
+            {
+              "id": "313",
+              "nombre": "Cabo de Gata 140"
+            },
+            {
+              "id": "134",
+              "nombre": "Cabo de Gata - Zapillo"
+            },
+            {
+              "id": "135",
+              "nombre": "Paseo Marítimo - el Palmeral"
+            },
+            {
+              "id": "136",
+              "nombre": "Paseo Marítimo - Auditorio"
+            },
+            {
+              "id": "137",
+              "nombre": "Paseo Marítimo - Residencia de Mayores"
+            },
+            {
+              "id": "138",
+              "nombre": "Paseo Marítimo - Nueva Almería"
+            },
+            {
+              "id": "443",
+              "nombre": "Paseo Marítimo - Parque Andarax"
+            },
+            {
+              "id": "140",
+              "nombre": "Paseo Marítimo - Río Andarax"
+            },
+            {
+              "id": "141",
+              "nombre": "Paseo Marítimo - la Cabaña"
+            },
+            {
+              "id": "142",
+              "nombre": "Paseo Marítimo - el Bobar"
+            },
+            {
+              "id": "143",
+              "nombre": "Paseo Marítimo - Trafariña"
+            },
+            {
+              "id": "144",
+              "nombre": "Universidad"
+            },
+            {
+              "id": "294",
+              "nombre": "Las Palomas - Playa"
+            },
+            {
+              "id": "167",
+              "nombre": "El Charco"
+            },
+            {
+              "id": "168",
+              "nombre": "Costacabana - Pistas Deportivas"
+            },
+            {
+              "id": "169",
+              "nombre": "Plaza de Costacabana"
+            }
+          ]
+        },
+        {
+          "ruta": "PLAZA DE COSTACABANA - HOSPITAL UNIVERSITARIO TORRECÁRDENAS",
+          "paradas": [
+            {
+              "id": "169",
+              "nombre": "Plaza de Costacabana"
+            },
+            {
+              "id": "171",
+              "nombre": "Rhin"
+            },
+            {
+              "id": "172",
+              "nombre": "Volga"
+            },
+            {
+              "id": "318",
+              "nombre": "Las Palomas"
+            },
+            {
+              "id": "144",
+              "nombre": "Universidad"
+            },
+            {
+              "id": "145",
+              "nombre": "Trafariña"
+            },
+            {
+              "id": "147",
+              "nombre": "La Cabaña"
+            },
+            {
+              "id": "444",
+              "nombre": "Parque Andarax"
+            },
+            {
+              "id": "149",
+              "nombre": "Playa"
+            },
+            {
+              "id": "150",
+              "nombre": "Nueva Almería"
+            },
+            {
+              "id": "151",
+              "nombre": "Quinto Pino"
+            },
+            {
+              "id": "152",
+              "nombre": "Auditorio"
+            },
+            {
+              "id": "164",
+              "nombre": "Cabo de Gata - el Palmeral"
+            },
+            {
+              "id": "165",
+              "nombre": "Plaza del Zapillo"
+            },
+            {
+              "id": "314",
+              "nombre": "Cabo de Gata 131"
+            },
+            {
+              "id": "166",
+              "nombre": "Cabo de Gata - California"
+            },
+            {
+              "id": "41",
+              "nombre": "Cabo de Gata - Villa García"
+            },
+            {
+              "id": "42",
+              "nombre": "Cabo de Gata - San Miguel"
+            },
+            {
+              "id": "108",
+              "nombre": "Residencia Alborán"
+            },
+            {
+              "id": "43",
+              "nombre": "Cabo de Gata - Club Náutico"
+            },
+            {
+              "id": "44",
+              "nombre": "Oliveros"
+            },
+            {
+              "id": "7",
+              "nombre": "Stella Maris"
+            },
+            {
+              "id": "80",
+              "nombre": "Rambla 54"
+            },
+            {
+              "id": "51",
+              "nombre": "Obelisco"
+            },
+            {
+              "id": "117",
+              "nombre": "Vaguada"
+            },
+            {
+              "id": "282",
+              "nombre": "Mercado de los Ángeles"
+            },
+            {
+              "id": "342",
+              "nombre": "Delegación de Educación"
+            },
+            {
+              "id": "298",
+              "nombre": "Paseo de la Caridad"
+            },
+            {
+              "id": "336",
+              "nombre": "Paseo de la Caridad, 5"
+            },
+            {
+              "id": "337",
+              "nombre": "Calle Largo Caballero, 40"
+            },
+            {
+              "id": "338",
+              "nombre": "Calle Largo Caballero, 84"
+            },
+            {
+              "id": "339",
+              "nombre": "Residencia Ballesol"
+            },
+            {
+              "id": "340",
+              "nombre": "CEP"
+            },
+            {
+              "id": "341",
+              "nombre": "IES Al Andalus"
+            },
+            {
+              "id": "347",
+              "nombre": "Rambla Belén, Alfarerías"
+            },
+            {
+              "id": "281",
+              "nombre": "Rambla - Humilladero"
+            },
+            {
+              "id": "114",
+              "nombre": "Rambla - Vaguada"
+            },
+            {
+              "id": "398",
+              "nombre": "Parroquia de San José"
+            },
+            {
+              "id": "399",
+              "nombre": "Santa Isabel 58"
+            },
+            {
+              "id": "13",
+              "nombre": "La Magnesita"
+            },
+            {
+              "id": "14",
+              "nombre": "Fábrica de Azufre"
+            },
+            {
+              "id": "15",
+              "nombre": "Acceso Piedras Redondas"
+            },
+            {
+              "id": "16",
+              "nombre": "Rambla Iniesta"
+            },
+            {
+              "id": "17",
+              "nombre": "Cementerio"
+            },
+            {
+              "id": "319",
+              "nombre": "Tanatorio"
+            },
+            {
+              "id": "320",
+              "nombre": "Redonda Estadio Municipal"
+            },
+            {
+              "id": "21",
+              "nombre": "Materno Infantil"
+            },
+            {
+              "id": "22",
+              "nombre": "Hospital Universitario Torrecárdenas"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "linea": "L19",
+      "rutas": [
+        {
+          "ruta": "GREGORIO MARAÑÓN - LA SALLE - UNIVERSIDAD NORTE",
+          "paradas": [
+            {
+              "id": "33",
+              "nombre": "Gregorio Marañón - la Salle"
+            },
+            {
+              "id": "8",
+              "nombre": "Avenida de la Estación"
+            },
+            {
+              "id": "292",
+              "nombre": "Estación Intermodal"
+            },
+            {
+              "id": "468",
+              "nombre": "Avenida Montserrat - Estación de Servicio"
+            },
+            {
+              "id": "461",
+              "nombre": "Civitas"
+            },
+            {
+              "id": "459",
+              "nombre": "Avenida Montserrat - Gachas Colorás"
+            },
+            {
+              "id": "470",
+              "nombre": "Avenida Montserrat - Minerales"
+            },
+            {
+              "id": "385",
+              "nombre": "Estadio Mediterráneo"
+            },
+            {
+              "id": "482",
+              "nombre": "Universidad Norte"
+            }
+          ]
+        },
+        {
+          "ruta": "UNIVERSIDAD NORTE - GREGORIO MARAÑÓN - LA SALLE",
+          "paradas": [
+            {
+              "id": "482",
+              "nombre": "Universidad Norte"
+            },
+            {
+              "id": "388",
+              "nombre": "Estadio Mediterráneo - Centro"
+            },
+            {
+              "id": "471",
+              "nombre": "Avenida Montserrat - Manuel Azaña"
+            },
+            {
+              "id": "460",
+              "nombre": "Avenida Montserrat - Doctoral"
+            },
+            {
+              "id": "462",
+              "nombre": "Divina Infantita"
+            },
+            {
+              "id": "469",
+              "nombre": "Avenida Montserrat 45"
+            },
+            {
+              "id": "472",
+              "nombre": "Hotel Nh"
+            },
+            {
+              "id": "273",
+              "nombre": "Carretera de Ronda 31"
+            },
+            {
+              "id": "293",
+              "nombre": "Artés de Arcos"
+            },
+            {
+              "id": "33",
+              "nombre": "Gregorio Marañón - la Salle"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "linea": "L20",
+      "rutas": [
+        {
+          "ruta": "GREGORIO MARAÑÓN - LA SALLE - HOSPITAL DE EL TOYO",
+          "paradas": [
+            {
+              "id": "33",
+              "nombre": "Gregorio Marañón - la Salle"
+            },
+            {
+              "id": "8",
+              "nombre": "Avenida de la Estación"
+            },
+            {
+              "id": "401",
+              "nombre": "Carretera de Ronda 78"
+            },
+            {
+              "id": "9",
+              "nombre": "Ronda - Sanidad"
+            },
+            {
+              "id": "10",
+              "nombre": "Ronda - Blas Infante"
+            },
+            {
+              "id": "11",
+              "nombre": "Cruz Roja"
+            },
+            {
+              "id": "174",
+              "nombre": "Regiones"
+            },
+            {
+              "id": "81",
+              "nombre": "Granja Escuela"
+            },
+            {
+              "id": "82",
+              "nombre": "Los Díaz"
+            },
+            {
+              "id": "83",
+              "nombre": "Plaza Fátima"
+            },
+            {
+              "id": "84",
+              "nombre": "Polígono la Mezquita"
+            },
+            {
+              "id": "175",
+              "nombre": "Los Partidores"
+            },
+            {
+              "id": "176",
+              "nombre": "Los Picos"
+            },
+            {
+              "id": "177",
+              "nombre": "La Cañada 50"
+            },
+            {
+              "id": "179",
+              "nombre": "Plaza de la Cañada"
+            },
+            {
+              "id": "181",
+              "nombre": "Kilómetro 5 - la Cañada"
+            },
+            {
+              "id": "180",
+              "nombre": "Carretera de Níjar 280"
+            },
+            {
+              "id": "183",
+              "nombre": "IES Portocarrero"
+            },
+            {
+              "id": "258",
+              "nombre": "Carretera de Viator 56"
+            },
+            {
+              "id": "349",
+              "nombre": "Loma Cabrera"
+            },
+            {
+              "id": "430",
+              "nombre": "Venta Cabrera - Parque"
+            },
+            {
+              "id": "254",
+              "nombre": "Boticario - el Álamo"
+            },
+            {
+              "id": "252",
+              "nombre": "Venta Gaspar - Parque"
+            },
+            {
+              "id": "248",
+              "nombre": "López Campillo - el Alquián"
+            },
+            {
+              "id": "246",
+              "nombre": "Carretera Viator - el Alquián 153"
+            },
+            {
+              "id": "244",
+              "nombre": "San Vicente 32"
+            },
+            {
+              "id": "242",
+              "nombre": "Carretera Viator - el Alquián 11"
+            },
+            {
+              "id": "238",
+              "nombre": "Colegio San Bernardo"
+            },
+            {
+              "id": "192",
+              "nombre": "Kilómetro 9 - Retamar"
+            },
+            {
+              "id": "193",
+              "nombre": "El Alquián - Retamar"
+            },
+            {
+              "id": "194",
+              "nombre": "IES el Alquián"
+            },
+            {
+              "id": "457",
+              "nombre": "Campo de Futbol - el Alquián"
+            },
+            {
+              "id": "332",
+              "nombre": "Hospital de el Toyo"
+            }
+          ]
+        },
+        {
+          "ruta": "HOSPITAL DE EL TOYO - GREGORIO MARAÑÓN - LA SALLE",
+          "paradas": [
+            {
+              "id": "332",
+              "nombre": "Hospital de el Toyo"
+            },
+            {
+              "id": "458",
+              "nombre": "Complejo Deportivo los Pinos"
+            },
+            {
+              "id": "268",
+              "nombre": "Carretera de Níjar 191"
+            },
+            {
+              "id": "195",
+              "nombre": "El Alquián - Almería"
+            },
+            {
+              "id": "196",
+              "nombre": "Kilómetro 9 - Almería"
+            },
+            {
+              "id": "239",
+              "nombre": "Paraje del Cerrillo"
+            },
+            {
+              "id": "240",
+              "nombre": "Carretera Viator - el Alquián 7"
+            },
+            {
+              "id": "245",
+              "nombre": "San Vicente 126"
+            },
+            {
+              "id": "247",
+              "nombre": "Carretera Viator - el Alquián 142"
+            },
+            {
+              "id": "249",
+              "nombre": "López Campillo - la Cañada"
+            },
+            {
+              "id": "253",
+              "nombre": "Venta Gaspar - la Cañada"
+            },
+            {
+              "id": "255",
+              "nombre": "Boticario - Parque"
+            },
+            {
+              "id": "257",
+              "nombre": "Cruce de los Llanos"
+            },
+            {
+              "id": "349",
+              "nombre": "Loma Cabrera"
+            },
+            {
+              "id": "259",
+              "nombre": "Carretera de Viator 47"
+            },
+            {
+              "id": "204",
+              "nombre": "Los Ángeles"
+            },
+            {
+              "id": "205",
+              "nombre": "Agua Fresca"
+            },
+            {
+              "id": "206",
+              "nombre": "Kilómetro 5"
+            },
+            {
+              "id": "207",
+              "nombre": "Carretera de Níjar 239"
+            },
+            {
+              "id": "208",
+              "nombre": "Plaza de la Cañada - Iglesia"
+            },
+            {
+              "id": "210",
+              "nombre": "La Cañada 51"
+            },
+            {
+              "id": "211",
+              "nombre": "Los Picos - Casi"
+            },
+            {
+              "id": "212",
+              "nombre": "Los Partidores - Casi"
+            },
+            {
+              "id": "96",
+              "nombre": "El Ingenio"
+            },
+            {
+              "id": "97",
+              "nombre": "Molino Rojo"
+            },
+            {
+              "id": "98",
+              "nombre": "Carretera de Níjar - los Díaz"
+            },
+            {
+              "id": "99",
+              "nombre": "Carretera de Níjar - Granja Escuela"
+            },
+            {
+              "id": "267",
+              "nombre": "Regiones - Moisés Ruiz"
+            },
+            {
+              "id": "29",
+              "nombre": "Ronda - Cruz Roja"
+            },
+            {
+              "id": "30",
+              "nombre": "Ronda - Juzgados"
+            },
+            {
+              "id": "31",
+              "nombre": "Sanidad"
+            },
+            {
+              "id": "32",
+              "nombre": "Gregorio Marañón 45"
+            },
+            {
+              "id": "33",
+              "nombre": "Gregorio Marañón - la Salle"
+            }
+          ]
+        },
+        {
+          "ruta": "GREGORIO MARAÑÓN - LA SALLE - CAMINO DE LAS HERAS",
+          "paradas": [
+            {
+              "id": "33",
+              "nombre": "Gregorio Marañón - la Salle"
+            },
+            {
+              "id": "8",
+              "nombre": "Avenida de la Estación"
+            },
+            {
+              "id": "401",
+              "nombre": "Carretera de Ronda 78"
+            },
+            {
+              "id": "9",
+              "nombre": "Ronda - Sanidad"
+            },
+            {
+              "id": "10",
+              "nombre": "Ronda - Blas Infante"
+            },
+            {
+              "id": "11",
+              "nombre": "Cruz Roja"
+            },
+            {
+              "id": "174",
+              "nombre": "Regiones"
+            },
+            {
+              "id": "81",
+              "nombre": "Granja Escuela"
+            },
+            {
+              "id": "82",
+              "nombre": "Los Díaz"
+            },
+            {
+              "id": "83",
+              "nombre": "Plaza Fátima"
+            },
+            {
+              "id": "84",
+              "nombre": "Polígono la Mezquita"
+            },
+            {
+              "id": "175",
+              "nombre": "Los Partidores"
+            },
+            {
+              "id": "176",
+              "nombre": "Los Picos"
+            },
+            {
+              "id": "177",
+              "nombre": "La Cañada 50"
+            },
+            {
+              "id": "179",
+              "nombre": "Plaza de la Cañada"
+            },
+            {
+              "id": "181",
+              "nombre": "Kilómetro 5 - la Cañada"
+            },
+            {
+              "id": "180",
+              "nombre": "Carretera de Níjar 280"
+            },
+            {
+              "id": "183",
+              "nombre": "IES Portocarrero"
+            },
+            {
+              "id": "258",
+              "nombre": "Carretera de Viator 56"
+            },
+            {
+              "id": "349",
+              "nombre": "Loma Cabrera"
+            },
+            {
+              "id": "430",
+              "nombre": "Venta Cabrera - Parque"
+            },
+            {
+              "id": "254",
+              "nombre": "Boticario - el Álamo"
+            },
+            {
+              "id": "252",
+              "nombre": "Venta Gaspar - Parque"
+            },
+            {
+              "id": "248",
+              "nombre": "López Campillo - el Alquián"
+            },
+            {
+              "id": "246",
+              "nombre": "Carretera Viator - el Alquián 153"
+            },
+            {
+              "id": "244",
+              "nombre": "San Vicente 32"
+            },
+            {
+              "id": "242",
+              "nombre": "Carretera Viator - el Alquián 11"
+            },
+            {
+              "id": "238",
+              "nombre": "Colegio San Bernardo"
+            },
+            {
+              "id": "192",
+              "nombre": "Kilómetro 9 - Retamar"
+            },
+            {
+              "id": "193",
+              "nombre": "El Alquián - Retamar"
+            },
+            {
+              "id": "194",
+              "nombre": "IES el Alquián"
+            },
+            {
+              "id": "457",
+              "nombre": "Campo de Futbol - el Alquián"
+            },
+            {
+              "id": "332",
+              "nombre": "Hospital de el Toyo"
+            },
+            {
+              "id": "264",
+              "nombre": "Los Castaños"
+            },
+            {
+              "id": "266",
+              "nombre": "Acebuche"
+            },
+            {
+              "id": "226",
+              "nombre": "Calle Real Solar"
+            },
+            {
+              "id": "227",
+              "nombre": "Cuevas Centro"
+            },
+            {
+              "id": "228",
+              "nombre": "Camino de los Molinos, 40"
+            },
+            {
+              "id": "326",
+              "nombre": "Barranco las Heras, 14"
+            },
+            {
+              "id": "229",
+              "nombre": "Camino de las Heras"
+            }
+          ]
+        },
+        {
+          "ruta": "CAMINO DE LAS HERAS - GREGORIO MARAÑÓN - LA SALLE",
+          "paradas": [
+            {
+              "id": "229",
+              "nombre": "Camino de las Heras"
+            },
+            {
+              "id": "327",
+              "nombre": "Barranco las Heras"
+            },
+            {
+              "id": "230",
+              "nombre": "Camino de los Molinos, 15"
+            },
+            {
+              "id": "231",
+              "nombre": "Calle Real"
+            },
+            {
+              "id": "232",
+              "nombre": "Calle Real, 1"
+            },
+            {
+              "id": "266",
+              "nombre": "Acebuche"
+            },
+            {
+              "id": "265",
+              "nombre": "Los Castaños"
+            },
+            {
+              "id": "332",
+              "nombre": "Hospital de el Toyo"
+            },
+            {
+              "id": "458",
+              "nombre": "Complejo Deportivo los Pinos"
+            },
+            {
+              "id": "268",
+              "nombre": "Carretera de Níjar 191"
+            },
+            {
+              "id": "195",
+              "nombre": "El Alquián - Almería"
+            },
+            {
+              "id": "196",
+              "nombre": "Kilómetro 9 - Almería"
+            },
+            {
+              "id": "239",
+              "nombre": "Paraje del Cerrillo"
+            },
+            {
+              "id": "240",
+              "nombre": "Carretera Viator - el Alquián 7"
+            },
+            {
+              "id": "245",
+              "nombre": "San Vicente 126"
+            },
+            {
+              "id": "247",
+              "nombre": "Carretera Viator - el Alquián 142"
+            },
+            {
+              "id": "249",
+              "nombre": "López Campillo - la Cañada"
+            },
+            {
+              "id": "253",
+              "nombre": "Venta Gaspar - la Cañada"
+            },
+            {
+              "id": "255",
+              "nombre": "Boticario - Parque"
+            },
+            {
+              "id": "257",
+              "nombre": "Cruce de los Llanos"
+            },
+            {
+              "id": "349",
+              "nombre": "Loma Cabrera"
+            },
+            {
+              "id": "259",
+              "nombre": "Carretera de Viator 47"
+            },
+            {
+              "id": "204",
+              "nombre": "Los Ángeles"
+            },
+            {
+              "id": "205",
+              "nombre": "Agua Fresca"
+            },
+            {
+              "id": "206",
+              "nombre": "Kilómetro 5"
+            },
+            {
+              "id": "207",
+              "nombre": "Carretera de Níjar 239"
+            },
+            {
+              "id": "208",
+              "nombre": "Plaza de la Cañada - Iglesia"
+            },
+            {
+              "id": "210",
+              "nombre": "La Cañada 51"
+            },
+            {
+              "id": "211",
+              "nombre": "Los Picos - Casi"
+            },
+            {
+              "id": "212",
+              "nombre": "Los Partidores - Casi"
+            },
+            {
+              "id": "96",
+              "nombre": "El Ingenio"
+            },
+            {
+              "id": "97",
+              "nombre": "Molino Rojo"
+            },
+            {
+              "id": "98",
+              "nombre": "Carretera de Níjar - los Díaz"
+            },
+            {
+              "id": "99",
+              "nombre": "Carretera de Níjar - Granja Escuela"
+            },
+            {
+              "id": "267",
+              "nombre": "Regiones - Moisés Ruiz"
+            },
+            {
+              "id": "29",
+              "nombre": "Ronda - Cruz Roja"
+            },
+            {
+              "id": "30",
+              "nombre": "Ronda - Juzgados"
+            },
+            {
+              "id": "31",
+              "nombre": "Sanidad"
+            },
+            {
+              "id": "32",
+              "nombre": "Gregorio Marañón 45"
+            },
+            {
+              "id": "33",
+              "nombre": "Gregorio Marañón - la Salle"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "linea": "L30",
+      "rutas": [
+        {
+          "ruta": "GREGORIO MARAÑÓN - LA SALLE - RESIDENCIAL ALBORÁN",
+          "paradas": [
+            {
+              "id": "33",
+              "nombre": "Gregorio Marañón - la Salle"
+            },
+            {
+              "id": "8",
+              "nombre": "Avenida de la Estación"
+            },
+            {
+              "id": "292",
+              "nombre": "Estación Intermodal"
+            },
+            {
+              "id": "401",
+              "nombre": "Carretera de Ronda 78"
+            },
+            {
+              "id": "9",
+              "nombre": "Ronda - Sanidad"
+            },
+            {
+              "id": "54",
+              "nombre": "Blas Infante"
+            },
+            {
+              "id": "55",
+              "nombre": "Arcipreste de Hita"
+            },
+            {
+              "id": "56",
+              "nombre": "Parque Carrefour"
+            },
+            {
+              "id": "57",
+              "nombre": "Parque del Generalife"
+            },
+            {
+              "id": "384",
+              "nombre": "Manuel Azaña"
+            },
+            {
+              "id": "385",
+              "nombre": "Estadio Mediterráneo"
+            },
+            {
+              "id": "188",
+              "nombre": "Aeropuerto"
+            },
+            {
+              "id": "473",
+              "nombre": "Rambla Lechuga"
+            },
+            {
+              "id": "189",
+              "nombre": "Kilómetro 8"
+            },
+            {
+              "id": "190",
+              "nombre": "La Venta"
+            },
+            {
+              "id": "191",
+              "nombre": "El Chalet"
+            },
+            {
+              "id": "192",
+              "nombre": "Kilómetro 9 - Retamar"
+            },
+            {
+              "id": "193",
+              "nombre": "El Alquián - Retamar"
+            },
+            {
+              "id": "194",
+              "nombre": "IES el Alquián"
+            },
+            {
+              "id": "457",
+              "nombre": "Campo de Futbol - el Alquián"
+            },
+            {
+              "id": "333",
+              "nombre": "Hospital el Toyo"
+            },
+            {
+              "id": "431",
+              "nombre": "Juegos del Mediterráneo 31"
+            },
+            {
+              "id": "352",
+              "nombre": "Juegos del Mediterráneo 11"
+            },
+            {
+              "id": "351",
+              "nombre": "Centro de Congresos - Hoteles"
+            },
+            {
+              "id": "350",
+              "nombre": "Juegos de Casablanca - Hoteles"
+            },
+            {
+              "id": "377",
+              "nombre": "Residencial Alborán"
+            }
+          ]
+        },
+        {
+          "ruta": "RESIDENCIAL ALBORÁN - GREGORIO MARAÑÓN - LA SALLE",
+          "paradas": [
+            {
+              "id": "377",
+              "nombre": "Residencial Alborán"
+            },
+            {
+              "id": "221",
+              "nombre": "Residencial los Girasoles"
+            },
+            {
+              "id": "317",
+              "nombre": "Residencial Sol"
+            },
+            {
+              "id": "222",
+              "nombre": "Guardería"
+            },
+            {
+              "id": "316",
+              "nombre": "Camino de los Espejos"
+            },
+            {
+              "id": "223",
+              "nombre": "Camino de la Escuela 20"
+            },
+            {
+              "id": "224",
+              "nombre": "Paseo de Castañeda 122"
+            },
+            {
+              "id": "225",
+              "nombre": "Paseo de Castañeda 92"
+            },
+            {
+              "id": "333",
+              "nombre": "Hospital el Toyo"
+            },
+            {
+              "id": "458",
+              "nombre": "Complejo Deportivo los Pinos"
+            },
+            {
+              "id": "268",
+              "nombre": "Carretera de Níjar 191"
+            },
+            {
+              "id": "195",
+              "nombre": "El Alquián - Almería"
+            },
+            {
+              "id": "196",
+              "nombre": "Kilómetro 9 - Almería"
+            },
+            {
+              "id": "197",
+              "nombre": "El Chalet"
+            },
+            {
+              "id": "198",
+              "nombre": "La Venta"
+            },
+            {
+              "id": "199",
+              "nombre": "Kilómetro 8"
+            },
+            {
+              "id": "474",
+              "nombre": "Rambla Lechuga, Vuelta"
+            },
+            {
+              "id": "188",
+              "nombre": "Aeropuerto"
+            },
+            {
+              "id": "388",
+              "nombre": "Estadio Mediterráneo - Centro"
+            },
+            {
+              "id": "389",
+              "nombre": "Calle Manuel Azaña, 139"
+            },
+            {
+              "id": "70",
+              "nombre": "Avenida Mediterráneo 233"
+            },
+            {
+              "id": "71",
+              "nombre": "Plaza Nueva Andalucía"
+            },
+            {
+              "id": "72",
+              "nombre": "IES Azcona"
+            },
+            {
+              "id": "74",
+              "nombre": "Conservatorio de Música"
+            },
+            {
+              "id": "31",
+              "nombre": "Sanidad"
+            },
+            {
+              "id": "32",
+              "nombre": "Gregorio Marañón 45"
+            },
+            {
+              "id": "33",
+              "nombre": "Gregorio Marañón - la Salle"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "linea": "L31",
+      "rutas": [
+        {
+          "ruta": "GREGORIO MARAÑÓN - LA SALLE - RESIDENCIAL ALBORÁN, PARQUE",
+          "paradas": [
+            {
+              "id": "33",
+              "nombre": "Gregorio Marañón - la Salle"
+            },
+            {
+              "id": "8",
+              "nombre": "Avenida de la Estación"
+            },
+            {
+              "id": "292",
+              "nombre": "Estación Intermodal"
+            },
+            {
+              "id": "468",
+              "nombre": "Avenida Montserrat - Estación de Servicio"
+            },
+            {
+              "id": "461",
+              "nombre": "Civitas"
+            },
+            {
+              "id": "459",
+              "nombre": "Avenida Montserrat - Gachas Colorás"
+            },
+            {
+              "id": "470",
+              "nombre": "Avenida Montserrat - Minerales"
+            },
+            {
+              "id": "385",
+              "nombre": "Estadio Mediterráneo"
+            },
+            {
+              "id": "475",
+              "nombre": "N-344 Estación de Servicio"
+            },
+            {
+              "id": "214",
+              "nombre": "Paseo de Castañeda, 94"
+            },
+            {
+              "id": "215",
+              "nombre": "Paseo de Castañeda, Calle Pomelo"
+            },
+            {
+              "id": "216",
+              "nombre": "Camino de la Escuela, 111"
+            },
+            {
+              "id": "302",
+              "nombre": "Juegos de Atenas"
+            },
+            {
+              "id": "303",
+              "nombre": "Juegos de Barcelona - Túnez"
+            },
+            {
+              "id": "304",
+              "nombre": "Juegos de Barcelona - Atenas"
+            },
+            {
+              "id": "355",
+              "nombre": "Residencial Sol"
+            },
+            {
+              "id": "356",
+              "nombre": "Los Girasoles"
+            },
+            {
+              "id": "378",
+              "nombre": "Residencial Alborán, Parque"
+            }
+          ]
+        },
+        {
+          "ruta": "RESIDENCIAL ALBORÁN, PARQUE - GREGORIO MARAÑÓN - LA SALLE",
+          "paradas": [
+            {
+              "id": "378",
+              "nombre": "Residencial Alborán, Parque"
+            },
+            {
+              "id": "463",
+              "nombre": "Juegos de Casablanca, Juegos de Argel"
+            },
+            {
+              "id": "464",
+              "nombre": "Complejo Deportivo \"el Toyo\""
+            },
+            {
+              "id": "466",
+              "nombre": "Avenida de los Juegos Mediterráneos, 2"
+            },
+            {
+              "id": "465",
+              "nombre": "Villa Mediterránea, Vuelta"
+            },
+            {
+              "id": "388",
+              "nombre": "Estadio Mediterráneo - Centro"
+            },
+            {
+              "id": "471",
+              "nombre": "Avenida Montserrat - Manuel Azaña"
+            },
+            {
+              "id": "460",
+              "nombre": "Avenida Montserrat - Doctoral"
+            },
+            {
+              "id": "462",
+              "nombre": "Divina Infantita"
+            },
+            {
+              "id": "469",
+              "nombre": "Avenida Montserrat 45"
+            },
+            {
+              "id": "472",
+              "nombre": "Hotel Nh"
+            },
+            {
+              "id": "273",
+              "nombre": "Carretera de Ronda 31"
+            },
+            {
+              "id": "293",
+              "nombre": "Artés de Arcos"
+            },
+            {
+              "id": "33",
+              "nombre": "Gregorio Marañón - la Salle"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
