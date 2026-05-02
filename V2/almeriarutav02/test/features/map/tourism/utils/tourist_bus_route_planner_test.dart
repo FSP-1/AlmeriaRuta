@@ -27,17 +27,17 @@ void main() {
       lastService: '22:30',
       totalStops: 4,
       stops: [
-        StopModel(id: 's1', name: 'Origen', lat: 36.8380, lon: -2.4600, zone: 'A', lineIds: {'L1'}),
-        StopModel(id: 's2', name: 'Intermedia', lat: 36.8390, lon: -2.4630, zone: 'A', lineIds: {'L1'}),
-        StopModel(id: 's3', name: 'Destino', lat: 36.8405, lon: -2.4660, zone: 'A', lineIds: {'L1'}),
+        StopModel(id: 's1', name: 'Origen', lat: 36.8380, lon: -2.4600, zone: '', lineIds: {'L1'}),
+        StopModel(id: 's2', name: 'Intermedia', lat: 36.8390, lon: -2.4630, zone: '', lineIds: {'L1'}),
+        StopModel(id: 's3', name: 'Destino', lat: 36.8405, lon: -2.4660, zone: '', lineIds: {'L1'}),
       ],
     );
 
     test('findNearbyStops returns stops ordered by distance to tourist place', () {
       final stops = [
-        StopModel(id: 'a', name: 'Lejana', lat: 36.8300, lon: -2.4500, zone: 'A', lineIds: {'L1'}),
-        StopModel(id: 'b', name: 'Cercana', lat: 36.8408, lon: -2.4668, zone: 'A', lineIds: {'L1'}),
-        StopModel(id: 'c', name: 'Muy cercana', lat: 36.8412, lon: -2.4672, zone: 'A', lineIds: {'L1'}),
+        StopModel(id: 'a', name: 'Lejana', lat: 36.8300, lon: -2.4500, zone: '', lineIds: {'L1'}),
+        StopModel(id: 'b', name: 'Cercana', lat: 36.8408, lon: -2.4668, zone: '', lineIds: {'L1'}),
+        StopModel(id: 'c', name: 'Muy cercana', lat: 36.8412, lon: -2.4672, zone: '', lineIds: {'L1'}),
       ];
 
       final options = TouristBusRoutePlanner.findNearbyStops(
@@ -76,7 +76,7 @@ void main() {
         name: 'Intercambiador',
         lat: 36.8500,
         lon: -2.5000,
-        zone: 'A',
+        zone: '',
         lineIds: const {'L1', 'L2'},
       );
 
@@ -90,8 +90,8 @@ void main() {
         lastService: '22:30',
         totalStops: 3,
         stops: [
-          StopModel(id: 'u1', name: 'Cerca usuario', lat: 36.8381, lon: -2.4601, zone: 'A', lineIds: const {'L1'}),
-          StopModel(id: 'u2', name: 'Intermedia L1', lat: 36.8440, lon: -2.4800, zone: 'A', lineIds: const {'L1'}),
+          StopModel(id: 'u1', name: 'Cerca usuario', lat: 36.8381, lon: -2.4601, zone: '', lineIds: const {'L1'}),
+          StopModel(id: 'u2', name: 'Intermedia L1', lat: 36.8440, lon: -2.4800, zone: '', lineIds: const {'L1'}),
           transfer,
         ],
       );
@@ -101,7 +101,7 @@ void main() {
         name: 'Destino turístico',
         lat: 36.8410,
         lon: -2.4670,
-        zone: 'A',
+        zone: '',
         lineIds: const {'L2'},
       );
 
@@ -115,7 +115,7 @@ void main() {
         lastService: '22:30',
         totalStops: 3,
         stops: [
-          StopModel(id: 'f0', name: 'Lejana L2', lat: 36.8600, lon: -2.5100, zone: 'A', lineIds: const {'L2'}),
+          StopModel(id: 'f0', name: 'Lejana L2', lat: 36.8600, lon: -2.5100, zone: '', lineIds: const {'L2'}),
           transfer,
           destination,
         ],

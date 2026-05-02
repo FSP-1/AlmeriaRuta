@@ -4,7 +4,7 @@ import '../utils/tourist_bus_route_planner.dart';
 /// Formats a [TouristBusRoutePlan] into a list of readable step-by-step instructions.
 List<String> buildBusRouteInstructions(TouristBusRoutePlan plan, TouristPlace place) {
   final instructions = <String>[
-    'Camina ${plan.walkToBoardMeters.round()} m (${plan.walkToBoardMinutes} min aprox.) hasta ${plan.segments.first.boardingStop.name}.',
+    'Camina ${plan.walkToBoardMeters.round()} m hasta ${plan.segments.first.boardingStop.name}.',
   ];
 
   for (var i = 0; i < plan.segments.length; i++) {
@@ -27,7 +27,7 @@ List<String> buildBusRouteInstructions(TouristBusRoutePlan plan, TouristPlace pl
   }
 
   instructions.add(
-    'Camina ${plan.walkFromStopToPlaceMeters.round()} m (${plan.walkFromStopToPlaceMinutes} min aprox.) para llegar a ${place.name}.',
+    'Camina ${plan.walkFromStopToPlaceMeters.round()} m para llegar a ${place.name}.',
   );
 
   return instructions;

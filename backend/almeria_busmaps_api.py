@@ -124,66 +124,86 @@ class BusMapsClient:
         self.stop_times_with_line = st[['line_id', 'stop_id_norm', 'arrival_seconds']]
 
     def get_almeria_lines(self):
-        """Obtiene todas las líneas urbanas de Almería"""
+        """Obtiene todas las líneas urbanas de Almería (FIX REAL ORDEN + COMPLETAS)"""
         if self.lines_cache is not None:
             return self.lines_cache
-            
+
         lines = []
-        
+
         for _, route in self.urban_routes_almeria.iterrows():
             short_name = clean_route_name(route['route_short_name'])
             long_name = route.get('route_long_name', short_name)
-            
-            print(f"Procesando línea urbana: {short_name} - {long_name}")
-            
-            # Obtener trips de esta ruta (uno por dirección)
+
+            print(f"🟢 Procesando línea: {short_name}")
+
+            # 🔥 TODOS los trips de la línea
             route_trips = self.trips[self.trips['route_id'] == route['route_id']]
-            print(f"  Trips encontrados para {short_name}: {len(route_trips)}")
-            
-            if len(route_trips) == 0:
-                print(f"  ⚠️ No hay trips para {short_name}")
+
+            if route_trips.empty:
+                continue
+
+            trip_ids = route_trips['trip_id'].unique()
+
+            # 🔥 TODAS las paradas de TODOS los trips
+            trip_stops = self.stop_times[
+                self.stop_times['trip_id'].isin(trip_ids)
+            ].copy()
+
+            if trip_stops.empty:
+                continue
+
+            # 🔥 merge con stops reales
+            trip_stops = trip_stops.merge(
+                self.stops,
+                on='stop_id_norm',
+                how='left'
+            )
+
+            # 🔥 ordenar correctamente
+            trip_stops = trip_stops.sort_values(['trip_id', 'stop_sequence'])
+
+            trip_stops = trip_stops[trip_stops['stop_name'].notna()]
+
+            # 🔥 ENCONTRAR EL RECORRIDO MÁS COMPLETO
+            # En lugar de mezclar paradas de todos los viajes (lo que rompe el orden geográfico),
+            # buscamos el viaje (trip_id) individual que tenga más paradas en esta ruta.
+            trip_stop_counts = trip_stops.groupby('trip_id').size()
+
+            if trip_stop_counts.empty:
                 continue
                 
-            route_trips = route_trips.groupby('direction_id').head(1)
-            print(f"  Trips después de agrupar: {len(route_trips)}")
-            
-            stops_for_route = []
+            longest_trip_id = trip_stop_counts.idxmax()
+            best_trip_stops = trip_stops[trip_stops['trip_id'] == longest_trip_id].sort_values('stop_sequence')
 
-            for _, trip in route_trips.iterrows():
-                print(f"    Procesando trip: {trip['trip_id']}")
-                # Obtener paradas del trip
-                trip_stops = self.stop_times[self.stop_times['trip_id'] == trip['trip_id']].copy()
-                print(f"    Paradas en stop_times: {len(trip_stops)}")
-                
-                if len(trip_stops) == 0:
-                    print(f"    ⚠️ No hay paradas en stop_times para trip {trip['trip_id']}")
+            seen_consecutive = None
+            ordered_stops = []
+
+            for _, s in best_trip_stops.iterrows():
+                sid = str(s['stop_id_norm'])
+
+                # Evitar duplicados consecutivos (a veces el GTFS tiene la misma parada 2 veces seguidas por error)
+                # IMPORTANTE: No usamos un set() global para permitir que una ruta circular 
+                # vuelva a pasar por la misma parada más adelante si es necesario.
+                if sid == seen_consecutive:
                     continue
-                    
-                trip_stops = trip_stops.merge(
-                    self.stops,
-                    on='stop_id_norm',
-                    how='left'
-                ).sort_values('stop_sequence')
-                
-                trip_stops = trip_stops[trip_stops['stop_name'].notna()]
-                print(f"    Paradas después del merge: {len(trip_stops)}")
-                
-                for _, s in trip_stops.iterrows():
-                    stops_for_route.append({
-                        "id": s['stop_id_norm'],
-                        "name": s['stop_name'],
-                        "lat": s['stop_lat'],
-                        "lon": s['stop_lon'],
-                        "zone": get_zone_by_location(s['stop_lat'], s['stop_lon'])
-                    })
+                seen_consecutive = sid
 
-            # Eliminar duplicados y mantener orden
-            seen = set()
-            unique_stops = []
-            for s in stops_for_route:
-                if s['id'] not in seen:
-                    seen.add(s['id'])
-                    unique_stops.append(s)
+                ordered_stops.append({
+                    "id": sid,
+                    "name": s['stop_name'],
+                    "lat": float(s['stop_lat']),
+                    "lon": float(s['stop_lon']),
+                    "zone": get_zone_by_location(s['stop_lat'], s['stop_lon'])
+                })
+
+            # 🚫 evitar líneas basura gigantes o muy cortas
+            if len(ordered_stops) < 5:
+                print(f"⚠️ Línea descartada por pocas paradas: {short_name}")
+                continue
+
+            if len(ordered_stops) > 200:
+                print(f"⚠️ Línea recortada por exceso de paradas: {short_name}")
+                ordered_stops = ordered_stops[:200]
 
             lines.append({
                 "id": short_name,
@@ -194,11 +214,11 @@ class BusMapsClient:
                 "frequency": "15-30 min",
                 "firstService": "06:30",
                 "lastService": "22:30",
-                "totalStops": len(unique_stops),
-                "stops": unique_stops
+                "totalStops": len(ordered_stops),
+                "stops": ordered_stops
             })
 
-        print(f"Total líneas urbanas procesadas: {len(lines)}")
+        print(f"✅ Líneas finales: {len(lines)}")
         self.lines_cache = lines
         return lines
 

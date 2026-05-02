@@ -6,37 +6,52 @@ import '../../../../shared/services/line_models.dart';
 import 'tourist_bus_route_planner_models.dart';
 
 /// Compares two route plans and returns true if candidate is better.
-/// Direct routes (no transfer) are strongly preferred over transfer routes
-/// unless the transfer saves more than 8 minutes.
+/// Prioriza:
+/// - Menos caminata
+/// - Menos transbordos (muy importante)
+/// - Rutas más directas
 bool isBetterPlan(TouristBusRoutePlan? candidate, TouristBusRoutePlan? current) {
   if (candidate == null) return false;
   if (current == null) return true;
 
-  // Penalise each transfer with 8 minutes (waiting + walking between stops).
-  const transferPenaltyMinutes = 8;
-  final candidateAdjusted =
-      candidate.totalDurationMinutes + (candidate.segments.length - 1) * transferPenaltyMinutes;
-  final currentAdjusted =
-      current.totalDurationMinutes + (current.segments.length - 1) * transferPenaltyMinutes;
+  final candidateTransfers = candidate.segments.length;
+  final currentTransfers = current.segments.length;
 
-  if (candidateAdjusted != currentAdjusted) {
-    return candidateAdjusted < currentAdjusted;
+  // 🟢 PRIORIDAD ABSOLUTA: MENOS TRANSBORDOS
+  if (candidateTransfers != currentTransfers) {
+    return candidateTransfers < currentTransfers;
   }
-  // Tie-break: fewer transfers, then less walking to board.
-  if (candidate.segments.length != current.segments.length) {
-    return candidate.segments.length < current.segments.length;
+
+  // 🔵 luego distancia real
+  final candidateDistance = candidate.totalDistanceMeters;
+  final currentDistance = current.totalDistanceMeters;
+
+  if (candidateDistance != currentDistance) {
+    return candidateDistance < currentDistance;
   }
-  return candidate.walkToBoardMeters < current.walkToBoardMeters;
+
+  // 🟡 luego caminata
+  final candidateWalk = candidate.walkToBoardMeters +
+      candidate.walkFromStopToPlaceMeters;
+
+  final currentWalk = current.walkToBoardMeters +
+      current.walkFromStopToPlaceMeters;
+
+  return candidateWalk < currentWalk;
 }
 
-/// Returns true if taking the bus saves at least [minSavingMinutes] vs walking directly.
-bool isBusWorthIt(TouristBusRoutePlan plan, double directWalkMeters, {int minSavingMinutes = 5}) {
-  final directWalkMinutes = estimateWalkingMinutes(directWalkMeters);
-  return (directWalkMinutes - plan.totalDurationMinutes) >= minSavingMinutes;
+/// Returns true if taking the bus saves at least [minDistanceSavedMeters] vs walking directly.
+bool isBusWorthIt(
+  TouristBusRoutePlan plan,
+  double directWalkMeters, {
+  double minDistanceSavedMeters = 100, // 🔥 subido para evitar sugerencias absurdas
+}) {
+  return (directWalkMeters - plan.totalDistanceMeters) >=
+      minDistanceSavedMeters;
 }
 
 /// Estimates bus ride time in minutes based on number of stops.
-/// Uses 2 min/stop which is more realistic for Almería urban lines.
+/// Aproximación realista: ~2 min por parada
 int estimateBusRideMinutes(int stopCount) {
   return math.max(2, (stopCount - 1) * 2);
 }
@@ -60,10 +75,11 @@ double calculateSegmentDistance(List<StopModel> routeStops) {
 }
 
 /// Estimates walking time in minutes based on distance.
-/// Assumes average walking speed of 1.39 m/s (5 km/h).
+/// Velocidad media: 5 km/h (1.39 m/s)
 int estimateWalkingMinutes(double distanceMeters) {
-  const walkingSpeedMps = 1.39;
+  const walkingSpeedMps = 1.0;
   final minutes = ((distanceMeters / walkingSpeedMps) / 60).round();
+
   if (distanceMeters > 0 && minutes == 0) {
     return 1;
   }

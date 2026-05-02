@@ -23,28 +23,50 @@ class BusApiService {
   static final Map<String, DateTime> _lineArrivalsFetchedAt = {};
   static final Map<String, Future<Map<String, int>>> _inFlightLineArrivals = {};
 
-  Future<List<LineModel>> getLines({bool forceRefresh = false}) async {
-    await _ensureDiskCacheLoaded();
+Future<List<LineModel>> getLines({bool forceRefresh = false}) async {
+  if (_linesCache != null && !forceRefresh) {
+  return _linesCache!;
+}
+  await _ensureDiskCacheLoaded();
 
-    if (!forceRefresh && _linesCache != null) {
-      return _linesCache!;
-    }
+  final lines = await _fetchLines();
 
-    if (!forceRefresh && _inFlightLines != null) {
-      return _inFlightLines!;
-    }
+  // 🔥 FIX: construir lineIds reales
+  final Map<String, Set<String>> stopToLines = {};
 
-    final future = _fetchLines();
-    _inFlightLines = future;
-    try {
-      final lines = await future;
-      _linesCache = lines;
-      await _persistStaticCaches();
-      return lines;
-    } finally {
-      _inFlightLines = null;
+  for (final line in lines) {
+    for (final stop in line.stops) {
+      stopToLines.putIfAbsent(stop.id, () => {}).add(line.id);
     }
   }
+
+  // 🔥 aplicar a cada stop
+  final enrichedLines = lines.map((line) {
+    final newStops = line.stops.map((s) {
+      return s.copyWith(
+        lineIds: stopToLines[s.id] ?? {},
+      );
+    }).toList();
+
+    return LineModel(
+      id: line.id,
+      name: line.name,
+      fullName: line.fullName,
+      description: line.description,
+      color: line.color,
+      frequency: line.frequency,
+      firstService: line.firstService,
+      lastService: line.lastService,
+      totalStops: line.totalStops,
+      stops: newStops,
+    );
+  }).toList();
+
+  _linesCache = enrichedLines;
+  await _persistStaticCaches();
+
+  return enrichedLines;
+}
 
   Future<List<StopModel>> getLineStops(String lineId, {bool forceRefresh = false}) async {
     await _ensureDiskCacheLoaded();

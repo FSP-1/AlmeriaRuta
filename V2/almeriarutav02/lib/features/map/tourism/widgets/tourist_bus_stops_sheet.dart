@@ -3,7 +3,7 @@ import 'package:geolocator/geolocator.dart';
 
 import '../../viewmodels/map_viewmodel.dart';
 import '../models/tourist_place.dart';
-import '../utils/tourist_bus_route_planner_helpers.dart';
+import '../utils/tourist_bus_route_planner_models.dart';
 import 'tourist_bus_route_sheet.dart';
 
 /// Displays nearby bus stops for a tourist place and allows selecting one for routing.
@@ -20,14 +20,13 @@ Future<void> showTouristBusStopsSheet({
     return;
   }
 
-  // Direct walk distance and time for comparison
+  // Direct walk distance for comparison
   final directWalkMeters = Geolocator.distanceBetween(
     userLocation.latitude,
     userLocation.longitude,
     place.location.latitude,
     place.location.longitude,
   );
-  final directWalkMinutes = estimateWalkingMinutes(directWalkMeters);
 
   final nearbyStops = mapViewModel.getNearbyTouristStops(place);
   if (nearbyStops.isEmpty) {
@@ -43,22 +42,30 @@ Future<void> showTouristBusStopsSheet({
 
   // Prioritize actual best routes to the tourist point:
   // valid plan first, then shorter total time, fewer transfers, and closer stop to place.
-  evaluatedStops.sort((a, b) {
-    final aPlan = a.plan;
-    final bPlan = b.plan;
+evaluatedStops.sort((a, b) {
+  final aPlan = a.plan;
+  final bPlan = b.plan;
 
-    if (aPlan == null && bPlan != null) return 1;
-    if (aPlan != null && bPlan == null) return -1;
-    if (aPlan != null && bPlan != null) {
-      final byDuration = aPlan.totalDurationMinutes.compareTo(bPlan.totalDurationMinutes);
-      if (byDuration != 0) return byDuration;
+  if (aPlan == null && bPlan != null) return 1;
+  if (aPlan != null && bPlan == null) return -1;
 
-      final byTransfers = (aPlan.segments.length - 1).compareTo(bPlan.segments.length - 1);
-      if (byTransfers != 0) return byTransfers;
+  if (aPlan != null && bPlan != null) {
+    // 🔥 PRIORIDAD ABSOLUTA: directos
+    final aTransfers = aPlan.segments.length;
+    final bTransfers = bPlan.segments.length;
+
+    if (aTransfers != bTransfers) {
+      return aTransfers.compareTo(bTransfers);
     }
 
-    return a.option.distanceToPlaceMeters.compareTo(b.option.distanceToPlaceMeters);
-  });
+    // luego score
+    return _planPrecisionScore(aPlan)
+        .compareTo(_planPrecisionScore(bPlan));
+  }
+
+  return a.option.distanceToPlaceMeters
+      .compareTo(b.option.distanceToPlaceMeters);
+});
 
   await showModalBottomSheet<void>(
     context: context,
@@ -96,7 +103,7 @@ Future<void> showTouristBusStopsSheet({
                   const Icon(Icons.directions_walk, color: Colors.orange, size: 20),
                   const SizedBox(width: 8),
                   Text(
-                    'Caminando directo: ${directWalkMeters.round()} m · $directWalkMinutes min',
+                    'Caminando directo: ${directWalkMeters.round()} m',
                     style: const TextStyle(fontWeight: FontWeight.w500),
                   ),
                 ],
@@ -119,12 +126,16 @@ Future<void> showTouristBusStopsSheet({
                       ? 'Sin líneas detectadas'
                       : option.servingLines.map((l) => l.name).take(4).join(' · ');
 
+                  final walkToBoard = plan?.walkToBoardMeters ?? 0;
                   final busTimeText = plan != null
-                      ? '🚌 ${plan.totalDurationMinutes} min en bus · ${plan.routeStops.length} paradas'
+                      ? '🚶 ${walkToBoard.round()} m · 🚌 ${plan.routeStops.length} paradas · ~${plan.totalDurationMinutes} min'
                       : null;
+                  final saving = plan != null
+                      ? (directWalkMeters - plan.totalDistanceMeters).round()
+                      : 0;
                   final savingText = plan != null
-                      ? '(ahorras ${directWalkMinutes - plan.totalDurationMinutes} min vs caminar)'
-                      : 'No hay ruta útil en bus desde aquí';
+                      ? (saving > 0 ? 'Ahorras $saving m vs caminar' : 'Similar a caminar')
+                      : 'Sin ruta disponible desde tu posición';
 
                   return ListTile(
                     contentPadding: EdgeInsets.zero,
@@ -153,19 +164,22 @@ Future<void> showTouristBusStopsSheet({
                       ],
                     ),
                     isThreeLine: true,
-                    enabled: plan != null,
-                    onTap: plan == null
-                        ? null
-                        : () async {
-                            Navigator.pop(sheetContext);
-                            await mapViewModel.applyTouristBusRoutePlan(plan);
-                            if (!context.mounted) return;
-                            await showTouristBusRouteSheet(
-                              context: context,
-                              place: place,
-                              plan: plan,
-                            );
-                          },
+                    enabled: true,
+                    onTap: () async {
+                      mapViewModel.focusStopFromExternal(
+                        option.stop,
+                        lineId: option.servingLines.isNotEmpty ? option.servingLines.first.id : null,
+                      );
+                      Navigator.pop(sheetContext);
+                      if (plan == null) return;
+                      await mapViewModel.applyTouristBusRoutePlan(plan);
+                      if (!context.mounted) return;
+                      await showTouristBusRouteSheet(
+                        context: context,
+                        place: place,
+                        plan: plan,
+                      );
+                    },
                   );
                 },
               ),
@@ -183,4 +197,15 @@ Future<void> showTouristBusStopsSheet({
       ),
     ),
   );
+}
+
+double _planPrecisionScore(TouristBusRoutePlan plan) {
+  final transferPenalty = (plan.segments.length - 1) * 2000.0; // MUY caro
+  final walkPenalty = plan.walkToBoardMeters * 2 +
+      plan.walkFromStopToPlaceMeters * 2;
+
+  final busDistance = plan.totalDistanceMeters - 
+      (plan.walkToBoardMeters + plan.walkFromStopToPlaceMeters);
+
+  return busDistance + walkPenalty + transferPenalty;
 }

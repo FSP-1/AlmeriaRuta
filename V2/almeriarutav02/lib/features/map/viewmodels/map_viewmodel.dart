@@ -309,7 +309,7 @@ class MapViewModel extends ChangeNotifier {
       _userLocation!.latitude, _userLocation!.longitude,
       place.location.latitude, place.location.longitude,
     );
-    return isBusWorthIt(plan, directWalkMeters, minSavingMinutes: 2) ? plan : null;
+    return plan ;
   }
 
   Future<void> applyTouristBusRoutePlan(TouristBusRoutePlan plan) async {

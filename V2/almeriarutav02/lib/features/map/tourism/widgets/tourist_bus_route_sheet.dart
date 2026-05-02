@@ -43,7 +43,7 @@ Future<void> showTouristBusRouteSheet({
               Text('Paradas del bus: ${plan.routeStops.length}'),
               Text('Caminata inicial: ${plan.walkToBoardMeters.round()} m'),
               Text('Caminata final: ${plan.walkFromStopToPlaceMeters.round()} m'),
-              Text('Tiempo estimado: ${plan.totalDurationMinutes} min'),
+              Text('Distancia total: ${plan.totalDistanceMeters.round()} m'),
               const SizedBox(height: 12),
               const Text(
                 'Instrucciones',
