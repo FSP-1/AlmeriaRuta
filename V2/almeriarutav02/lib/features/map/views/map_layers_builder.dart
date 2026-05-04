@@ -85,17 +85,7 @@ class MapLayersBuilder {
         );
       }
 
-      if (mapViewModel.touristBusRoute.isNotEmpty) {
-        polylines.add(
-          Polyline(
-            points: mapViewModel.touristBusRoute,
-            strokeWidth: 5,
-            color: Colors.blue,
-            borderColor: Colors.white,
-            borderStrokeWidth: 1.5,
-          ),
-        );
-      }
+      polylines.addAll(_buildTouristBusSegmentPolylines(mapViewModel));
 
       if (mapViewModel.touristWalkToPlaceRoute.isNotEmpty) {
         polylines.add(
@@ -121,6 +111,42 @@ class MapLayersBuilder {
         borderStrokeWidth: 1,
       ),
     ];
+  }
+
+  static List<Polyline> _buildTouristBusSegmentPolylines(MapViewModel mapViewModel) {
+    final plan = mapViewModel.activeTouristBusRoutePlan;
+    if (plan == null) return const [];
+
+    final polylines = <Polyline>[];
+    final palette = <Color>[
+      Colors.blue,
+      Colors.deepPurple,
+      Colors.indigo,
+      Colors.teal,
+      Colors.orange,
+    ];
+
+    for (var index = 0; index < plan.segments.length; index++) {
+      final segment = plan.segments[index];
+      final color = palette[index % palette.length];
+      final points = segment.routeStops
+          .map((stop) => LatLng(stop.lat, stop.lon))
+          .toList();
+
+      if (points.length < 2) continue;
+
+      polylines.add(
+        Polyline(
+          points: points,
+          strokeWidth: 5.5,
+          color: color,
+          borderColor: Colors.white,
+          borderStrokeWidth: 1.5,
+        ),
+      );
+    }
+
+    return polylines;
   }
 
   /// Builds the active zone polygon layer.
@@ -153,6 +179,12 @@ class MapLayersBuilder {
   }) {
     final markers = <Marker>[];
     final hasTouristBusPlan = mapViewModel.activeTouristBusRoutePlan != null;
+    final transferStopIds = hasTouristBusPlan
+      ? mapViewModel.activeTouristBusRoutePlan!.segments
+        .skip(1)
+        .map((segment) => segment.boardingStop.id)
+        .toSet()
+      : <String>{};
 
     // Stop markers
     for (var index = 0; index < markersToRender.length; index++) {
@@ -160,15 +192,20 @@ class MapLayersBuilder {
       final isTouristRouteStop = isTouristBusRouteOnlyMode && hasTouristBusPlan;
       final isFirstRouteStop = isTouristRouteStop && index == 0;
       final isLastRouteStop = isTouristRouteStop && index == markersToRender.length - 1;
-      final isIntermediateRouteStop = isTouristRouteStop && !isFirstRouteStop && !isLastRouteStop;
+      final isTransferStop = isTouristRouteStop && transferStopIds.contains(stop.id);
+      final isIntermediateRouteStop = isTouristRouteStop && !isFirstRouteStop && !isLastRouteStop && !isTransferStop;
 
-      final markerSize = isIntermediateRouteStop ? 12.0 : 30.0;
-      final iconSize = isIntermediateRouteStop ? 8.0 : 16.0;
+      final markerSize = isIntermediateRouteStop ? 12.0 : (isTransferStop ? 34.0 : 30.0);
+      final iconSize = isIntermediateRouteStop ? 8.0 : (isTransferStop ? 18.0 : 16.0);
       final markerColor = isIntermediateRouteStop
           ? Colors.blue.withValues(alpha: 0.75)
           : (isFirstRouteStop
               ? Colors.deepOrange
-              : (isLastRouteStop ? Colors.green : (stop.lineIds.length > 1 ? Colors.purple : AppTheme.primaryRed)));
+          : (isLastRouteStop
+            ? Colors.green
+            : (isTransferStop
+              ? Colors.deepPurple
+              : (stop.lineIds.length > 1 ? Colors.purple : AppTheme.primaryRed))));
 
       markers.add(
         Marker(
@@ -191,7 +228,9 @@ class MapLayersBuilder {
                     ? Icons.circle
                     : (isFirstRouteStop
                         ? Icons.fmd_good
-                        : (isLastRouteStop ? Icons.flag : Icons.directions_bus)),
+                        : (isLastRouteStop
+                            ? Icons.flag
+                            : (isTransferStop ? Icons.swap_calls : Icons.directions_bus))),
                 color: Colors.white,
                 size: iconSize,
               ),

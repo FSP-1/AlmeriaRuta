@@ -85,7 +85,9 @@ class FavoritesPanel extends StatelessWidget {
             fav.type == FavoriteType.stop ? Icons.location_on : Icons.directions_bus,
             color: AppTheme.primaryRed,
           ),
-          title: Text(fav.name),
+          title: Text(
+            fav.type == FavoriteType.line ? '${fav.id} - ${fav.name}' : fav.name,
+          ),
           trailing: IconButton(
             icon: const Icon(Icons.delete_outline, color: Colors.grey),
             tooltip: 'Eliminar de favoritos',
@@ -94,7 +96,6 @@ class FavoritesPanel extends StatelessWidget {
                     fav.id,
                     fav.type,
                   );
-              onFavoritesChanged?.call();
             },
           ),
           onTap: () async {

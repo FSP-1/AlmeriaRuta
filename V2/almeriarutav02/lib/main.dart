@@ -30,7 +30,7 @@ class AlmeriaRutaApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => AuthViewModel()),
         ChangeNotifierProvider(create: (_) => HomeViewModel()),
         ChangeNotifierProvider(create: (_) => MapViewModel()),
-        ChangeNotifierProvider(create: (_) => TourismViewModel()),
+        ChangeNotifierProvider(create: (_) => TourismViewModel()..load()),
       ],
       child: MaterialApp(
         title: AppConstants.appName,

@@ -36,7 +36,7 @@ class ZoneFilterSection extends StatelessWidget {
             selected: mapViewModel.activeZone == null,
             icon: Icons.layers_clear,
             color: Colors.green,
-            title: 'Todas las zonas',
+            title: 'Ninguna zona',
             onTap: () {
               mapViewModel.clearZoneFilter();
               onChanged();
