@@ -83,8 +83,8 @@ class ArrivalObserverService {
         return;
       }
 
-      final arrivals = await _apiService.getStopArrivals(stopId, limit: 8);
-      final minutesToArrive = arrivals[lineId];
+      final arrivals = await _apiService.getLineArrivals(lineId);
+      final minutesToArrive = arrivals[stopId];
       if (minutesToArrive == null) {
         return;
       }

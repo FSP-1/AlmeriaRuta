@@ -61,7 +61,7 @@ class NotificationsStopPicker {
       if (!context.mounted) return;
       if (chosen != null) {
         vm.setArrivalStop(id: chosen.id, name: chosen.name);
-        await _maybePickArrivalLineForStop(context, stopId: chosen.id);
+        await _pickArrivalLineForStop(context, stopId: chosen.id);
       }
       return;
     }
@@ -130,7 +130,7 @@ class NotificationsStopPicker {
 
     if (chosenStop != null) {
       vm.setArrivalStop(id: chosenStop.id, name: chosenStop.name);
-      await _maybePickArrivalLineForStop(
+      await _pickArrivalLineForStop(
         context,
         stopId: chosenStop.id,
         preferredLineId: chosenLine.id,
@@ -138,36 +138,36 @@ class NotificationsStopPicker {
     }
   }
 
-  static Future<void> _maybePickArrivalLineForStop(
+  static Future<void> _pickArrivalLineForStop(
     BuildContext context, {
     required String stopId,
     String? preferredLineId,
   }) async {
     final vm = context.read<NotificationsViewModel>();
 
-    Map<String, int> arrivals;
+    late final List<LineModel> lines;
     try {
-      arrivals = await vm.getStopArrivals(stopId, limit: 8);
-    } catch (_) {
-      return;
-    }
-    if (!context.mounted || arrivals.isEmpty) return;
-
-    final lineIds = arrivals.keys.toList();
-    if (lineIds.length == 1) {
-      final id = lineIds.first;
-      final name = await _resolveLineName(context, id);
+      lines = await vm.getLines();
+    } catch (e) {
       if (!context.mounted) return;
-      vm.setArrivalLine(id: id, name: name);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error al cargar lineas: $e')),
+      );
       return;
     }
 
-    final lines = await vm.getLines();
     if (!context.mounted) return;
-    final nameById = {for (final l in lines) l.id: l.name};
 
-    final sortedIds = [...lineIds]
-      ..sort((a, b) => (arrivals[a] ?? 9999).compareTo(arrivals[b] ?? 9999));
+    final candidateLines = lines.where((line) {
+      return line.stops.any((stop) => stop.id == stopId);
+    }).toList();
+
+    final linesToShow = candidateLines.isNotEmpty ? candidateLines : lines;
+    final nameById = {for (final l in linesToShow) l.id: l.name};
+    final subtitleById = {
+      for (final l in linesToShow)
+        l.id: '${l.firstService} - ${l.lastService} · ${l.frequency}'
+    };
 
     final chosenId = await showModalBottomSheet<String>(
       context: context,
@@ -175,15 +175,20 @@ class NotificationsStopPicker {
         return ListView(
           children: [
             const ListTile(title: Text('Elegir linea para el aviso')),
-            for (final id in sortedIds)
+            if (candidateLines.isEmpty)
+              const ListTile(
+                leading: Icon(Icons.info_outline),
+                title: Text('No se pudo resolver la linea por parada. Elige una manualmente.'),
+              ),
+            for (final line in linesToShow)
               ListTile(
                 leading: const Icon(Icons.directions_bus),
-                title: Text(nameById[id] ?? id),
-                subtitle: Text('${arrivals[id]} min'),
-                trailing: (preferredLineId != null && id == preferredLineId)
+                title: Text('${line.name} - ${line.fullName}'.trim()),
+                subtitle: Text(subtitleById[line.id] ?? ''),
+                trailing: (preferredLineId != null && line.id == preferredLineId)
                     ? const Icon(Icons.check)
                     : null,
-                onTap: () => Navigator.pop(sheetContext, id),
+                onTap: () => Navigator.pop(sheetContext, line.id),
               ),
           ],
         );
@@ -192,19 +197,6 @@ class NotificationsStopPicker {
 
     if (!context.mounted || chosenId == null) return;
     vm.setArrivalLine(id: chosenId, name: nameById[chosenId] ?? chosenId);
-  }
-
-  static Future<String> _resolveLineName(BuildContext context, String lineId) async {
-    final vm = context.read<NotificationsViewModel>();
-    try {
-      final lines = await vm.getLines();
-      for (final l in lines) {
-        if (l.id == lineId) return l.name;
-      }
-      return lineId;
-    } catch (_) {
-      return lineId;
-    }
   }
 }
 

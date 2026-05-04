@@ -4,9 +4,13 @@ import pandas as pd
 import json
 import os
 import random
+import time
 
 app = Flask(__name__)
 CORS(app)
+
+# Store (lineId, stopId) -> {"initial_minutes": X, "assigned_at": timestamp}
+_arrival_times_cache = {}
 
 def _clean_id(val):
     """Limpia los IDs para que el CSV y el JSON coincidan perfectamente (ej: 404.0 -> '404')"""
@@ -23,15 +27,16 @@ def get_zone_by_location(lat, lon):
     elif lon <= -2.465: return "Oeste"
     return "A"
 
+
+
 class PerfectBusClient:
     def __init__(self):
         base_dir = os.path.dirname(__file__)
         paradas_csv_path = os.path.join(base_dir, "Paradas.csv")
         json_path = os.path.join(base_dir, "todas_las_lineas.json") # O el nombre que tenga tu JSON
         
-        print("🔄 Construyendo base de datos perfecta (JSON Scraping + CSV Local)...")
         
-        # 1. CARGAMOS LAS COORDENADAS EXACTAS (El CSV manda en la geografía)
+        # 1. CARGAMOS LAS COORDENADAS EXACTAS 
         self.local_stops = {}
         try:
             df_paradas = pd.read_csv(paradas_csv_path, sep=';', encoding='utf-8-sig')
@@ -49,16 +54,16 @@ class PerfectBusClient:
                     "lon": lon,
                     "zone": get_zone_by_location(lat, lon)
                 }
-            print(f"✅ {len(self.local_stops)} coordenadas exactas cargadas del CSV.")
+            print(f" {len(self.local_stops)} coordenadas exactas cargadas")
         except Exception as e:
-            print(f"❌ Error leyendo Paradas.csv: {e}")
+            print(f" Error leyendo Paradas.csv: {e}")
 
         # 2. CARGAMOS EL ORDEN Y LAS RUTAS (El JSON manda en el orden)
         try:
             with open(json_path, 'r', encoding='utf-8') as f:
                 scraped_data = json.load(f)
         except Exception as e:
-            print(f"❌ Error leyendo JSON: {e}")
+            print(f" Error leyendo JSON: {e}")
             scraped_data = {"lineas": []}
 
         # 3. FUSIONAMOS
@@ -67,10 +72,9 @@ class PerfectBusClient:
             line_id = linea_json.get("linea") # Ej: "L18"
             
             ordered_stops = []
-            seen_consecutive = None
             ruta_nombre_largo = f"Línea {line_id}"
             
-            # Recorremos ida y vuelta en el orden PERFECTO del JSON
+            # Recorremos ida y vuelta en el orden PERFECTO del JSON (sin deduplicación)
             for idx, ruta in enumerate(linea_json.get("rutas", [])):
                 # Guardamos el nombre de la primera ruta como nombre largo de la línea
                 if idx == 0 and ruta.get("ruta"):
@@ -79,33 +83,25 @@ class PerfectBusClient:
                 for parada in ruta.get("paradas", []):
                     pid = _clean_id(parada.get("id"))
                     
-                    if pid == seen_consecutive:
-                        continue
-                        
-                    # 🎯 ¡LA MAGIA! Buscamos el ID del JSON en nuestro CSV local
+                    # Buscamos el ID del JSON en nuestro CSV local
                     coordenadas_reales = self.local_stops.get(pid)
                     
                     if coordenadas_reales:
                         ordered_stops.append(coordenadas_reales)
-                        seen_consecutive = pid
                     else:
-                        print(f"⚠️ Parada {pid} de la {line_id} existe en el JSON pero no en Paradas.csv")
+                        print(f" Parada {pid} de la {line_id} existe en el JSON pero no en Paradas.csv")
             
             if ordered_stops:
                 self.lineas_data.append({
                     "id": line_id,
                     "name": line_id,
-                    "fullName": ruta_nombre_largo,  # Ya tienes los nombres oficiales
+                    "fullName": ruta_nombre_largo,
                     "description": f"Servicio urbano Almería",
-                    "color": "#860009", 
-                    "frequency": "15-20 min",
-                    "firstService": "06:30",
-                    "lastService": "22:30",
                     "totalStops": len(ordered_stops),
                     "stops": ordered_stops
                 })
 
-        print(f"🚀 ¡Éxito! {len(self.lineas_data)} líneas generadas con 100% de precisión.")
+        print(f" ¡Éxito! {len(self.lineas_data)} líneas generadas con 100% de precisión.")
 
 client = PerfectBusClient()
 
@@ -124,16 +120,44 @@ def get_line_stops(line_id):
 
 @app.route('/lines/<line_id>/arrivals')
 def get_line_arrivals(line_id):
-    """Simulación de llegadas para evitar el Error 404 en la app"""
-    arrivals = {}
+    """Arrivals con tiempos fijos que cuentan hacia atrás y se reinician"""
+    arrivals_list = []
     for line in client.lineas_data:
         if line['id'] == line_id:
             for stop in line['stops']:
-                arrivals[stop['id']] = random.randint(1, 20)
+                key = f"{line_id}:{stop['id']}"
+                
+                # Primera llamada: asignar tiempo aleatorio
+                if key not in _arrival_times_cache:
+                    _arrival_times_cache[key] = {
+                        "initial_minutes": random.randint(1, 20),
+                        "assigned_at": time.time()
+                    }
+                
+                cache_entry = _arrival_times_cache[key]
+                initial_minutes = cache_entry["initial_minutes"]
+                assigned_at = cache_entry["assigned_at"]
+                
+                # Calcular minutos transcurridos
+                elapsed_seconds = time.time() - assigned_at
+                elapsed_minutes = int(elapsed_seconds // 60)
+                
+                # Calcular minutos restantes
+                remaining = initial_minutes - elapsed_minutes
+                
+                # Si llega a 0 o menos, reiniciar
+                if remaining <= 0:
+                    _arrival_times_cache[key]["assigned_at"] = time.time()
+                    remaining = initial_minutes
+                
+                arrivals_list.append({
+                    "stopId": stop['id'],
+                    "minutes": remaining
+                })
     
-    if not arrivals:
-        return jsonify({}), 404
-    return jsonify(arrivals)
+    if not arrivals_list:
+        return jsonify({"arrivals": []}), 200
+    return jsonify({"arrivals": arrivals_list})
 
 @app.route('/stops/<stop_id>')
 def get_stop_detail(stop_id):
