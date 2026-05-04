@@ -45,8 +45,7 @@ class TouristBusRoutePlanner {
           stop.lon,
         );
 
-        if (maxWalkToBoardMeters != null &&
-            walkFromUser > maxWalkToBoardMeters) continue;
+        if (maxWalkToBoardMeters != null && walkFromUser > maxWalkToBoardMeters) continue;
       }
 
       options.add(TouristNearbyStopOption(
@@ -109,8 +108,7 @@ class TouristBusRoutePlanner {
     required List<LineModel> allLines,
     double maxWalkToBoardMeters = 800,
   }) {
-    print('\n========================================================');
-    print('📍 INICIANDO RUTEO HACIA DESTINO: ${destinationStop.name}');
+
     
     double distToUser(StopModel s) => Geolocator.distanceBetween(
         userLocation.latitude, userLocation.longitude, s.lat, s.lon);
@@ -136,7 +134,7 @@ class TouristBusRoutePlanner {
     final destLineIds = destinationStop.lineIds.toSet();
 
     // ───────────── DIRECTO ─────────────
-    print('--- BUSCANDO RUTA DIRECTA ---');
+
     for (final boarding in userNearbyStops) {
       final commonLineIds = boarding.lineIds.toSet().intersection(destLineIds);
 
@@ -165,19 +163,18 @@ class TouristBusRoutePlanner {
 
         if (isBetterPlan(plan, best)) {
           best = plan;
-          print('✅ [NUEVO MEJOR DIRECTO] ${line.name} desde ${boarding.name} (${routeStops.length} paradas)');
+     
         }
       }
     }
 
     if (best != null) {
-      print('🏆 SELECCIONADO PLAN DIRECTO FINAL: ${best.line.name}');
-      print('========================================================\n');
+
       return best;
     }
 
     // ───────────── TRANSBORDO ─────────────
-    print('--- NO HAY DIRECTO, BUSCANDO TRANSBORDOS ---');
+
     for (final boarding in userNearbyStops.take(15)) {
       
       for (final line1Id in boarding.lineIds) {
@@ -231,16 +228,12 @@ class TouristBusRoutePlanner {
 
             if (isBetterPlan(plan, best)) {
               best = plan;
-              print('🔄 [NUEVO MEJOR TRANSBORDO]');
-              print('   Sube en: ${boarding.name} (Línea ${line1.name})');
-              print('   Cambia en: ${transfer.name} (A la línea ${line2.name})');
-              print('   Total paradas viaje: ${seg1.length + seg2.length}');
+
             }
           }
         }
       }
     }
-    print('========================================================\n');
     return best;
   }
 

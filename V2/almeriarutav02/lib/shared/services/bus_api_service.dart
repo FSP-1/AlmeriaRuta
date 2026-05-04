@@ -14,7 +14,6 @@ class BusApiService {
   static const String _staticCacheUpdatedAtKey = 'bus_static_cache_updated_at_v1';
 
   static List<LineModel>? _linesCache;
-  static Future<List<LineModel>>? _inFlightLines;
   static final Map<String, List<StopModel>> _stopsCache = {};
   static bool _diskCacheLoaded = false;
   static Future<void>? _inFlightDiskCacheLoad;

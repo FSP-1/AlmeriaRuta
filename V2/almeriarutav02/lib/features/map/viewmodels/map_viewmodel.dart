@@ -305,10 +305,10 @@ class MapViewModel extends ChangeNotifier {
     );
     if (plan == null) return null;
 
-    final directWalkMeters = Geolocator.distanceBetween(
+  /*  final directWalkMeters = Geolocator.distanceBetween(
       _userLocation!.latitude, _userLocation!.longitude,
       place.location.latitude, place.location.longitude,
-    );
+    );*/
     return plan ;
   }
 
