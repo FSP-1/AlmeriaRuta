@@ -5,17 +5,12 @@ import '../models/mobility_service_model.dart';
 import '../../map/views/optimized_map_view.dart';
 import '../../lines/views/lines_view.dart';
 import '../../notifications/views/notifications_view.dart';
-import '../../notifications/services/backend_notifications_api_service.dart';
-import '../../auth/viewmodels/auth_viewmodel.dart';
-import '../../auth/views/auth_screen.dart';
-import '../../auth/views/profile_view.dart';
 import '../../tickets/views/tickets_hub_view.dart';
 import '../../../core/theme/app_theme.dart';
 import 'widgets/coming_soon_dialog.dart';
 import 'widgets/home_accessibility_info_card.dart';
 import 'widgets/home_info_card.dart';
 import 'widgets/home_section_card.dart';
-import 'widgets/home_user_profile_badge.dart';
 
 class HomeView extends StatefulWidget {
   const HomeView({super.key});
@@ -25,170 +20,22 @@ class HomeView extends StatefulWidget {
 }
 
 class _HomeViewState extends State<HomeView> {
-  final BackendNotificationsApiService _notificationsApi = BackendNotificationsApiService();
-  int _unreadNotificationsCount = 0;
-  String? _badgeToken;
-  bool _loadingUnreadNotifications = false;
-  String? _observedToken;
-  bool? _observedIsAuthenticated;
-  bool? _observedIsGuest;
-
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _initializeHomeState();
       context.read<HomeViewModel>().loadLines();
     });
   }
 
-  Future<void> _initializeHomeState() async {
-    final auth = context.read<AuthViewModel>();
-    await auth.initialize();
-    if (!mounted) return;
-    _syncAuthState(auth);
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    _syncAuthState(context.read<AuthViewModel>());
-  }
-
-  void _syncAuthState(AuthViewModel auth) {
-    final token = auth.token;
-    final isAuthenticated = auth.isAuthenticated;
-    final isGuest = auth.isGuest;
-
-    final authChanged = _observedToken != token ||
-        _observedIsAuthenticated != isAuthenticated ||
-        _observedIsGuest != isGuest;
-    if (!authChanged) {
-      return;
-    }
-
-    _observedToken = token;
-    _observedIsAuthenticated = isAuthenticated;
-    _observedIsGuest = isGuest;
-
-    if (token == null || !isAuthenticated || isGuest) {
-      _badgeToken = null;
-      _unreadNotificationsCount = 0;
-      return;
-    }
-
-    _refreshUnreadNotificationsCount();
-  }
-
-  Future<void> _refreshUnreadNotificationsCount({bool force = false}) async {
-    final auth = context.read<AuthViewModel>();
-    final token = auth.token;
-    if (token == null || !auth.isAuthenticated || auth.isGuest) {
-      if (!mounted) return;
-      setState(() {
-        _badgeToken = null;
-        _unreadNotificationsCount = 0;
-      });
-      return;
-    }
-
-    if (_loadingUnreadNotifications || (!force && _badgeToken == token)) {
-      return;
-    }
-
-    _loadingUnreadNotifications = true;
-    try {
-      final notifications = await _notificationsApi.fetchNotifications(token: token, unreadOnly: true);
-      if (!mounted) return;
-      setState(() {
-        _badgeToken = token;
-        _unreadNotificationsCount = notifications.length;
-      });
-    } finally {
-      _loadingUnreadNotifications = false;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
-    final auth = context.watch<AuthViewModel>();
-
     return Scaffold(
       appBar: AppBar(
         title: const Text('AlmeriaRuta'),
         centerTitle: true,
         backgroundColor: AppTheme.primaryRed,
         foregroundColor: Colors.white,
-        flexibleSpace: auth.isAuthenticated
-            ? SafeArea(
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: Padding(
-                    padding: const EdgeInsets.only(left: 10),
-                    child: SizedBox(
-                      width: 150,
-                      child: HomeUserProfileBadge(
-                        avatarIcon: auth.avatarIcon,
-                        username: auth.user?.username ?? 'Usuario',
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => const ProfileView(),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                  ),
-                ),
-              )
-            : null,
-        actions: [
-          IconButton(
-            icon: Icon(auth.isAuthenticated ? Icons.logout : Icons.login),
-            onPressed: () async {
-              if (!auth.isAuthenticated) {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const AuthScreen(),
-                  ),
-                );
-                return;
-              }
-
-              final shouldLogout = await showDialog<bool>(
-                    context: context,
-                    builder: (_) => AlertDialog(
-                      title: const Text('Cerrar sesión'),
-                      content: const Text('¿Seguro que quieres cerrar tu sesión actual?'),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.of(context).pop(false),
-                          child: const Text('Cancelar'),
-                        ),
-                        ElevatedButton(
-                          onPressed: () => Navigator.of(context).pop(true),
-                          child: const Text('Salir'),
-                        ),
-                      ],
-                    ),
-                  ) ??
-                  false;
-
-              if (!shouldLogout || !context.mounted) {
-                return;
-              }
-
-              await context.read<AuthViewModel>().logout();
-              if (!context.mounted) return;
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Sesión cerrada')),
-              );
-            },
-          ),
-        ],
       ),
       body: Container(
         decoration: BoxDecoration(
@@ -285,7 +132,7 @@ class _HomeViewState extends State<HomeView> {
                     child: HomeSectionCard(
                       service: service,
                       onTap: () => _handleServiceTap(context, service),
-                      unreadNotificationsCount: _unreadNotificationsCount,
+                      unreadNotificationsCount: 0,
                     ),
                   )),
                   
@@ -440,6 +287,6 @@ class _HomeViewState extends State<HomeView> {
     Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => const NotificationsView()),
-    ).then((_) => _refreshUnreadNotificationsCount(force: true));
+    );
   }
 }

@@ -4,7 +4,7 @@ import 'core/theme/app_theme.dart';
 import 'core/constants/app_constants.dart';
 import 'features/auth/viewmodels/auth_viewmodel.dart';
 import 'features/home/viewmodels/home_viewmodel.dart';
-import 'features/home/views/home_view.dart';
+import 'features/map/views/optimized_map_view.dart';
 import 'features/map/viewmodels/map_viewmodel.dart';
 import 'features/map/tourism/viewmodels/tourism_viewmodel.dart';
 import 'features/notifications/services/notification_scheduler_service.dart';
@@ -35,7 +35,7 @@ class AlmeriaRutaApp extends StatelessWidget {
       child: MaterialApp(
         title: AppConstants.appName,
         theme: AppTheme.lightTheme,
-        home: const HomeView(),
+        home: const OptimizedMapView(),
         debugShowCheckedModeBanner: false,
       ),
     );

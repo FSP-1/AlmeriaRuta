@@ -12,11 +12,13 @@ class MapOverlaysBuilder {
     MapViewModel mapViewModel,
     TourismViewModel tourismViewModel,
     VoidCallback onOpenFiltersMenu,
+    VoidCallback onOpenSimpleMenu,
   ) {
     return MapFilterBar(
       mapViewModel: mapViewModel,
       tourismViewModel: tourismViewModel,
       onOpenFiltersMenu: onOpenFiltersMenu,
+      onOpenSimpleMenu: onOpenSimpleMenu,
     );
   }
 

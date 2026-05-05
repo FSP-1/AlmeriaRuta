@@ -68,7 +68,6 @@ class FavoriteLineSelector extends StatelessWidget {
                   child: InkWell(
                     onTap: () {
                       onLineSelected(line.id);
-                      Navigator.pop(context);
                     },
                     borderRadius: BorderRadius.circular(12),
                     child: Padding(

@@ -25,16 +25,17 @@ Future<void> showMapTutorialFlow({
   return showDialog<void>(
     context: context,
     barrierDismissible: !isFirstTime,
-    builder: (_) => MapTutorialDialog(
+    builder: (dialogContext) => MapTutorialDialog(
       isFirstTime: isFirstTime,
       onComplete: () async {
         if (isFirstTime) {
           await OnboardingService.setDone();
-          if (!context.mounted) return;
-          Navigator.pop(context);
+          if (!context.mounted || !dialogContext.mounted) return;
+          Navigator.of(dialogContext).pop();
           await showFavoriteLineSelector(context);
         } else {
-          Navigator.pop(context);
+          if (!dialogContext.mounted) return;
+          Navigator.of(dialogContext).pop();
         }
       },
     ),
@@ -45,13 +46,15 @@ Future<void> showFavoriteLineSelector(BuildContext context) {
   return showModalBottomSheet<void>(
     context: context,
     isDismissible: true,
-    builder: (_) {
+    builder: (sheetContext) {
       final vm = context.read<MapViewModel>();
       return FavoriteLineSelector(
         lines: vm.lines,
         onLineSelected: (lineId) {
           vm.setFilter(MapFilter.line(lineId));
-          Navigator.pop(context);
+          if (sheetContext.mounted) {
+            Navigator.of(sheetContext).pop();
+          }
         },
       );
     },
