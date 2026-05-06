@@ -49,7 +49,7 @@ class PerfectBusClient:
                 
                 self.local_stops[pid] = {
                     "id": pid,
-                    "name": str(row['nombre']).strip().title(), # Ponemos el nombre bonito
+                    "name": str(row['nombre']).strip().title(), # Ponemos el nombre correctamente capitalizado
                     "lat": lat,
                     "lon": lon,
                     "zone": get_zone_by_location(lat, lon)
@@ -58,7 +58,8 @@ class PerfectBusClient:
         except Exception as e:
             print(f" Error leyendo Paradas.csv: {e}")
 
-        # 2. CARGAMOS EL ORDEN Y LAS RUTAS (El JSON manda en el orden)
+        # 2. Cargamos el JSON con el orden correcto de las paradas para cada línea (sin importar si el JSON tiene coordenadas o no, solo el orden y la relación línea-parada)
+
         try:
             with open(json_path, 'r', encoding='utf-8') as f:
                 scraped_data = json.load(f)
@@ -74,7 +75,7 @@ class PerfectBusClient:
             ordered_stops = []
             ruta_nombre_largo = f"Línea {line_id}"
             
-            # Recorremos ida y vuelta en el orden PERFECTO del JSON (sin deduplicación)
+            # Recorremos ida y vuelta en el orden  del JSON (sin deduplicación)
             for idx, ruta in enumerate(linea_json.get("rutas", [])):
                 # Guardamos el nombre de la primera ruta como nombre largo de la línea
                 if idx == 0 and ruta.get("ruta"):
@@ -172,5 +173,5 @@ def get_stop_detail(stop_id):
     return jsonify({"error": "Parada no encontrada"}), 404
 
 if __name__ == '__main__':
-    print("🌟 Iniciando API de Almería Súper Optimizada (Sin GTFS)...")
+    print(" Iniciando API de Almería buses")
     app.run(debug=True, host='0.0.0.0', port=5000)

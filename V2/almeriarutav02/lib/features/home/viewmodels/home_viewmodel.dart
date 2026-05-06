@@ -46,15 +46,7 @@ class HomeViewModel extends ChangeNotifier {
       color: Colors.deepPurple,
       status: ServiceStatus.active,
     ),
-    const MobilityServiceModel(
-      id: 'map',
-      title: 'Mapa Interactivo',
-      subtitle: 'Visualiza paradas en tiempo real',
-      description: 'Encuentra paradas cercanas con GPS y filtros por zona',
-      icon: Icons.map,
-      color: Colors.blue,
-      status: ServiceStatus.active,
-    ),
+   
   ];
 
   // Servicios de movilidad urbana (informativos)

@@ -9,7 +9,7 @@ import 'tourist_bus_route_planner_models.dart';
 class TouristBusRoutePlanner {
 
   // ─────────────────────────────────────────────
-  // 🟢 PARADAS CERCANAS AL DESTINO
+  //  PARADAS CERCANAS AL DESTINO
   // ─────────────────────────────────────────────
   static List<TouristNearbyStopOption> findNearbyStops({
     required TouristPlace place,
@@ -62,7 +62,7 @@ class TouristBusRoutePlanner {
   }
 
   // ─────────────────────────────────────────────
-  // 🔵 GENERA MEJORES PLANES
+  //  GENERA MEJORES PLANES
   // ─────────────────────────────────────────────
   static List<TouristBusRoutePlan> buildBestPlans({
     required TouristPlace place,
@@ -99,7 +99,7 @@ class TouristBusRoutePlanner {
   }
 
   // ─────────────────────────────────────────────
-  // 🟡 ALGORITMO PRINCIPAL
+  //  ALGORITMO PRINCIPAL
   // ─────────────────────────────────────────────
   static TouristBusRoutePlan? buildPlan({
     required TouristPlace place,
@@ -238,12 +238,12 @@ class TouristBusRoutePlanner {
   }
 
   // ─────────────────────────────────────────────
-  // 🛡️ EXTRACTOR LIMPIO (ARRAY CIRCULAR - ORDEN PERFECTO)
+  //  EXTRACTOR LIMPIO (ARRAY CIRCULAR - ORDEN PERFECTO)
   // ─────────────────────────────────────────────
   static List<StopModel>? _extractCleanRoute(List<StopModel> stops, String boardId, String destId) {
     if (stops.isEmpty) return null;
 
-    // 🔥 EL TRUCO MAGICO: Duplicar la ruta para simular el ciclo circular 🔥
+    //  EL TRUCO MAGICO: Duplicar la ruta para simular el ciclo circular 
     // Esto asegura que SIEMPRE avanzamos hacia adelante y las paradas 
     // mantienen su orden geográfico exacto en las calles.
     final extendedStops = [...stops, ...stops];

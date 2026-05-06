@@ -16,6 +16,7 @@ import '../models/filter_mode.dart';
 import '../viewmodels/map_viewmodel.dart';
 import '../filters/map_filter_menu_sheet.dart';
 import '../widgets/map_floating_buttons.dart';
+import '../widgets/map_simple_menu_overlay.dart';
 import '../widgets/stop_info_sheet.dart';
 import '../widgets/tourist_bus_stop_info_sheet.dart';
 import '../tourism/viewmodels/tourism_viewmodel.dart';
@@ -64,6 +65,12 @@ class _OptimizedMapViewState extends State<OptimizedMapView> {
     });
   }
 
+  void _toggleSimpleMenu() {
+    setState(() {
+      _isSimpleMenuOpen = !_isSimpleMenuOpen;
+    });
+  }
+
   // ── Handlers ──────────────────────────────────────────────────────────────
 
   void _onStopTap(BuildContext context, StopModel stop, MapViewModel vm) {
@@ -103,240 +110,6 @@ class _OptimizedMapViewState extends State<OptimizedMapView> {
       vm.setRoute(stop, route);
     } catch (_) {
       vm.setRoute(stop, [vm.userLocation!, LatLng(stop.lat, stop.lon)]);
-    }
-  }
-
-  Future<void> _openSimpleMenu() async {
-    if (_isSimpleMenuOpen) {
-      if (!mounted) return;
-      Navigator.of(context, rootNavigator: true).maybePop();
-      return;
-    }
-
-    final auth = context.read<AuthViewModel>();
-
-    _isSimpleMenuOpen = true;
-    try {
-      await showGeneralDialog<void>(
-        context: context,
-        barrierDismissible: true,
-        barrierLabel: 'Cerrar menú',
-        barrierColor: Colors.black54,
-        transitionDuration: const Duration(milliseconds: 240),
-        pageBuilder: (dialogContext, _, _) {
-        Widget menuItem({
-          required IconData icon,
-          required Color color,
-          required String title,
-          String? subtitle,
-          required VoidCallback onTap,
-        }) {
-          return Container(
-            margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: color.withValues(alpha: 0.28)),
-            ),
-            child: ListTile(
-              leading: CircleAvatar(
-                backgroundColor: color.withValues(alpha: 0.16),
-                foregroundColor: color,
-                child: Icon(icon),
-              ),
-              title: Text(
-                title,
-                style: const TextStyle(fontWeight: FontWeight.w700),
-              ),
-              subtitle: subtitle == null ? null : Text(subtitle),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: onTap,
-            ),
-          );
-        }
-
-        final panelWidth = MediaQuery.of(dialogContext).size.width * 0.86 > 360
-            ? 360.0
-            : MediaQuery.of(dialogContext).size.width * 0.86;
-
-// 1. Calculamos el espacio superior (AppBar + Status Bar)
-        final topOffset = kToolbarHeight + MediaQuery.of(dialogContext).padding.top;
-
-        return Align(
-          alignment: Alignment.bottomRight, // Alineamos abajo a la derecha
-          child: Padding(
-            padding: EdgeInsets.only(top: topOffset), // 2. Empujamos el menú bajo la cabecera
-            child: Material(
-              color: const Color(0xFFF8FAFC),
-              elevation: 14,
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(18),
-                // Quitamos el bottomLeft si el menú llega hasta abajo del todo
-              ),
-              child: SizedBox(
-                width: panelWidth,
-                child: ListView(
-                  padding: const EdgeInsets.only(top: 8, bottom: 10),
-                  children: [
-                    // 3. Añadimos una cabecera con botón de cerrar explícito
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 8, 8, 4),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text(
-                            'Menú',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF334155),
-                            ),
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.close),
-                            color: const Color(0xFF64748B),
-                            onPressed: () => Navigator.pop(dialogContext),
-                            tooltip: 'Cerrar menú',
-                          ),
-                        ],
-                      ),
-                    ),
-                    const Divider(height: 1),
-                    const SizedBox(height: 8),
-
-                    // A partir de aquí siguen tus opciones actuales...
-                    menuItem(
-                      icon: Icons.home_outlined,
-                      color: const Color(0xFF0EA5E9),
-                      title: 'Menú completo',
-                      subtitle: 'Abrir menú principal completo',
-                      onTap: () {
-                        Navigator.pop(dialogContext);
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const HomeView(),
-                          ),
-                        );
-                      },
-                    ),
-                    menuItem(
-                      icon: Icons.route_outlined,
-                      color: const Color(0xFFDC2626),
-                      title: 'Líneas de autobús',
-                      onTap: () {
-                        Navigator.pop(dialogContext);
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (_) => const LinesView()),
-                        );
-                      },
-                    ),
-                    menuItem(
-                      icon: Icons.confirmation_number_outlined,
-                      color: const Color(0xFF16A34A),
-                      title: 'Billetes y tarjeta',
-                      onTap: () {
-                        Navigator.pop(dialogContext);
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (_) => const TicketsHubView()),
-                        );
-                      },
-                    ),
-                    menuItem(
-                      icon: Icons.notifications_active_outlined,
-                      color: const Color(0xFF7C3AED),
-                      title: 'Notificaciones',
-                      onTap: () {
-                        Navigator.pop(dialogContext);
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (_) => const NotificationsView()),
-                        );
-                      },
-                    ),
-                    if (auth.isAuthenticated)
-                      menuItem(
-                        icon: Icons.person_outline,
-                        color: const Color(0xFF0F766E),
-                        title: 'Perfil',
-                        subtitle: 'Ver perfil de usuario',
-                        onTap: () {
-                          Navigator.pop(dialogContext);
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (_) => const ProfileView()),
-                          );
-                        },
-                      ),
-                    menuItem(
-                      icon: auth.isAuthenticated ? Icons.logout : Icons.login,
-                      color: const Color(0xFFB42318),
-                      title: auth.isAuthenticated ? 'Cerrar sesión' : 'Iniciar sesión',
-                      subtitle: auth.isAuthenticated
-                          ? 'Cerrar sesión actual'
-                          : 'Acceder con tu cuenta',
-                      onTap: () async {
-                        Navigator.pop(dialogContext);
-
-                        if (!auth.isAuthenticated) {
-                          if (!mounted) return;
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (_) => const AuthScreen()),
-                          );
-                          return;
-                        }
-
-                        final shouldLogout = await showDialog<bool>(
-                              context: context,
-                              builder: (_) => AlertDialog(
-                                title: const Text('Cerrar sesión'),
-                                content: const Text('¿Seguro que quieres cerrar tu sesión actual?'),
-                                actions: [
-                                  TextButton(
-                                    onPressed: () => Navigator.of(context).pop(false),
-                                    child: const Text('Cancelar'),
-                                  ),
-                                  ElevatedButton(
-                                    onPressed: () => Navigator.of(context).pop(true),
-                                    child: const Text('Salir'),
-                                  ),
-                                ],
-                              ),
-                            ) ??
-                            false;
-
-                        if (!mounted || !shouldLogout) {
-                          return;
-                        }
-
-                        await auth.logout();
-                        if (!mounted) return;
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Sesión cerrada')),
-                        );
-                      },
-                    ),
-                    const SizedBox(height: 10),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        );
-      },
-        transitionBuilder: (_, animation, _, child) {
-          final curved = CurvedAnimation(parent: animation, curve: Curves.easeOutCubic);
-          return SlideTransition(
-            position: Tween<Offset>(begin: const Offset(1, 0), end: Offset.zero).animate(curved),
-            child: child,
-          );
-        },
-      );
-    } finally {
-      _isSimpleMenuOpen = false;
     }
   }
 
@@ -425,7 +198,7 @@ class _OptimizedMapViewState extends State<OptimizedMapView> {
                 ),
                 IconButton(
                   icon: const Icon(Icons.menu),
-                  onPressed: _openSimpleMenu,
+                  onPressed: _toggleSimpleMenu,
                 ),
               ],
             );
@@ -472,6 +245,11 @@ class _OptimizedMapViewState extends State<OptimizedMapView> {
                   ),
                 ],
               ),
+              if (_isSimpleMenuOpen)
+                MapSimpleMenuOverlay(
+                  isOpen: _isSimpleMenuOpen,
+                  onClose: _toggleSimpleMenu,
+                ),
               MapOverlaysBuilder.buildSearchOverlay(
                 _showSearch,
                 (location) {
@@ -489,19 +267,21 @@ class _OptimizedMapViewState extends State<OptimizedMapView> {
         },
       ),
       floatingActionButton: Consumer<MapViewModel>(
-        builder: (context, mapViewModel, _) => MapFloatingButtons(
-          hasActiveRoute: mapViewModel.activeRoute.isNotEmpty,
-          onClearRoute: mapViewModel.clearRoute,
-          onMyLocation: () => MapFabActions.centerOnUser(
-            mapController: _mapController,
-            userLocation: mapViewModel.userLocation,
-          ),
-          onFavorites: () => MapFabActions.openFavorites(
-            context: context,
-            mapViewModel: mapViewModel,
-            mapController: _mapController,
-          ),
-        ),
+        builder: (context, mapViewModel, _) => _isSimpleMenuOpen
+            ? const SizedBox.shrink()
+            : MapFloatingButtons(
+                hasActiveRoute: mapViewModel.activeRoute.isNotEmpty,
+                onClearRoute: mapViewModel.clearRoute,
+                onMyLocation: () => MapFabActions.centerOnUser(
+                  mapController: _mapController,
+                  userLocation: mapViewModel.userLocation,
+                ),
+                onFavorites: () => MapFabActions.openFavorites(
+                  context: context,
+                  mapViewModel: mapViewModel,
+                  mapController: _mapController,
+                ),
+              ),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
