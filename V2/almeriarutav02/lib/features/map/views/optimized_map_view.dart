@@ -5,13 +5,6 @@ import 'package:latlong2/latlong.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../../shared/services/line_models.dart';
-import '../../auth/viewmodels/auth_viewmodel.dart';
-import '../../auth/views/auth_screen.dart';
-import '../../auth/views/profile_view.dart';
-import '../../home/views/home_view.dart';
-import '../../lines/views/lines_view.dart';
-import '../../notifications/views/notifications_view.dart';
-import '../../tickets/views/tickets_hub_view.dart';
 import '../models/filter_mode.dart';
 import '../viewmodels/map_viewmodel.dart';
 import '../filters/map_filter_menu_sheet.dart';

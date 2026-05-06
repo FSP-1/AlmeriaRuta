@@ -121,16 +121,17 @@ class _SearchWidgetState extends State<SearchWidget> {
         orElse: () => AlmeriaZones.zones.first,
       );
 
-      widget.onLocationSelected(
-        LocationModel(
-          latitude: zone.center.latitude,
-          longitude: zone.center.longitude,
-          address: zone.description,
-          name: zone.name,
-        ),
-      );
-      _controller.text = zone.name;
-      setState(() => _suggestions = []);
+      setState(() {
+        _suggestions = [
+          LocationModel(
+            latitude: zone.center.latitude,
+            longitude: zone.center.longitude,
+            address: zone.description,
+            name: 'Zona: ${zone.name}',
+          ),
+        ];
+        _isLoading = false;
+      });
       return;
     }
 

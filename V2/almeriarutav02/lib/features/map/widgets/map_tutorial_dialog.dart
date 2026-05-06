@@ -100,7 +100,7 @@ class MapTutorialDialog extends StatelessWidget {
                   Expanded(
                     child: Text(
                       isFirstTime
-                          ? 'Por defecto se muestran paradas cercanas a tu ubicación (800m).\nDesde el menú de capas puedes activar bus, turismo y zonas.'
+                          ? 'Por defecto se muestran paradas cercanas a tu ubicación (800m).\nEl botón de filtros abre un panel único que reúne bus, turismo y zonas para cambiar todo desde un solo sitio.'
                           : 'La vista inicial muestra paradas cercanas a tu ubicación (800m).',
                       style: const TextStyle(
                         fontSize: 13,
@@ -117,15 +117,15 @@ class MapTutorialDialog extends StatelessWidget {
             _buildHelpItem(
               icon: Icons.near_me,
               iconColor: AppTheme.primaryRed,
-              title: 'Menú de capas',
-              description: 'Abre el menú principal para decidir qué capas ves: bus, turismo y zonas.',
+              title: 'Menú simple',
+              description: 'Abre el botón de menú simple para ver accesos rápidos',
             ),
             const SizedBox(height: 12),
             _buildHelpItem(
-              icon: Icons.directions_bus,
+              icon: Icons.tune,
               iconColor: AppTheme.primaryRed,
-              title: 'Paradas de bus',
-              description: 'Dentro del menú puedes elegir cercanas, todas, favoritas o una línea concreta.',
+              title: 'Filtros del mapa',
+              description: 'Abre el panel de filtros para combinar bus, turismo y zonas en una sola hoja.',
             ),
             const SizedBox(height: 12),
             _buildHelpItem(

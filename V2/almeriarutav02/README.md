@@ -24,6 +24,7 @@ Rutas clave:
 - `lib/features/map/tourism/` módulo turístico
 - `lib/features/home/` home y navegación principal
 - `lib/features/notifications/` configuración y scheduling de notificaciones (MVVM)
+- `lib/shared/` servicios comunes, modelos compartidos y widgets reutilizables
 
 ### Filtros del mapa
 
