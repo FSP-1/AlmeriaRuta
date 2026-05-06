@@ -139,7 +139,7 @@ class TouristData {
     TouristPlace(
       id: 'parque_andarax',
       name: 'Parque del Andarax',
-      location: LatLng(36.826433, -2.4308275),
+      location: LatLng(36.8168271,-2.4303437),
       description: 'Zona verde junto al rio',
       category: TouristCategory.park,
     ),

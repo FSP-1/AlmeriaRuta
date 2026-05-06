@@ -89,7 +89,8 @@ class PerfectBusClient:
                     if coordenadas_reales:
                         ordered_stops.append(coordenadas_reales)
                     else:
-                        print(f" Parada {pid} de la {line_id} existe en el JSON pero no en Paradas.csv")
+                        nombre_parada = parada.get('nombre', 'Sin nombre')
+                        print(f" Parada {pid} ({nombre_parada}) de la {line_id} existe en el JSON pero no en Paradas.csv")
             
             if ordered_stops:
                 self.lineas_data.append({
