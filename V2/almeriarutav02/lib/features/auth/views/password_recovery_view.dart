@@ -42,7 +42,7 @@ class _PasswordRecoveryViewState extends State<PasswordRecoveryView> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const Text(
-                  'Introduce tu email y tu PIN para recuperar tu contraseña.',
+                  'Introduce tu email y tu PIN para generar una contraseña temporal. Tras iniciar sesión, ve a tu Perfil para cambiarla por la contraseña que tú quieras.',
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                 ),
                 const SizedBox(height: 16),
@@ -113,7 +113,7 @@ class _PasswordRecoveryViewState extends State<PasswordRecoveryView> {
                               builder: (context) => AlertDialog(
                                 title: const Text('Contraseña temporal'),
                                 content: SelectableText(
-                                  'Tu nueva contraseña temporal es:\n\n$temporaryPassword\n\nInicia sesión y cámbiala después.',
+                                  'Tu nueva contraseña temporal es:\n\n$temporaryPassword\n\nCopia esta contraseña e inicia sesión. Después, dirígete a la sección de "Perfil" para cambiarla por una tuya.',
                                 ),
                                 actions: [
                                   TextButton(
