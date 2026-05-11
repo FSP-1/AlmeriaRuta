@@ -94,8 +94,13 @@ class _RegisterFormCardState extends State<RegisterFormCard> {
                           _passwordController.text,
                           _recoveryPinController.text.trim(),
                         );
-                        if (success && context.mounted) {
+                        if (!context.mounted) return;
+                        if (success) {
+                          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Cuenta creada')));
                           Navigator.of(context).popUntil((route) => route.isFirst);
+                        } else {
+                          final msg = vm.error ?? 'Error al crear cuenta';
+                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
                         }
                       },
                 child: vm.loading

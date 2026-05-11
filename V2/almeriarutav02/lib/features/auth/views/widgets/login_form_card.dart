@@ -67,7 +67,11 @@ class _LoginFormCardState extends State<LoginFormCard> {
                         );
                         if (!context.mounted) return;
                         if (success) {
+                          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Sesión iniciada')));
                           Navigator.of(context).popUntil((route) => route.isFirst);
+                        } else {
+                          final msg = vm.error ?? 'Error al iniciar sesión';
+                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
                         }
                       },
                 child: vm.loading

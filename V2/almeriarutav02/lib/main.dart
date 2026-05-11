@@ -5,6 +5,7 @@ import 'core/constants/app_constants.dart';
 import 'features/auth/viewmodels/auth_viewmodel.dart';
 import 'features/home/viewmodels/home_viewmodel.dart';
 import 'features/map/views/optimized_map_view.dart';
+import 'features/map/viewmodels/notices_viewmodel.dart';
 import 'features/map/viewmodels/map_viewmodel.dart';
 import 'features/map/tourism/viewmodels/tourism_viewmodel.dart';
 import 'features/notifications/services/notification_scheduler_service.dart';
@@ -30,6 +31,9 @@ class AlmeriaRutaApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => AuthViewModel()),
         ChangeNotifierProvider(create: (_) => HomeViewModel()),
         ChangeNotifierProvider(create: (_) => MapViewModel()),
+        ChangeNotifierProvider(
+          create: (_) => NoticesViewModel()..startAutoRefresh(),
+        ),
         ChangeNotifierProvider(create: (_) => TourismViewModel()..load()),
       ],
       child: MaterialApp(

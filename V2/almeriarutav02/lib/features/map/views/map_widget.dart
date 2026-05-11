@@ -3,6 +3,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 
 import '../../../shared/services/line_models.dart';
+import '../../../shared/services/notices_api_service.dart';
 import '../viewmodels/map_viewmodel.dart';
 import '../tourism/viewmodels/tourism_viewmodel.dart';
 import '../tourism/widgets/tourist_bus_route_sheet.dart';
@@ -19,6 +20,7 @@ class MapWidget extends StatelessWidget {
   final bool isTouristBusRouteOnlyMode;
   final bool isWalkingRouteMode;
   final List<StopModel> markersToRender;
+  final List<DisabledStopModel> disabledStops;
   final ValueChanged<double> onZoomChanged;
   final void Function(StopModel stop) onStopTap;
   final void Function(StopModel stop) onTouristBusStopTap;
@@ -32,6 +34,7 @@ class MapWidget extends StatelessWidget {
     required this.isTouristBusRouteOnlyMode,
     required this.isWalkingRouteMode,
     required this.markersToRender,
+    required this.disabledStops,
     required this.onZoomChanged,
     required this.onStopTap,
     required this.onTouristBusStopTap,
@@ -55,6 +58,7 @@ class MapWidget extends StatelessWidget {
         isTouristBusRouteOnlyMode: isTouristBusRouteOnlyMode,
         isWalkingRouteMode: isWalkingRouteMode,
         markersToRender: markersToRender,
+        disabledStops: disabledStops,
         onStopMarkerTap: (stop) {
           if (isTouristBusRouteOnlyMode) {
             onTouristBusStopTap(stop);

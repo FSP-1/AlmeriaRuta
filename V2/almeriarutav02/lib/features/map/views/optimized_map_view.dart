@@ -6,9 +6,11 @@ import 'package:latlong2/latlong.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../shared/services/line_models.dart';
 import '../models/filter_mode.dart';
+import '../viewmodels/notices_viewmodel.dart';
 import '../viewmodels/map_viewmodel.dart';
 import '../filters/map_filter_menu_sheet.dart';
 import '../widgets/map_floating_buttons.dart';
+import '../widgets/notices_marquee_widget.dart';
 import '../widgets/map_simple_menu_overlay.dart';
 import '../widgets/stop_info_sheet.dart';
 import '../widgets/tourist_bus_stop_info_sheet.dart';
@@ -219,6 +221,16 @@ class _OptimizedMapViewState extends State<OptimizedMapView> {
             children: [
               Column(
                 children: [
+                  NoticesMarqueeWidget(
+                    onTap: () {
+                      final noticesVM = context.read<NoticesViewModel>();
+                      showModalBottomSheet(
+                        context: context,
+                        isScrollControlled: true,
+                        builder: (_) => NoticesSummarySheet(noticesVM: noticesVM),
+                      );
+                    },
+                  ),
                   if (!isTouristBusMode)
                     _buildActiveFiltersBar(context, mapViewModel, tourismViewModel),
                   Expanded(
@@ -229,7 +241,8 @@ class _OptimizedMapViewState extends State<OptimizedMapView> {
                       tourismViewModel: tourismViewModel,
                       isTouristBusRouteOnlyMode: isTouristBusMode,
                       isWalkingRouteMode: isWalkingMode,
-                      markersToRender: markersToRender,
+                        markersToRender: markersToRender,
+                        disabledStops: context.watch<NoticesViewModel>().disabledStops,
                       onZoomChanged: (z) => setState(() => _currentZoom = z),
                       onStopTap: (stop) => _onStopTap(context, stop, mapViewModel),
                       onTouristBusStopTap: (stop) =>

@@ -7,6 +7,7 @@ import '../tourism/viewmodels/tourism_viewmodel.dart';
 import '../tourism/models/tourist_place.dart';
 import '../tourism/widgets/tourism_markers_layer.dart';
 import '../../../shared/services/line_models.dart';
+import '../../../shared/services/notices_api_service.dart';
 
 /// Builds all map layers (polygons, polylines, markers).
 class MapLayersBuilder {
@@ -18,6 +19,7 @@ class MapLayersBuilder {
     required bool isTouristBusRouteOnlyMode,
     required bool isWalkingRouteMode,
     required List<StopModel> markersToRender,
+    required List<DisabledStopModel> disabledStops,
     required Function(StopModel) onStopMarkerTap,
     required Function(TouristPlace) onTouristMarkerTap,
     required VoidCallback onTouristPlaceMarkerTap,
@@ -40,6 +42,11 @@ class MapLayersBuilder {
 
       // Stop markers and user location
       if (currentZoom >= 12 && !mapViewModel.isLoadingStops)
+        // Disabled stops layer (background, always visible)
+        if (disabledStops.isNotEmpty)
+          MarkerLayer(
+            markers: _buildDisabledMarkers(mapViewModel, disabledStops),
+          ),
         MarkerLayer(
           markers: _buildMarkers(
             mapViewModel: mapViewModel,
@@ -289,6 +296,36 @@ class MapLayersBuilder {
       );
     }
 
+    return markers;
+  }
+
+  static List<Marker> _buildDisabledMarkers(
+      MapViewModel mapViewModel, List<DisabledStopModel> disabledStops) {
+    final markers = <Marker>[];
+    for (final ds in disabledStops) {
+      final matches = mapViewModel.stops.where((s) => s.id == ds.stopId).toList();
+      if (matches.isEmpty) continue;
+      final stop = matches.first;
+      markers.add(
+        Marker(
+          point: LatLng(stop.lat, stop.lon),
+          width: 28,
+          height: 28,
+            child: Container(
+            decoration: BoxDecoration(
+              color: Colors.grey.withValues(alpha: 0.14),
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.grey.shade600, width: 2),
+            ),
+            child: Icon(
+              Icons.location_off,
+              color: Colors.grey.shade700,
+              size: 14,
+            ),
+          ),
+        ),
+      );
+    }
     return markers;
   }
 }

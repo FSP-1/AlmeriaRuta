@@ -61,6 +61,7 @@ class StopModel {
   final double lon;
   final String zone;
   final Set<String> lineIds;
+  final bool isActive;
 
   StopModel({
     required this.id,
@@ -69,6 +70,7 @@ class StopModel {
     required this.lon,
     required this.zone,
     this.lineIds = const {},
+    this.isActive = true,
   });
 
   factory StopModel.fromJson(Map<String, dynamic> json) {
@@ -84,6 +86,7 @@ class StopModel {
       lon: (json['lon'] ?? 0.0).toDouble(),
       zone: json['zone'] ?? 'A',
       lineIds: lineIds,
+      isActive: json['isActive'] ?? true,
     );
   }
 
@@ -95,6 +98,7 @@ class StopModel {
       'lon': lon,
       'zone': zone,
       'lineIds': lineIds.toList(),
+      'isActive': isActive,
     };
   }
 
@@ -105,6 +109,7 @@ class StopModel {
     double? lon,
     String? zone,
     Set<String>? lineIds,
+    bool? isActive,
   }) {
     return StopModel(
       id: id ?? this.id,
@@ -113,6 +118,49 @@ class StopModel {
       lon: lon ?? this.lon,
       zone: zone ?? this.zone,
       lineIds: lineIds ?? this.lineIds,
+      isActive: isActive ?? this.isActive,
     );
+  }
+}
+
+class NoticeModel {
+  final String id;
+  final String title;
+  final String message;
+  final String type; // 'TURISMO', 'LINEA', 'PARADA', 'GENERAL'
+  final String? relatedId;
+  final DateTime createdAt;
+
+  NoticeModel({
+    required this.id,
+    required this.title,
+    required this.message,
+    required this.type,
+    this.relatedId,
+    required this.createdAt,
+  });
+
+  factory NoticeModel.fromJson(Map<String, dynamic> json) {
+    return NoticeModel(
+      id: json['id']?.toString() ?? '',
+      title: json['title'] ?? '',
+      message: json['message'] ?? '',
+      type: json['type'] ?? 'GENERAL',
+      relatedId: json['relatedId'],
+      createdAt: json['createdAt'] != null
+          ? DateTime.parse(json['createdAt'].toString())
+          : DateTime.now(),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'title': title,
+      'message': message,
+      'type': type,
+      'relatedId': relatedId,
+      'createdAt': createdAt.toIso8601String(),
+    };
   }
 }

@@ -10,6 +10,8 @@ import '../../lines/views/lines_view.dart';
 import '../../notifications/views/notifications_view.dart';
 import '../../notifications/services/backend_notifications_api_service.dart';
 import '../../tickets/views/tickets_hub_view.dart';
+import '../../operario/views/operario_panel_view.dart';
+import '../../operario/viewmodels/operario_viewmodel.dart';
 
 class MapSimpleMenuOverlay extends StatefulWidget {
   final bool isOpen;
@@ -190,6 +192,28 @@ class _MapSimpleMenuOverlayState extends State<MapSimpleMenuOverlay> {
                           );
                         },
                       ),
+                      if (auth.user?.isOperario == true)
+                        _buildMenuItem(
+                          context: context,
+                          icon: Icons.admin_panel_settings_outlined,
+                          color: const Color(0xFFDC2626),
+                          title: 'Panel de Operario',
+                          subtitle: 'Gestionar avisos y paradas',
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => ChangeNotifierProvider(
+                                  create: (_) => OperarioViewModel(
+                                    token: auth.token,
+                                    userId: auth.user?.id,
+                                  ),
+                                  child: const OperarioPanelView(),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
                       if (auth.isAuthenticated)
                         _buildMenuItem(
                           context: context,
