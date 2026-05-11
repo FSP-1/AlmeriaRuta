@@ -33,6 +33,7 @@ class AuthRepository:
                         username VARCHAR(80) NOT NULL UNIQUE,
                         password_hash VARCHAR(255) NOT NULL,
                         recovery_pin_hash VARCHAR(255) NULL,
+                        is_operario TINYINT(1) DEFAULT 0,
                         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                     )
                     """
@@ -105,6 +106,55 @@ class AuthRepository:
                 has_recovery_pin_hash = cur.fetchone()['column_count'] > 0
                 if not has_recovery_pin_hash:
                     cur.execute("ALTER TABLE users ADD COLUMN recovery_pin_hash VARCHAR(255) NULL")
+
+                cur.execute(
+                    """
+                    SELECT COUNT(*) AS column_count
+                    FROM information_schema.COLUMNS
+                    WHERE TABLE_SCHEMA = DATABASE()
+                      AND TABLE_NAME = 'users'
+                      AND COLUMN_NAME = 'is_operario'
+                    """
+                )
+                has_is_operario = cur.fetchone()['column_count'] > 0
+                if not has_is_operario:
+                    cur.execute("ALTER TABLE users ADD COLUMN is_operario TINYINT(1) DEFAULT 0")
+
+                cur.execute(
+                    """
+                    CREATE TABLE IF NOT EXISTS notices (
+                        id BIGINT PRIMARY KEY AUTO_INCREMENT,
+                        title VARCHAR(100) NOT NULL,
+                        message TEXT NOT NULL,
+                        type VARCHAR(50) NOT NULL,
+                        related_id VARCHAR(50) NULL,
+                        is_active TINYINT(1) DEFAULT 1,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                        INDEX idx_notices_active (is_active),
+                        INDEX idx_notices_type (type)
+                    )
+                    """
+                )
+
+                cur.execute(
+                    """
+                    CREATE TABLE IF NOT EXISTS disabled_stops (
+                        id BIGINT PRIMARY KEY AUTO_INCREMENT,
+                        stop_id VARCHAR(100) NOT NULL,
+                        stop_name VARCHAR(255) NOT NULL,
+                        reason TEXT NULL,
+                        disabled_by BIGINT NOT NULL,
+                        is_active TINYINT(1) DEFAULT 1,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                        UNIQUE KEY uq_disabled_stops_stop_id (stop_id),
+                        INDEX idx_disabled_stops_active (is_active),
+                        CONSTRAINT fk_disabled_stops_user FOREIGN KEY (disabled_by) REFERENCES users(id)
+                            ON DELETE CASCADE
+                    )
+                    """
+                )
 
                 cur.execute(
                     """
@@ -211,7 +261,7 @@ class AuthRepository:
         with self._conn() as conn:
             with conn.cursor() as cur:
                 cur.execute(
-                    "SELECT id, email, username, password_hash "
+                    "SELECT id, email, username, password_hash, is_operario "
                     "FROM users "
                     "WHERE LOWER(email)=LOWER(%s) OR LOWER(username)=LOWER(%s) "
                     "LIMIT 1",
@@ -223,7 +273,7 @@ class AuthRepository:
         with self._conn() as conn:
             with conn.cursor() as cur:
                 cur.execute(
-                    "SELECT id, email, username, password_hash, created_at FROM users WHERE id=%s LIMIT 1",
+                    "SELECT id, email, username, password_hash, is_operario, created_at FROM users WHERE id=%s LIMIT 1",
                     (user_id,),
                 )
                 return cur.fetchone()
@@ -290,10 +340,17 @@ class AuthRepository:
         with self._conn() as conn:
             with conn.cursor() as cur:
                 cur.execute(
-                    "SELECT id, email, username, password_hash, recovery_pin_hash FROM users WHERE LOWER(email)=LOWER(%s) LIMIT 1",
+                    "SELECT id, email, username, password_hash, recovery_pin_hash, is_operario FROM users WHERE LOWER(email)=LOWER(%s) LIMIT 1",
                     (email,),
                 )
                 return cur.fetchone()
+
+    def list_user_ids(self):
+        with self._conn() as conn:
+            with conn.cursor() as cur:
+                cur.execute("SELECT id FROM users")
+                rows = cur.fetchall()
+                return [r['id'] for r in rows]
 
     def create_notification(self, user_id, title, body, payload_json=None):
         with self._conn() as conn:
@@ -410,3 +467,58 @@ class AuthRepository:
                     ),
                 )
                 return cur.rowcount
+
+    # ============ NOTICES (Avisos) ============
+    def create_notice(self, title, message, notice_type, related_id=None):
+        with self._conn() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "INSERT INTO notices (title, message, type, related_id, is_active) VALUES (%s, %s, %s, %s, 1)",
+                    (title, message, notice_type, related_id),
+                )
+                return cur.lastrowid
+
+    def list_active_notices(self):
+        with self._conn() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "SELECT id, title, message, type, related_id, created_at FROM notices WHERE is_active=1 ORDER BY created_at DESC LIMIT 50",
+                )
+                return cur.fetchall()
+
+    def deactivate_notice(self, notice_id):
+        with self._conn() as conn:
+            with conn.cursor() as cur:
+                cur.execute("UPDATE notices SET is_active=0 WHERE id=%s", (notice_id,))
+                return cur.rowcount
+
+    # ============ DISABLED STOPS (Paradas Deshabilitadas) ============
+    def disable_stop(self, stop_id, stop_name, reason, disabled_by_user_id):
+        with self._conn() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "INSERT INTO disabled_stops (stop_id, stop_name, reason, disabled_by, is_active) VALUES (%s, %s, %s, %s, 1) "
+                    "ON DUPLICATE KEY UPDATE is_active=1, reason=%s, disabled_by=%s, updated_at=NOW()",
+                    (stop_id, stop_name, reason, disabled_by_user_id, reason, disabled_by_user_id),
+                )
+                return cur.lastrowid
+
+    def enable_stop(self, stop_id):
+        with self._conn() as conn:
+            with conn.cursor() as cur:
+                cur.execute("UPDATE disabled_stops SET is_active=0 WHERE stop_id=%s", (stop_id,))
+                return cur.rowcount
+
+    def list_disabled_stops(self):
+        with self._conn() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "SELECT stop_id, stop_name, reason, disabled_by, created_at FROM disabled_stops WHERE is_active=1 ORDER BY created_at DESC",
+                )
+                return cur.fetchall()
+
+    def is_stop_disabled(self, stop_id):
+        with self._conn() as conn:
+            with conn.cursor() as cur:
+                cur.execute("SELECT id FROM disabled_stops WHERE stop_id=%s AND is_active=1 LIMIT 1", (stop_id,))
+                return cur.fetchone() is not None

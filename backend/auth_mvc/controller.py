@@ -38,6 +38,30 @@ def create_auth_blueprint(auth_service):
 
         return decorator
 
+    def operario_required():
+        def decorator(fn):
+            @wraps(fn)
+            def wrapper(*args, **kwargs):
+                token = _extract_bearer_token()
+                if not token:
+                    return jsonify({'error': 'Token requerido'}), 401
+                try:
+                    data = auth_service.parse_token(token)
+                except SignatureExpired:
+                    return jsonify({'error': 'Token expirado'}), 401
+                except BadSignature:
+                    return jsonify({'error': 'Token invalido'}), 401
+
+                if not data.get('is_operario'):
+                    return jsonify({'error': 'Acceso denegado. Se requieren permisos de operario.'}), 403
+
+                request.auth = data
+                return fn(*args, **kwargs)
+
+            return wrapper
+
+        return decorator
+
     @auth_bp.route('/auth/register', methods=['POST'])
     def auth_register():
         try:
@@ -176,5 +200,61 @@ def create_auth_blueprint(auth_service):
             return jsonify(payload), status
         except Exception as e:
             return jsonify({'error': f'No se pudo guardar el perfil de tarjeta: {e}'}), 500
+
+    # ============ OPERARIO ENDPOINTS ============
+
+    @auth_bp.route('/operario/notices', methods=['GET'])
+    def operario_list_notices():
+        try:
+            payload, status = auth_service.list_notices()
+            return jsonify(payload), status
+        except Exception as e:
+            return jsonify({'error': f'No se pudieron cargar los avisos: {e}'}), 500
+
+    @auth_bp.route('/operario/notices', methods=['POST'])
+    @operario_required()
+    def operario_create_notice():
+        try:
+            body = request.get_json(silent=True) or {}
+            payload, status = auth_service.create_notice(body)
+            return jsonify(payload), status
+        except Exception as e:
+            return jsonify({'error': f'No se pudo crear el aviso: {e}'}), 500
+
+    @auth_bp.route('/operario/notices/<int:notice_id>/deactivate', methods=['POST'])
+    @operario_required()
+    def operario_deactivate_notice(notice_id):
+        try:
+            payload, status = auth_service.deactivate_notice(notice_id)
+            return jsonify(payload), status
+        except Exception as e:
+            return jsonify({'error': f'No se pudo desactivar el aviso: {e}'}), 500
+
+    @auth_bp.route('/operario/stops/disabled', methods=['GET'])
+    def operario_list_disabled_stops():
+        try:
+            payload, status = auth_service.list_disabled_stops()
+            return jsonify(payload), status
+        except Exception as e:
+            return jsonify({'error': f'No se pudieron cargar las paradas deshabilitadas: {e}'}), 500
+
+    @auth_bp.route('/operario/stops/<stop_id>/disable', methods=['POST'])
+    @operario_required()
+    def operario_disable_stop(stop_id):
+        try:
+            body = request.get_json(silent=True) or {}
+            payload, status = auth_service.disable_stop(stop_id, body)
+            return jsonify(payload), status
+        except Exception as e:
+            return jsonify({'error': f'No se pudo deshabilitar la parada: {e}'}), 500
+
+    @auth_bp.route('/operario/stops/<stop_id>/enable', methods=['POST'])
+    @operario_required()
+    def operario_enable_stop(stop_id):
+        try:
+            payload, status = auth_service.enable_stop(stop_id)
+            return jsonify(payload), status
+        except Exception as e:
+            return jsonify({'error': f'No se pudo habilitar la parada: {e}'}), 500
 
     return auth_bp

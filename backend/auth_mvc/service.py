@@ -114,11 +114,17 @@ class AuthService:
             self.hash_password(password),
             self.hash_pin(recovery_pin),
         )
-        token = self.issue_token({'uid': user_id, 'email': email, 'username': normalized_username, 'guest': False})
+        token = self.issue_token({
+            'uid': user_id,
+            'email': email,
+            'username': normalized_username,
+            'guest': False,
+            'is_operario': False,
+        })
 
         return {
             'token': token,
-            'user': {'id': user_id, 'email': email, 'username': normalized_username, 'guest': False},
+            'user': {'id': user_id, 'email': email, 'username': normalized_username, 'guest': False, 'isOperario': False},
         }, 200
 
     def login(self, identifier: str, password: str):
@@ -130,11 +136,13 @@ class AuthService:
         if not user or not self.verify_password(password, user['password_hash']):
             return {'error': 'Credenciales incorrectas'}, 401
 
+        is_operario = bool(user.get('is_operario', False))
         token = self.issue_token({
             'uid': user['id'],
             'email': user['email'],
             'username': user['username'],
             'guest': False,
+            'is_operario': is_operario,
         })
 
         return {
@@ -144,6 +152,7 @@ class AuthService:
                 'email': user['email'],
                 'username': user['username'],
                 'guest': False,
+                'isOperario': is_operario,
             },
         }, 200
 
@@ -157,13 +166,20 @@ class AuthService:
 
     def me(self, auth_data: dict):
         if auth_data.get('guest'):
-            return {'id': None, 'email': None, 'username': auth_data.get('username'), 'guest': True}, 200
+            return {'id': None, 'email': None, 'username': auth_data.get('username'), 'guest': True, 'isOperario': False}, 200
 
         user = self.repo.find_user_by_id(auth_data.get('uid'))
         if not user:
             return {'error': 'Usuario no encontrado'}, 404
 
-        return {'id': user['id'], 'email': user['email'], 'username': user['username'], 'guest': False}, 200
+        is_operario = bool(user.get('is_operario', False))
+        return {
+            'id': user['id'],
+            'email': user['email'],
+            'username': user['username'],
+            'guest': False,
+            'isOperario': is_operario,
+        }, 200
 
     def update_profile(self, auth_data: dict, body: dict):
         user_id = auth_data.get('uid')
@@ -190,12 +206,14 @@ class AuthService:
         if not updated_user:
             return {'error': 'Usuario no encontrado'}, 404
 
+        is_operario = bool(updated_user.get('is_operario', False))
         token = self.issue_token(
             {
                 'uid': updated_user['id'],
                 'email': updated_user['email'],
                 'username': updated_user['username'],
                 'guest': False,
+                'is_operario': is_operario,
             }
         )
 
@@ -206,6 +224,7 @@ class AuthService:
                 'email': updated_user['email'],
                 'username': updated_user['username'],
                 'guest': False,
+                'isOperario': is_operario,
             },
         }, 200
 
@@ -457,3 +476,107 @@ class AuthService:
         )
 
         return self.get_transport_profile(auth_data)
+
+    # ============ OPERARIO SERVICES ============
+
+    def create_notice(self, body: dict):
+        title = self._sanitize(str(body.get('title', '')).strip())
+        message = self._sanitize(str(body.get('message', '')).strip())
+        notice_type = self._sanitize(str(body.get('type', '')).strip().upper())
+        related_id = self._sanitize(str(body.get('relatedId', '')).strip() or None)
+
+        if not title or not message:
+            return {'error': 'Título y mensaje son requeridos'}, 400
+
+        allowed_types = {'TURISMO', 'LINEA', 'PARADA', 'GENERAL'}
+        if notice_type not in allowed_types:
+            return {'error': f'Tipo inválido. Permitidos: {", ".join(allowed_types)}'}, 400
+
+        notice_id = self.repo.create_notice(title, message, notice_type, related_id)
+        # Create app notifications for existing users so authenticated apps get notified
+        try:
+            user_ids = self.repo.list_user_ids()
+            payload = json.dumps({'noticeId': notice_id, 'type': notice_type, 'relatedId': related_id}, ensure_ascii=False)
+            for uid in user_ids:
+                try:
+                    self.repo.create_notification(uid, f"Nuevo aviso: {title}", message, payload)
+                except Exception:
+                    # ignore notification errors per-user
+                    continue
+        except Exception:
+            # best-effort: if listing users or creating notifications fails, continue
+            pass
+        return {
+            'success': True,
+            'notice': {
+                'id': notice_id,
+                'title': title,
+                'message': message,
+                'type': notice_type,
+                'relatedId': related_id,
+            },
+        }, 201
+
+    def list_notices(self):
+        notices = self.repo.list_active_notices()
+        return {
+            'notices': [
+                {
+                    'id': n['id'],
+                    'title': n['title'],
+                    'message': n['message'],
+                    'type': n['type'],
+                    'relatedId': n['related_id'],
+                    'createdAt': n['created_at'].isoformat() if n['created_at'] else None,
+                }
+                for n in notices
+            ]
+        }, 200
+
+    def deactivate_notice(self, notice_id: int):
+        if self.repo.deactivate_notice(notice_id) > 0:
+            return {'success': True}, 200
+        return {'error': 'Aviso no encontrado'}, 404
+
+    def disable_stop(self, stop_id: str, body: dict):
+        stop_id = self._sanitize(stop_id).strip()
+        stop_name = self._sanitize(str(body.get('stopName', '')).strip() or stop_id)
+        reason = self._sanitize(str(body.get('reason', '')).strip() or 'No especificado')
+        disabled_by = body.get('disabledByUserId')
+
+        if not stop_id:
+            return {'error': 'stop_id requerido'}, 400
+
+        disabled_id = self.repo.disable_stop(stop_id, stop_name, reason, disabled_by)
+        return {
+            'success': True,
+            'stop': {
+                'id': disabled_id,
+                'stopId': stop_id,
+                'stopName': stop_name,
+                'reason': reason,
+            },
+        }, 201
+
+    def enable_stop(self, stop_id: str):
+        stop_id = self._sanitize(stop_id).strip()
+        if not stop_id:
+            return {'error': 'stop_id requerido'}, 400
+
+        if self.repo.enable_stop(stop_id) > 0:
+            return {'success': True}, 200
+        return {'error': 'Parada no encontrada o no está deshabilitada'}, 404
+
+    def list_disabled_stops(self):
+        stops = self.repo.list_disabled_stops()
+        return {
+            'disabledStops': [
+                {
+                    'stopId': s['stop_id'],
+                    'stopName': s['stop_name'],
+                    'reason': s['reason'],
+                    'disabledAt': s['created_at'].isoformat() if s['created_at'] else None,
+                }
+                for s in stops
+            ]
+        }, 200
