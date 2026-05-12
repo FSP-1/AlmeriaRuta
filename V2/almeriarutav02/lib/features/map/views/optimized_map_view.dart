@@ -42,6 +42,7 @@ class _OptimizedMapViewState extends State<OptimizedMapView> {
   double _currentZoom = 13.0;
   bool _showSearch = false;
   bool _isSimpleMenuOpen = false;
+  bool _isRefreshingLocation = false;
 
   @override
   void initState() {
@@ -278,10 +279,33 @@ class _OptimizedMapViewState extends State<OptimizedMapView> {
             : MapFloatingButtons(
                 hasActiveRoute: mapViewModel.activeRoute.isNotEmpty,
                 onClearRoute: mapViewModel.clearRoute,
-                onMyLocation: () => MapFabActions.centerOnUser(
-                  mapController: _mapController,
-                  userLocation: mapViewModel.userLocation,
-                ),
+                onMyLocation: () {
+                  if (_isRefreshingLocation) return;
+                  setState(() => _isRefreshingLocation = true);
+
+                  showDialog<void>(
+                    context: context,
+                    barrierDismissible: false,
+                    builder: (_) => const Center(
+                      child: CircularProgressIndicator(color: AppTheme.primaryRed),
+                    ),
+                  );
+
+                  mapViewModel.refreshCurrentLocation().whenComplete(() {
+                    if (!mounted) return;
+                    final nav = Navigator.of(context, rootNavigator: true);
+                    if (nav.canPop()) {
+                      nav.pop();
+                    }
+                    setState(() => _isRefreshingLocation = false);
+                  }).then((_) {
+                    if (!mounted) return;
+                    MapFabActions.centerOnUser(
+                      mapController: _mapController,
+                      userLocation: mapViewModel.userLocation,
+                    );
+                  });
+                },
                 onFavorites: () => MapFabActions.openFavorites(
                   context: context,
                   mapViewModel: mapViewModel,

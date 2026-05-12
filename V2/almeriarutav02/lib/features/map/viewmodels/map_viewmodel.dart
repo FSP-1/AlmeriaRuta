@@ -3,6 +3,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
+import 'dart:async';
 
 import '../models/location_model.dart';
 import '../models/zone_model.dart';
@@ -35,6 +36,7 @@ class MapViewModel extends ChangeNotifier {
   List<StopModel> _stops = [];
   List<LineModel> _lines = [];
   LatLng? _userLocation;
+  Timer? _routeLocationRefreshTimer;
   bool _showBusStops = true;
   MapFilter _currentFilter = const MapFilter.nearby();
   Set<String> _favoriteStopIds = {};
@@ -132,17 +134,44 @@ class MapViewModel extends ChangeNotifier {
 
   Future<void> getCurrentLocation() async {
     if (_userLocation != null) return;
+    await refreshCurrentLocation();
+  }
+
+  Future<void> refreshCurrentLocation() async {
     try {
-      final permission = await Geolocator.checkPermission();
+      var permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied) {
-        await Geolocator.requestPermission();
+        permission = await Geolocator.requestPermission();
       }
+      if (permission == LocationPermission.deniedForever ||
+          permission == LocationPermission.denied) {
+        // No podemos obtener ubicación; mantener la que haya o fallback.
+        _userLocation ??= const LatLng(36.8381, -2.4597);
+        notifyListeners();
+        return;
+      }
+
       final position = await Geolocator.getCurrentPosition();
       _userLocation = LatLng(position.latitude, position.longitude);
     } catch (_) {
-      _userLocation = const LatLng(36.8381, -2.4597);
+      _userLocation ??= const LatLng(36.8381, -2.4597);
     }
     notifyListeners();
+  }
+
+  void _startRouteLocationRefreshTimer() {
+    _routeLocationRefreshTimer?.cancel();
+    // Refresco inmediato y luego cada 3 minutos.
+    unawaited(refreshCurrentLocation());
+    _routeLocationRefreshTimer = Timer.periodic(
+      const Duration(minutes: 3),
+      (_) => unawaited(refreshCurrentLocation()),
+    );
+  }
+
+  void _stopRouteLocationRefreshTimer() {
+    _routeLocationRefreshTimer?.cancel();
+    _routeLocationRefreshTimer = null;
   }
 
   // ── Favorites ─────────────────────────────────────────────────────────────
@@ -240,6 +269,7 @@ class MapViewModel extends ChangeNotifier {
     _routeDistanceMeters = 0;
     _routeDurationMinutes = 0;
     _isRouteFallback = false;
+    _startRouteLocationRefreshTimer();
     notifyListeners();
   }
 
@@ -256,6 +286,7 @@ class MapViewModel extends ChangeNotifier {
     _routeDistanceMeters = result.distanceMeters;
     _routeDurationMinutes = result.durationMinutes;
     _isRouteFallback = result.isFallback;
+    _startRouteLocationRefreshTimer();
     notifyListeners();
   }
 
@@ -272,6 +303,7 @@ class MapViewModel extends ChangeNotifier {
     _routeDistanceMeters = 0;
     _routeDurationMinutes = 0;
     _isRouteFallback = false;
+    _stopRouteLocationRefreshTimer();
     notifyListeners();
   }
 
@@ -333,6 +365,7 @@ class MapViewModel extends ChangeNotifier {
     _routeDurationMinutes = plan.totalDurationMinutes;
     _isRouteFallback = false;
     _isLoading = false;
+    _startRouteLocationRefreshTimer();
 
     debugPrint('[MapViewModel] Applying tourist plan: place=${plan.place.name} '
       'segments=${plan.segments.length} routeStops=${plan.routeStops.length} '
@@ -340,6 +373,12 @@ class MapViewModel extends ChangeNotifier {
       'walkToBoardPoints=${_touristWalkToBoardRoute.length} walkToPlacePoints=${_touristWalkToPlaceRoute.length}');
 
     notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    _stopRouteLocationRefreshTimer();
+    super.dispose();
   }
 
   // ── Distance helpers ──────────────────────────────────────────────────────
@@ -436,15 +475,24 @@ class MapViewModel extends ChangeNotifier {
       notifyListeners();
       return;
     }
-    _stopsInZone = allStops.where((s) {
-      return AlmeriaZones.isPointInsidePolygon(LatLng(s.lat, s.lon), _selectedZone!.polygon);
+    _stopsInZone = allStops.where((stop) {
+      return AlmeriaZones.isPointInsidePolygon(
+        LatLng(stop.lat, stop.lon),
+        _selectedZone!.polygon,
+      );
     }).toList();
+
+    // Calcular líneas sin inflar por paradas repetidas en la misma ruta.
     final counts = <String, int>{};
-    for (final s in _stopsInZone) {
-      for (final id in s.lineIds) {
-        counts[id] = (counts[id] ?? 0) + 1;
+    final seenStopIds = <String>{};
+
+    for (final stop in _stopsInZone) {
+      if (!seenStopIds.add(stop.id)) continue;
+      for (final lineId in stop.lineIds) {
+        counts[lineId] = (counts[lineId] ?? 0) + 1;
       }
     }
+
     _linesInZone = Map.fromEntries(
       counts.entries.toList()..sort((a, b) => b.value.compareTo(a.value)),
     );
