@@ -8,6 +8,7 @@ class LineModel {
   final String firstService;
   final String lastService;
   final int totalStops;
+  final List<LineRouteModel> routes;
   final List<StopModel> stops;
 
   LineModel({
@@ -20,10 +21,21 @@ class LineModel {
     required this.firstService,
     required this.lastService,
     required this.totalStops,
+    this.routes = const [],
     required this.stops,
   });
 
   factory LineModel.fromJson(Map<String, dynamic> json) {
+    final routes = (json['routes'] as List?)
+            ?.whereType<Map<String, dynamic>>()
+            .map(LineRouteModel.fromJson)
+            .toList() ??
+        const <LineRouteModel>[];
+
+    final flattenedStops = routes.isNotEmpty
+        ? routes.expand((route) => route.stops).toList()
+        : (json['stops'] as List?)?.whereType<Map<String, dynamic>>().map(StopModel.fromJson).toList() ?? [];
+
     return LineModel(
       id: json['id'] ?? '',
       name: json['name'] ?? '',
@@ -34,7 +46,8 @@ class LineModel {
       firstService: json['firstService'] ?? '06:30',
       lastService: json['lastService'] ?? '22:30',
       totalStops: json['totalStops'] ?? 0,
-      stops: (json['stops'] as List?)?.map((s) => StopModel.fromJson(s)).toList() ?? [],
+      routes: routes,
+      stops: flattenedStops,
     );
   }
 
@@ -49,6 +62,35 @@ class LineModel {
       'firstService': firstService,
       'lastService': lastService,
       'totalStops': totalStops,
+      'routes': routes.map((route) => route.toJson()).toList(),
+      'stops': stops.map((stop) => stop.toJson()).toList(),
+    };
+  }
+}
+
+class LineRouteModel {
+  final String name;
+  final List<StopModel> stops;
+
+  LineRouteModel({
+    required this.name,
+    required this.stops,
+  });
+
+  factory LineRouteModel.fromJson(Map<String, dynamic> json) {
+    return LineRouteModel(
+      name: json['name']?.toString() ?? json['ruta']?.toString() ?? 'Ruta',
+      stops: (json['stops'] as List?)
+              ?.whereType<Map<String, dynamic>>()
+              .map(StopModel.fromJson)
+              .toList() ??
+          const [],
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'name': name,
       'stops': stops.map((stop) => stop.toJson()).toList(),
     };
   }

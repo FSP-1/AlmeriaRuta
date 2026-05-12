@@ -83,13 +83,27 @@ class LineCard extends StatelessWidget {
                     color: lineColor,
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: Text(
-                    '${line.stops.isNotEmpty ? line.stops.length : line.totalStops}',
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        '${line.routes.isNotEmpty ? line.routes.length : 1}',
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'rutas',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: Colors.white.withValues(alpha: 0.9),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],

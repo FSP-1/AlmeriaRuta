@@ -87,6 +87,18 @@ class _LineStopsContentState extends State<_LineStopsContent> {
     return stops;
   }
 
+  List<LineRouteModel> _visibleRoutes() {
+    if (widget.line.routes.isNotEmpty) {
+      return widget.line.routes;
+    }
+    return [
+      LineRouteModel(
+        name: widget.line.fullName,
+        stops: _loadedStops,
+      ),
+    ];
+  }
+
   void _openFirstMatchIfAny() {
     final filteredStops = _filterStops(_loadedStops);
     if (filteredStops.isEmpty) {
@@ -223,13 +235,45 @@ class _LineStopsContentState extends State<_LineStopsContent> {
                       }
 
                       final stops = snapshot.data ?? [];
+                      final routes = _visibleRoutes();
+                      final normalizedQuery = LineSearchUtils.normalizeText(_query.trim());
+
+                      if (normalizedQuery.isEmpty) {
+                        if (routes.isEmpty) {
+                          return Center(
+                            child: Text(
+                              'No hay paradas disponibles',
+                              style: TextStyle(color: Colors.grey[700]),
+                            ),
+                          );
+                        }
+
+                        return ListView.builder(
+                          controller: scrollController,
+                          itemCount: routes.length,
+                          itemBuilder: (context, routeIndex) {
+                            final route = routes[routeIndex];
+                            return Padding(
+                              padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                              child: _buildRouteSection(
+                                context,
+                                route,
+                                widget.line,
+                                widget.viewModel,
+                                lineColor,
+                                favVM,
+                              ),
+                            );
+                          },
+                        );
+                      }
+
                       final filteredStops = _filterStops(stops);
                       if (filteredStops.isEmpty) {
                         return Center(
                           child: Text(
-                            _query.trim().isEmpty
-                                ? 'No hay paradas disponibles'
-                                : 'No hay paradas que coincidan',
+                            'No hay paradas que coincidan',
+                            style: TextStyle(color: Colors.grey[700]),
                           ),
                         );
                       }
@@ -239,125 +283,14 @@ class _LineStopsContentState extends State<_LineStopsContent> {
                         itemCount: filteredStops.length,
                         itemBuilder: (context, index) {
                           final stop = filteredStops[index];
-                          final isLast = index == filteredStops.length - 1;
-                          final isStopFav = favVM.isFavorite(stop.id, FavoriteType.stop);
-                          final minutes = widget.viewModel.getArrivalMinutes(widget.line.id, stop.id);
-                          final arrivalLabel = widget.viewModel.formatArrivalLabel(minutes);
-                          final badgeBackgroundColor = minutes == null
-                              ? Colors.grey.withValues(alpha: 0.12)
-                              : (minutes <= 3
-                                    ? Colors.red.withValues(alpha: 0.12)
-                                    : Colors.green.withValues(alpha: 0.12));
-                          final badgeTextColor = minutes == null
-                              ? Colors.grey[700]
-                              : (minutes <= 3 ? Colors.red : Colors.green[800]);
-
-                          return Column(
-                            children: [
-                              InkWell(
-                                onTap: () => _showStopActions(context, stop, widget.line, widget.viewModel),
-                                child: Padding(
-                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                                  child: Row(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Container(
-                                        width: 40,
-                                        height: 40,
-                                        decoration: BoxDecoration(
-                                          color: lineColor.withValues(alpha: 0.15),
-                                          shape: BoxShape.circle,
-                                        ),
-                                        child: Icon(
-                                          Icons.location_on,
-                                          color: lineColor,
-                                          size: 22,
-                                        ),
-                                      ),
-                                      const SizedBox(width: 12),
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              stop.name,
-                                              style: const TextStyle(
-                                                fontWeight: FontWeight.w600,
-                                                fontSize: 15,
-                                              ),
-                                            ),
-                                            const SizedBox(height: 4),
-                                            Container(
-                                              padding: const EdgeInsets.symmetric(
-                                                horizontal: 8,
-                                                vertical: 2,
-                                              ),
-                                              decoration: BoxDecoration(
-                                                color: Colors.grey[100],
-                                                borderRadius: BorderRadius.circular(4),
-                                              ),
-                                              child: Text(
-                                                LineUiUtils.resolveZoneName(stop.lat, stop.lon),
-                                                style: TextStyle(
-                                                  fontSize: 12,
-                                                  color: Colors.grey[700],
-                                                ),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 10,
-                                          vertical: 6,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: badgeBackgroundColor,
-                                          borderRadius: BorderRadius.circular(8),
-                                        ),
-                                        child: Text(
-                                          arrivalLabel,
-                                          style: TextStyle(
-                                            fontWeight: FontWeight.w700,
-                                            color: badgeTextColor,
-                                          ),
-                                        ),
-                                      ),
-                                      IconButton(
-                                        tooltip: isStopFav
-                                            ? 'Quitar de favoritos'
-                                            : 'Guardar en favoritos',
-                                        icon: Icon(
-                                          isStopFav ? Icons.star : Icons.star_border,
-                                          color: Colors.amber,
-                                        ),
-                                        onPressed: () async {
-                                          if (isStopFav) {
-                                            await favVM.remove(stop.id, FavoriteType.stop);
-                                          } else {
-                                            await favVM.add(
-                                              FavoriteModel(
-                                                id: stop.id,
-                                                name: stop.name,
-                                                type: FavoriteType.stop,
-                                              ),
-                                            );
-                                          }
-                                        },
-                                      ),
-                                      Icon(Icons.chevron_right, color: Colors.grey[400]),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                              if (!isLast)
-                                Padding(
-                                  padding: const EdgeInsets.only(left: 35),
-                                  child: Divider(height: 1, color: Colors.grey[200]),
-                                ),
-                            ],
+                          return _buildStopTile(
+                            context: context,
+                            stop: stop,
+                            currentLine: widget.line,
+                            linesViewModel: widget.viewModel,
+                            lineColor: lineColor,
+                            favVM: favVM,
+                            isLast: index == filteredStops.length - 1,
                           );
                         },
                       );
@@ -369,6 +302,166 @@ class _LineStopsContentState extends State<_LineStopsContent> {
           ),
         );
       },
+    );
+  }
+
+  Widget _buildRouteSection(
+    BuildContext context,
+    LineRouteModel route,
+    LineModel currentLine,
+    LinesViewModel linesViewModel,
+    Color lineColor,
+    FavoritesViewModel favVM,
+  ) {
+    return ExpansionTile(
+      initiallyExpanded: true,
+      tilePadding: EdgeInsets.zero,
+      childrenPadding: const EdgeInsets.only(bottom: 8),
+      title: Text(
+        route.name,
+        style: const TextStyle(fontWeight: FontWeight.w700),
+      ),
+      subtitle: Text('${route.stops.length} paradas'),
+      children: route.stops
+          .asMap()
+          .entries
+          .map(
+            (entry) => _buildStopTile(
+              context: context,
+              stop: entry.value,
+              currentLine: currentLine,
+              linesViewModel: linesViewModel,
+              lineColor: lineColor,
+              favVM: favVM,
+              isLast: entry.key == route.stops.length - 1,
+            ),
+          )
+          .toList(),
+    );
+  }
+
+  Widget _buildStopTile({
+    required BuildContext context,
+    required StopModel stop,
+    required LineModel currentLine,
+    required LinesViewModel linesViewModel,
+    required Color lineColor,
+    required FavoritesViewModel favVM,
+    required bool isLast,
+  }) {
+    final isStopFav = favVM.isFavorite(stop.id, FavoriteType.stop);
+    final minutes = linesViewModel.getArrivalMinutes(currentLine.id, stop.id);
+    final arrivalLabel = linesViewModel.formatArrivalLabel(minutes);
+    final badgeBackgroundColor = minutes == null
+        ? Colors.grey.withValues(alpha: 0.12)
+        : (minutes <= 3
+              ? Colors.red.withValues(alpha: 0.12)
+              : Colors.green.withValues(alpha: 0.12));
+    final badgeTextColor = minutes == null
+        ? Colors.grey[700]
+        : (minutes <= 3 ? Colors.red : Colors.green[800]);
+
+    return Column(
+      children: [
+        InkWell(
+          onTap: () => _showStopActions(context, stop, currentLine, linesViewModel),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 12),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: lineColor.withValues(alpha: 0.15),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.location_on,
+                    color: lineColor,
+                    size: 22,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        stop.name,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 15,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 6,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: Colors.grey[100],
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              LineUiUtils.resolveZoneName(stop.lat, stop.lon),
+                              style: TextStyle(fontSize: 12, color: Colors.grey[700]),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: badgeBackgroundColor,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    arrivalLabel,
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      color: badgeTextColor,
+                    ),
+                  ),
+                ),
+                IconButton(
+                  tooltip: isStopFav ? 'Quitar de favoritos' : 'Guardar en favoritos',
+                  icon: Icon(
+                    isStopFav ? Icons.star : Icons.star_border,
+                    color: Colors.amber,
+                  ),
+                  onPressed: () async {
+                    if (isStopFav) {
+                      await favVM.remove(stop.id, FavoriteType.stop);
+                    } else {
+                      await favVM.add(
+                        FavoriteModel(
+                          id: stop.id,
+                          name: stop.name,
+                          type: FavoriteType.stop,
+                        ),
+                      );
+                    }
+                  },
+                ),
+                Icon(Icons.chevron_right, color: Colors.grey[400]),
+              ],
+            ),
+          ),
+        ),
+        if (!isLast)
+          Padding(
+            padding: const EdgeInsets.only(left: 35),
+            child: Divider(height: 1, color: Colors.grey[200]),
+          ),
+      ],
     );
   }
 

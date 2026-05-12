@@ -73,14 +73,16 @@ class PerfectBusClient:
             line_id = linea_json.get("linea") # Ej: "L18"
             
             ordered_stops = []
+            ordered_routes = []
             ruta_nombre_largo = f"Línea {line_id}"
             
-            # Recorremos ida y vuelta en el orden  del JSON (sin deduplicación)
+            # Recorremos ida y vuelta en el orden del JSON.
             for idx, ruta in enumerate(linea_json.get("rutas", [])):
                 # Guardamos el nombre de la primera ruta como nombre largo de la línea
                 if idx == 0 and ruta.get("ruta"):
                     ruta_nombre_largo = str(ruta.get("ruta")).title()
-                    
+
+                route_stops = []
                 for parada in ruta.get("paradas", []):
                     pid = _clean_id(parada.get("id"))
                     
@@ -88,10 +90,17 @@ class PerfectBusClient:
                     coordenadas_reales = self.local_stops.get(pid)
                     
                     if coordenadas_reales:
-                        ordered_stops.append(coordenadas_reales)
+                        route_stops.append(coordenadas_reales)
                     else:
                         nombre_parada = parada.get('nombre', 'Sin nombre')
                         print(f" Parada {pid} ({nombre_parada}) de la {line_id} existe en el JSON pero no en Paradas.csv")
+
+                if route_stops:
+                    ordered_routes.append({
+                        "name": str(ruta.get("ruta") or f"Ruta {idx + 1}").title(),
+                        "stops": route_stops,
+                    })
+                    ordered_stops.extend(route_stops)
             
             if ordered_stops:
                 self.lineas_data.append({
@@ -100,6 +109,7 @@ class PerfectBusClient:
                     "fullName": ruta_nombre_largo,
                     "description": f"Servicio urbano Almería",
                     "totalStops": len(ordered_stops),
+                    "routes": ordered_routes,
                     "stops": ordered_stops
                 })
 
@@ -117,7 +127,7 @@ def get_lines():
 def get_line_stops(line_id):
     for line in client.lineas_data:
         if line['id'] == line_id:
-            return jsonify(line['stops'])
+            return jsonify(line.get('routes', line['stops']))
     return jsonify([])
 
 @app.route('/lines/<line_id>/arrivals')

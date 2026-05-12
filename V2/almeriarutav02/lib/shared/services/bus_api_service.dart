@@ -9,9 +9,10 @@ import '../../core/constants/app_constants.dart';
 class BusApiService {
   static final http.Client _client = http.Client();
   static const Duration _staticDataCacheTtl = Duration(hours: 24);
-  static const String _linesCacheKey = 'bus_lines_cache_v1';
-  static const String _stopsCacheKey = 'bus_stops_cache_v1';
-  static const String _staticCacheUpdatedAtKey = 'bus_static_cache_updated_at_v1';
+  // Bump cache keys whenever the static payload/schema changes.
+  static const String _linesCacheKey = 'bus_lines_cache_v2';
+  static const String _stopsCacheKey = 'bus_stops_cache_v2';
+  static const String _staticCacheUpdatedAtKey = 'bus_static_cache_updated_at_v2';
 
   static List<LineModel>? _linesCache;
   static final Map<String, List<StopModel>> _stopsCache = {};
@@ -30,7 +31,7 @@ Future<List<LineModel>> getLines({bool forceRefresh = false}) async {
 
   final lines = await _fetchLines();
 
-  // 🔥 FIX: construir lineIds reales
+  //  FIX: construir lineIds reales
   final Map<String, Set<String>> stopToLines = {};
 
   for (final line in lines) {
@@ -39,12 +40,19 @@ Future<List<LineModel>> getLines({bool forceRefresh = false}) async {
     }
   }
 
-  // 🔥 aplicar a cada stop
+  //  aplicar a cada stop
   final enrichedLines = lines.map((line) {
     final newStops = line.stops.map((s) {
       return s.copyWith(
         lineIds: stopToLines[s.id] ?? {},
       );
+    }).toList();
+
+    final newRoutes = line.routes.map((route) {
+      final updatedStops = route.stops
+          .map((s) => s.copyWith(lineIds: stopToLines[s.id] ?? {}))
+          .toList();
+      return LineRouteModel(name: route.name, stops: updatedStops);
     }).toList();
 
     return LineModel(
@@ -57,6 +65,7 @@ Future<List<LineModel>> getLines({bool forceRefresh = false}) async {
       firstService: line.firstService,
       lastService: line.lastService,
       totalStops: line.totalStops,
+      routes: newRoutes,
       stops: newStops,
     );
   }).toList();
@@ -157,7 +166,15 @@ Future<List<LineModel>> getLines({bool forceRefresh = false}) async {
     );
     if (response.statusCode == 200) {
       final List<dynamic> data = json.decode(response.body);
-      return data.map((json) => StopModel.fromJson(json)).toList();
+      if (data.isNotEmpty && data.first is Map<String, dynamic> && (data.first as Map<String, dynamic>).containsKey('stops')) {
+        return data
+            .whereType<Map<String, dynamic>>()
+            .expand((route) => (route['stops'] as List? ?? const [])
+                .whereType<Map<String, dynamic>>()
+                .map(StopModel.fromJson))
+            .toList();
+      }
+      return data.whereType<Map<String, dynamic>>().map(StopModel.fromJson).toList();
     }
     throw Exception('Error al cargar paradas');
   }
