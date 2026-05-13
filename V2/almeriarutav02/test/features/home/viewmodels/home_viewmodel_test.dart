@@ -16,8 +16,8 @@ void main() {
       final vm = HomeViewModel();
       final ids = vm.busServices.map((s) => s.id).toList();
 
-      expect(ids, containsAll(['lines', 'tickets', 'notifications', 'map']));
-      expect(vm.busServices.where((s) => s.status == ServiceStatus.active), hasLength(4));
+      expect(ids, containsAll(['lines', 'tickets', 'notifications']));
+      expect(vm.busServices.where((s) => s.status == ServiceStatus.active), hasLength(3));
     });
 
     test('contains informational urban and accessibility services', () {

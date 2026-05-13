@@ -9,12 +9,14 @@ void main() {
         'email': 'test@almeria.com',
         'username': 'cliente',
         'guest': true,
+        'isOperario': true,
       });
 
       expect(user.id, 7);
       expect(user.email, 'test@almeria.com');
       expect(user.username, 'cliente');
       expect(user.guest, isTrue);
+      expect(user.isOperario, isTrue);
     });
 
     test('parses string id via int.tryParse', () {
@@ -61,6 +63,7 @@ void main() {
         'email': 'user@example.com',
         'username': 'user',
         'guest': false,
+        'isOperario': false,
       });
     });
 
@@ -70,10 +73,17 @@ void main() {
       expect(json['id'], isNull);
       expect(json['email'], isNull);
       expect(json['guest'], isTrue);
+      expect(json['isOperario'], isFalse);
     });
 
     test('roundtrip fromJson -> toJson is stable', () {
-      final original = {'id': 5, 'email': 'r@r.com', 'username': 'ronda', 'guest': false};
+      final original = {
+        'id': 5,
+        'email': 'r@r.com',
+        'username': 'ronda',
+        'guest': false,
+        'isOperario': false,
+      };
       final user = AppUser.fromJson(original);
       expect(user.toJson(), original);
     });

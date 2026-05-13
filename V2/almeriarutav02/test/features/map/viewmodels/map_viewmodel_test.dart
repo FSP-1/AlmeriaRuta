@@ -232,8 +232,9 @@ void main() {
       expect(vm.isRouteFallback, isTrue);
     });
 
-    test('applyTouristBusRoutePlan exposes active plan and clearRoute resets it', () {
+    test('applyTouristBusRoutePlan exposes active plan and clearRoute resets it', () async {
       final vm = MapViewModel();
+      await vm.refreshCurrentLocation();
       final place = TouristPlace(
         id: 'tp1',
         name: 'Alcazaba',
@@ -287,7 +288,7 @@ void main() {
         totalDurationMinutes: 9,
       );
 
-      vm.applyTouristBusRoutePlan(plan);
+      await vm.applyTouristBusRoutePlan(plan);
 
       expect(vm.isTouristBusRouteOnlyMode, isTrue);
       expect(vm.activeTouristBusRoutePlan, isNotNull);
