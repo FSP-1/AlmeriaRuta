@@ -225,6 +225,6 @@ Gestiona el acceso, el estado de sesión y la experiencia de usuario registrado.
 ## 5.13 Relación con el resto de documentación
 
 - Consulta la arquitectura general en el README raíz.
-- Para el algoritmo de turismo en bus, revisa `ALGORITMO_RUTA_TURISTICA.md`.
-- Para contratos de backend, revisa `API_CONTRATO_BACKEND.md`.
-- Para cobertura y validación, revisa `8-Estrategia-y-cobertura-de-tests.md`.
+- Para el algoritmo de turismo en bus, revisa [ALGORITMO_RUTA_TURISTICA.md](../mapa-turismo/ALGORITMO_RUTA_TURISTICA.md).
+- Para contratos de backend, revisa [API_CONTRATO_BACKEND.md](../arquitectura-api/API_CONTRATO_BACKEND.md).
+- Para cobertura y validación, revisa [8-Estrategia-y-cobertura-de-tests.md](../calidad/8-Estrategia-y-cobertura-de-tests.md).

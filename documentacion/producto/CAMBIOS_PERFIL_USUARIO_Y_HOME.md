@@ -27,7 +27,7 @@ Al pulsar el icono de salir:
 
 ### 1.3 Archivo implicado
 
-- [lib/features/home/views/home_view.dart](../V2/almeriarutav02/lib/features/home/views/home_view.dart)
+- [lib/features/home/views/home_view.dart](../../V2/almeriarutav02/lib/features/home/views/home_view.dart)
 
 ---
 
@@ -59,9 +59,9 @@ Cuando el usuario pulsa editar:
 
 ### 2.4 Archivos implicados
 
-- [lib/features/auth/views/profile_view.dart](../V2/almeriarutav02/lib/features/auth/views/profile_view.dart)
-- [lib/features/auth/viewmodels/auth_viewmodel.dart](../V2/almeriarutav02/lib/features/auth/viewmodels/auth_viewmodel.dart)
-- [lib/features/auth/services/auth_api_service.dart](../V2/almeriarutav02/lib/features/auth/services/auth_api_service.dart)
+- [lib/features/auth/views/profile_view.dart](../../V2/almeriarutav02/lib/features/auth/views/profile_view.dart)
+- [lib/features/auth/viewmodels/auth_viewmodel.dart](../../V2/almeriarutav02/lib/features/auth/viewmodels/auth_viewmodel.dart)
+- [lib/features/auth/services/auth_api_service.dart](../../V2/almeriarutav02/lib/features/auth/services/auth_api_service.dart)
 
 ---
 
@@ -73,7 +73,7 @@ Evitar repetir validaciones de email, usuario y contraseña en varios formulario
 
 ### 3.2 Archivo reutilizable
 
-- [lib/features/auth/utils/auth_validators.dart](../V2/almeriarutav02/lib/features/auth/utils/auth_validators.dart)
+- [lib/features/auth/utils/auth_validators.dart](../../V2/almeriarutav02/lib/features/auth/utils/auth_validators.dart)
 
 ### 3.3 Validadores centralizados
 
@@ -110,9 +110,9 @@ Se añadieron endpoints para actualizar perfil y cambiar contraseña.
 
 ### 4.3 Archivos backend implicados
 
-- [backend/auth_mvc/controller.py](../backend/auth_mvc/controller.py)
-- [backend/auth_mvc/service.py](../backend/auth_mvc/service.py)
-- [backend/auth_mvc/repository.py](../backend/auth_mvc/repository.py)
+- [backend/auth_mvc/controller.py](../../backend/auth_mvc/controller.py)
+- [backend/auth_mvc/service.py](../../backend/auth_mvc/service.py)
+- [backend/auth_mvc/repository.py](../../backend/auth_mvc/repository.py)
 
 ---
 

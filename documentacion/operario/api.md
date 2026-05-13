@@ -61,8 +61,8 @@ Para mantener estable la integración con Flutter, la API devuelve formatos cons
 En este módulo es especialmente útil mantener trazabilidad de acciones: quién publica avisos, quién deshabilita paradas, cuándo se revierten cambios y por qué motivo. Esa trazabilidad ayuda tanto en soporte como en auditoría interna.
 
 ## Referencias de implementación
-- [backend/almeria_busmaps_api.py](backend/almeria_busmaps_api.py)
-- [backend/almeria_auth_api.py](backend/almeria_auth_api.py)
-- [backend/auth_mvc/controller.py](backend/auth_mvc/controller.py)
-- [backend/auth_mvc/service.py](backend/auth_mvc/service.py)
-- [backend/auth_mvc/repository.py](backend/auth_mvc/repository.py)
+- [backend/almeria_busmaps_api.py](../../backend/almeria_busmaps_api.py)
+- [backend/almeria_auth_api.py](../../backend/almeria_auth_api.py)
+- [backend/auth_mvc/controller.py](../../backend/auth_mvc/controller.py)
+- [backend/auth_mvc/service.py](../../backend/auth_mvc/service.py)
+- [backend/auth_mvc/repository.py](../../backend/auth_mvc/repository.py)

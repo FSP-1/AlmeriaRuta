@@ -227,9 +227,9 @@ lib/features/map/tourism/
 
 ## ¿Preguntas?
 
-- **"¿Cómo funciona?"** → Ver `ALGORITMO_RUTA_TURISTICA.md`
-- **"Resumen rápido?"** → Ver `ALGORITMO_RESUMEN_RAPIDO.md`
-- **"Detalles API?"** → Ver `API_CONTRATO_BACKEND.md`
+- **"¿Cómo funciona?"** → Ver [ALGORITMO_RUTA_TURISTICA.md](ALGORITMO_RUTA_TURISTICA.md)
+- **"Resumen rápido?"** → Ver [ALGORITMO_RESUMEN_RAPIDO.md](ALGORITMO_RESUMEN_RAPIDO.md)
+- **"Detalles API?"** → Ver [API_CONTRATO_BACKEND.md](../arquitectura-api/API_CONTRATO_BACKEND.md)
 - **"¿Dónde está el código?"** → `lib/features/map/tourism/utils/`
 
 ---

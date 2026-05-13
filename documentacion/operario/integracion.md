@@ -4,7 +4,7 @@
 La integración entre frontend y backend en el módulo de operario busca que cualquier acción operativa en la app tenga un reflejo inmediato, coherente y seguro en servidor. No se trata solo de “mandar peticiones”, sino de mantener sincronizado el estado de avisos y paradas con una experiencia de uso clara para quien opera la red.
 
 ## Pieza principal en el frontend: notices_api_service
-El archivo [V2/almeriarutav02/lib/shared/services/notices_api_service.dart](V2/almeriarutav02/lib/shared/services/notices_api_service.dart) es la pieza central de comunicación con backend para este módulo.
+El archivo [V2/almeriarutav02/lib/shared/services/notices_api_service.dart](../../V2/almeriarutav02/lib/shared/services/notices_api_service.dart) es la pieza central de comunicación con backend para este módulo.
 
 Su papel es importante por tres motivos:
 1. Centraliza las rutas y evita que la vista conozca detalles HTTP.

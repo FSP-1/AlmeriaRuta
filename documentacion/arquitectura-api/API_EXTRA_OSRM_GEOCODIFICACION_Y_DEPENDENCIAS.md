@@ -22,8 +22,7 @@ La app Flutter usa varias capas de servicio, cada una con una responsabilidad co
 | Configuracion | `lib/core/constants/app_constants.dart` | Define las URLs base del backend |
 | Mapa y rutas | `lib/features/map/viewmodels/map_viewmodel.dart` | Carga ubicaciones, paradas y rutas peatonales |
 | Busqueda de ubicaciones | `lib/features/map/widgets/search_widget.dart` | Geocodifica texto a coordenadas |
-| Seleccion de ubicacion | `lib/features/map/views/map_view.dart` | Pantalla con picker de ubicacion |
-| Mapa optimizado | `lib/features/map/views/optimized_map_view.dart` | Mapa principal con filtros, capas y rutas |
+| Mapa principal | `lib/features/map/views/optimized_map_view.dart` | Pantalla principal con filtros, capas, busqueda y rutas |
 | Info de parada | `lib/features/map/widgets/stop_info_sheet.dart` | Distancia y tiempo andando |
 | API de autenticacion | `lib/features/auth/services/auth_api_service.dart` | Login, registro, invitado y perfil |
 | API de notificaciones | `lib/features/notifications/services/backend_notifications_api_service.dart` | Lectura, marcado y borrado |
@@ -40,8 +39,6 @@ Dependencias relevantes para este bloque funcional:
 ```yaml
 dependencies:
   http: ^1.2.2
-  location_picker_flutter_map: ^4.1.0
-  flutter_map_tile_caching: ^10.0.1
   geolocator: ^14.0.2
   flutter_map: ^8.2.2
   latlong2: ^0.9.1
@@ -58,7 +55,6 @@ dependencies:
 | Paquete | Uso real en la app |
 |---|---|
 | `http` | Peticiones a OSRM, Nominatim y al backend Flask |
-| `location_picker_flutter_map` | Pantalla de seleccion de ubicacion sobre OSM |
 | `flutter_map` | Render del mapa principal y capas vectoriales |
 | `latlong2` | Modelo de coordenadas `LatLng` |
 | `geolocator` | GPS, permisos, distancia entre puntos |
@@ -67,6 +63,8 @@ dependencies:
 | `qr_flutter` | Generacion visual de QR para validacion |
 | `provider` | Inyeccion y consumo de ViewModels |
 | `timezone` / `flutter_timezone` | Programacion de notificaciones locales |
+
+Nota de mantenimiento: `location_picker_flutter_map`, `flutter_map_tile_caching` y `cupertino_icons` pueden aparecer declaradas en `pubspec.yaml`, pero no tienen uso activo detectado en `lib/` tras la consolidacion del mapa principal.
 
 ---
 
@@ -181,41 +179,22 @@ El `SearchWidget` no navega por si mismo. Solo devuelve una ubicacion selecciona
 
 ---
 
-## 5. Mapa y Seleccion de Ubicacion
+## 5. Mapa Principal y Seleccion de Ubicacion
 
-### Archivo: `lib/features/map/views/map_view.dart`
+### Archivo: `lib/features/map/views/optimized_map_view.dart`
 
-Esta pantalla usa `location_picker_flutter_map` para ofrecer una experiencia de picker ya lista sobre OpenStreetMap.
+La seleccion y busqueda de ubicaciones se integra en la experiencia principal del mapa. El flujo activo combina `OptimizedMapView`, `SearchWidget` y `MapViewModel`, en lugar de una pantalla separada de picker.
 
 ### Funcionamiento
 
-```dart
-return FlutterLocationPicker(
-  initPosition: const LatLong(36.8381, -2.4597),
-  initZoom: 13,
-  minZoomLevel: 10,
-  maxZoomLevel: 18,
-  trackMyPosition: true,
-  mapLanguage: 'es',
-  selectLocationButtonText: 'Confirmar Ubicación',
-  userAgent: 'AlmeriaRuta/1.0.0',
-  onPicked: (pickedData) { ... },
-  onChanged: (pickedData) { ... },
-)
-```
-
-### Que aporta esta pantalla
-
-| Comportamiento | Resultado |
-|---|---|
-| `trackMyPosition: true` | Usa posicion real del dispositivo |
-| `onChanged` | Actualiza la ubicacion mientras el usuario arrastra el mapa |
-| `onPicked` | Confirma la ubicacion final y devuelve el modelo |
-| `selectLocationButtonText` | Texto del boton final de confirmacion |
+1. `SearchWidget` resuelve texto a `LocationModel` mediante alias locales o Nominatim.
+2. `OptimizedMapView` recibe la ubicacion seleccionada.
+3. `MapViewModel` actualiza foco, rutas o filtros segun el contexto.
+4. `flutter_map` renderiza la ubicacion, paradas, zonas y rutas en la misma pantalla.
 
 ### Relacion con la app
 
-Esta vista se usa como selector de ubicacion manual. La app recibe la coordenada seleccionada como `LocationModel` y la usa en flujos de rutas, paradas cercanas o ajustes de direccion.
+El usuario no sale del mapa para buscar o seleccionar una ubicacion. Esto reduce navegacion intermedia y mantiene visibles las capas de paradas, favoritos, turismo y ruta activa.
 
 ---
 
@@ -641,8 +620,8 @@ Estos servicios dependen de que el backend Auth mantenga usuarios, notificacione
 | Geocodificacion | `search_widget.dart`, `location_model.dart`, `zone_aliases.dart` |
 | GPS del usuario | `map_viewmodel.dart`, `stop_info_sheet.dart` |
 | Ruta peatonal | `map_viewmodel.dart` |
-| Seleccion de ubicacion | `map_view.dart` |
-| Mapa principal | `optimized_map_view.dart`, `map_selection_sheets.dart` |
+| Seleccion de ubicacion | `optimized_map_view.dart`, `search_widget.dart` |
+| Mapa principal | `optimized_map_view.dart`, `map_widget.dart`, `map_overlays_builder.dart` |
 | API de autenticacion | `auth_api_service.dart` |
 | Notificaciones backend | `backend_notifications_api_service.dart` |
 | Compra de tickets | `ticket_purchase_api_service.dart` |

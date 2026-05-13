@@ -33,11 +33,11 @@ Se ampliaron y estabilizaron tests en:
 
 - `features/lines` (ViewModel + modelos auxiliares).
 - `features/notifications` (ViewModel y servicios de persistencia/observacion).
-- `features/map` (ViewModel y capa turismo: modelos + data).
+- `features/map` (ViewModel, modelos, zonas, favoritos y capa turismo).
 - `features/tickets` (servicio API de compra).
 - `shared/services` (onboarding).
 - `core` (constantes y tema).
-- `features/home` y `features/recharge` (modelos).
+- `features/auth`, `features/home`, `features/recharge` y `features/validation`.
 
 ## Refactor minimo para habilitar testeo de casos dificiles
 
@@ -69,14 +69,12 @@ Valor:
 
 ## Resultado de la fase
 
-- Suite completa validada en verde: **109 tests pasando**.
-- Reduccion de archivos `lib/` sin test espejo (`test/..._test.dart`):
-  - Estado inicial de esta subfase: **58**
-  - Estado tras iteraciones: **46**
+- Suite completa validada en verde: **202 tests pasando** con `flutter test`.
+- Tests actualizados para reflejar el modelo actual:
+  - `AppUser` serializa `isOperario`.
+  - `HomeViewModel` expone 3 servicios core activos: `lines`, `tickets`, `notifications`.
+  - `MapViewModel.applyTouristBusRoutePlan` es asincrono y requiere ubicacion disponible.
 
 ## Recomendaciones para la siguiente fase
 
-1. Continuar por quick wins en vistas/widgets (tests de render y comportamiento simple).
-2. Priorizar servicios de red compartidos (`BusApiService`) con un refactor de inyeccion similar.
-3. Mantener criterio de validacion doble (focal + suite completa) en cada bloque.
-4. Evitar mezclar cambios funcionales con cambios de testeo en una misma PR cuando sea posible.
+1. Revisar tests asociados a codigo marcado como legado antes de eliminar archivos muertos.

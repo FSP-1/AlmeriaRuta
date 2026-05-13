@@ -8,11 +8,11 @@ En la práctica, el panel de operario permite dos bloques de trabajo:
 2. Deshabilitar y re-habilitar paradas cuando su estado operativo cambia.
 
 ## Cómo está organizado en el frontend
-La vista principal está en [V2/almeriarutav02/lib/features/operario/views/operario_panel_view.dart](V2/almeriarutav02/lib/features/operario/views/operario_panel_view.dart) y se divide por pestañas para separar claramente avisos y paradas.
+La vista principal está en [V2/almeriarutav02/lib/features/operario/views/operario_panel_view.dart](../../V2/almeriarutav02/lib/features/operario/views/operario_panel_view.dart) y se divide por pestañas para separar claramente avisos y paradas.
 
-La lógica de negocio y estado está en [V2/almeriarutav02/lib/features/operario/viewmodels/operario_viewmodel.dart](V2/almeriarutav02/lib/features/operario/viewmodels/operario_viewmodel.dart). Ahí se controla qué campos están rellenos, qué validaciones se cumplen, cuándo hay carga en curso y cómo se refrescan los listados tras cada operación.
+La lógica de negocio y estado está en [V2/almeriarutav02/lib/features/operario/viewmodels/operario_viewmodel.dart](../../V2/almeriarutav02/lib/features/operario/viewmodels/operario_viewmodel.dart). Ahí se controla qué campos están rellenos, qué validaciones se cumplen, cuándo hay carga en curso y cómo se refrescan los listados tras cada operación.
 
-La comunicación HTTP se centraliza en [V2/almeriarutav02/lib/shared/services/notices_api_service.dart](V2/almeriarutav02/lib/shared/services/notices_api_service.dart), para que la vista y el viewmodel no tengan dependencias directas con el detalle de endpoints.
+La comunicación HTTP se centraliza en [V2/almeriarutav02/lib/shared/services/notices_api_service.dart](../../V2/almeriarutav02/lib/shared/services/notices_api_service.dart), para que la vista y el viewmodel no tengan dependencias directas con el detalle de endpoints.
 
 ## Qué flujo sigue un operario dentro de la app
 Cuando entra un usuario con rol operario, abre el panel y puede crear avisos de cuatro tipos: GENERAL, TURISMO, LINEA y PARADA. Esta clasificación se usa para que la información se muestre con prioridad y contexto: primero mensajes globales, luego turismo, y por último avisos de afectación puntual por línea o parada.
@@ -47,6 +47,6 @@ Se validan campos obligatorios y tamaños de texto antes de llamar al backend. A
 Las paradas deshabilitadas no se quedan solo en el panel: también se reflejan visualmente en el mapa con estilo atenuado. Con esto, la información operativa y la visualización geográfica quedan sincronizadas y el estado de la red se entiende mejor por parte de los usuarios.
 
 ## Archivos clave
-- [V2/almeriarutav02/lib/features/operario/views/operario_panel_view.dart](V2/almeriarutav02/lib/features/operario/views/operario_panel_view.dart)
-- [V2/almeriarutav02/lib/features/operario/viewmodels/operario_viewmodel.dart](V2/almeriarutav02/lib/features/operario/viewmodels/operario_viewmodel.dart)
-- [V2/almeriarutav02/lib/shared/services/notices_api_service.dart](V2/almeriarutav02/lib/shared/services/notices_api_service.dart)
+- [V2/almeriarutav02/lib/features/operario/views/operario_panel_view.dart](../../V2/almeriarutav02/lib/features/operario/views/operario_panel_view.dart)
+- [V2/almeriarutav02/lib/features/operario/viewmodels/operario_viewmodel.dart](../../V2/almeriarutav02/lib/features/operario/viewmodels/operario_viewmodel.dart)
+- [V2/almeriarutav02/lib/shared/services/notices_api_service.dart](../../V2/almeriarutav02/lib/shared/services/notices_api_service.dart)

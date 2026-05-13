@@ -74,7 +74,6 @@ lib/
 │   ├── recharge/             # Tarjeta de transporte y recargas
 │   ├── tickets/              # Compra y gestión de tickets
 │   ├── validation/           # Validación de viajes
-│   └── settings/             # Ajustes y estado de cuenta
 └── shared/                   # Servicios y widgets reutilizables
 ```
 
@@ -180,16 +179,18 @@ dart run flutter_launcher_icons
 
 ## Documentación del repositorio
 
-Documentación técnica útil dentro de `documentacion/`:
+El índice principal de documentación está en:
 
-- [documentacion/5-Funcionalidades-de-la-aplicacion-y-mvvm.md](documentacion/5-Funcionalidades-de-la-aplicacion-y-mvvm.md)
-- [documentacion/5-Funcionalidades-de-la-aplicacion.md](documentacion/5-Funcionalidades-de-la-aplicacion.md)
-- [documentacion/6-Integracion-API-y-Dependencias.md](documentacion/6-Integracion-API-y-Dependencias.md)
-- [documentacion/8-Estrategia-y-cobertura-de-tests.md](documentacion/8-Estrategia-y-cobertura-de-tests.md)
-- [documentacion/9-Refactorizacion-Mapa-Rutas-Turisticas-y-Seguridad.md](documentacion/9-Refactorizacion-Mapa-Rutas-Turisticas-y-Seguridad.md)
-- [documentacion/API_CONTRATO_BACKEND.md](documentacion/API_CONTRATO_BACKEND.md)
-- [documentacion/API_CONEXION_Y_OPTIMIZACION.md](documentacion/API_CONEXION_Y_OPTIMIZACION.md)
-- [documentacion/API_EXTRA_OSRM_GEOCODIFICACION_Y_DEPENDENCIAS.md](documentacion/API_EXTRA_OSRM_GEOCODIFICACION_Y_DEPENDENCIAS.md)
+- [documentacion/README.md](documentacion/README.md)
+
+Documentos técnicos recomendados:
+
+- [Funcionalidades y MVVM](documentacion/producto/5-Funcionalidades-de-la-aplicacion-y-mvvm.md)
+- [Integración API y dependencias](documentacion/arquitectura-api/6-Integracion-API-y-Dependencias.md)
+- [Estrategia y cobertura de tests](documentacion/calidad/8-Estrategia-y-cobertura-de-tests.md)
+- [Contrato del backend](documentacion/arquitectura-api/API_CONTRATO_BACKEND.md)
+- [OSRM, geocodificación y dependencias](documentacion/arquitectura-api/API_EXTRA_OSRM_GEOCODIFICACION_Y_DEPENDENCIAS.md)
+- [Algoritmo de ruta turística](documentacion/mapa-turismo/ALGORITMO_RUTA_TURISTICA.md)
 
 ## Notas de desarrollo
 
@@ -200,4 +201,4 @@ Documentación técnica útil dentro de `documentacion/`:
 
 ## Estado actual
 
-El proyecto está orientado a una versión funcional de movilidad urbana para Almería, con mapa, turismo, tickets, recargas, validación, auth y notificaciones ya integradas en la misma experiencia móvil.
+El proyecto está orientado a una versión funcional de movilidad urbana para Almería, con mapa, turismo, tickets, recargas, validación, auth y notificaciones ya integradas en la misma experiencia móvil. La suite Flutter actual se valida con `flutter test` desde `V2/almeriarutav02`.

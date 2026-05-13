@@ -85,8 +85,9 @@ dart run flutter_launcher_icons
 
 ## Documentación completa
 
-Consulta el README raíz del repositorio para detalles funcionales y de arquitectura.
+Consulta el [README raíz](../../README.md) para la visión general del repositorio y el [índice de documentación](../../documentacion/README.md) para navegar por arquitectura, API, algoritmo turístico y tests.
 
-Documentación puntual de los cambios recientes:
+Documentación específica del cliente Flutter:
 
-- [Cambios de turismo, rutas y caché](documentacion/CAMBIOS_TURISMO_RUTAS_Y_CACHE.md)
+- [Cambios de turismo, rutas y caché](../../documentacion/mapa-turismo/CAMBIOS_TURISMO_RUTAS_Y_CACHE.md)
+- [Filtros del mapa](lib/features/map/filters/README.md)

@@ -4,7 +4,7 @@
 
 Esta carpeta contiene documentación completa del **Algoritmo de Planeador de Rutas Turísticas en Autobús**.
 
-### 1. **ALGORITMO_RUTA_TURISTICA.md** 
+### 1. [ALGORITMO_RUTA_TURISTICA.md](ALGORITMO_RUTA_TURISTICA.md)
 Explicación técnica completa del algoritmo
 - Descripción general y tipo de algoritmo
 - Qué cambió respecto versión anterior
@@ -19,7 +19,7 @@ Explicación técnica completa del algoritmo
 
 ---
 
-### 2. **ALGORITMO_RESUMEN_RAPIDO.md**
+### 2. [ALGORITMO_RESUMEN_RAPIDO.md](ALGORITMO_RESUMEN_RAPIDO.md)
 Referencia rápida del algoritmo (TL;DR)
 - Resumen en 1 línea
 - Tabla de cambios respecto anterior
@@ -34,7 +34,7 @@ Referencia rápida del algoritmo (TL;DR)
 
 ---
 
-### 3. **API_CONTRATO_BACKEND.md**
+### 3. [API_CONTRATO_BACKEND.md](../arquitectura-api/API_CONTRATO_BACKEND.md)
 Especificación de API backend
 - Todos los endpoints (`/lines`, `/lines/<id>/stops`, `/lines/<id>/arrivals`)
 - Formatos de request/response con ejemplos
@@ -48,7 +48,7 @@ Especificación de API backend
 
 ---
 
-### 4. **CHECKLIST_IMPLEMENTACION.md**
+### 4. [CHECKLIST_IMPLEMENTACION.md](CHECKLIST_IMPLEMENTACION.md)
 Estado del proyecto
 - ✅ Qué está hecho
 - ⏳ Qué falta
@@ -102,27 +102,27 @@ Estado del proyecto
 ## 📍 Para Diferentes Audiencias
 
 ### 👨‍💼 Managers / No Técnico
-1. Lee: **ALGORITMO_RESUMEN_RAPIDO.md** → "TL;DR"
+1. Lee: [ALGORITMO_RESUMEN_RAPIDO.md](ALGORITMO_RESUMEN_RAPIDO.md) → "TL;DR"
 2. Entiende: Core está hecho, JSON pendiente, testing pendiente
 3. Status: 🟢 Listo para desplegar hoy
 
 ### 👨‍💻 Developers Frontend
-1. Lee: **ALGORITMO_RUTA_TURISTICA.md** (completo)
-2. Lee: **API_CONTRATO_BACKEND.md** (integración)
+1. Lee: [ALGORITMO_RUTA_TURISTICA.md](ALGORITMO_RUTA_TURISTICA.md) (completo)
+2. Lee: [API_CONTRATO_BACKEND.md](../arquitectura-api/API_CONTRATO_BACKEND.md) (integración)
 3. Código: `lib/features/map/tourism/utils/tourist_bus_route_planner_core.dart`
 
 ### 👨‍💻 Developers Backend
-1. Lee: **API_CONTRATO_BACKEND.md** (endpoints, formatos)
+1. Lee: [API_CONTRATO_BACKEND.md](../arquitectura-api/API_CONTRATO_BACKEND.md) (endpoints, formatos)
 2. Código: `backend/almeria_busmaps_api.py`
 3. Test: Comandos curl provistos en API contract
 
 ### 🧪 QA / Testing
-1. Lee: **CHECKLIST_IMPLEMENTACION.md** → "Checklist de Testing"
-2. Lee: **ALGORITMO_RESUMEN_RAPIDO.md** → "Ejemplo Práctico"
+1. Lee: [CHECKLIST_IMPLEMENTACION.md](CHECKLIST_IMPLEMENTACION.md) → "Checklist de Testing"
+2. Lee: [ALGORITMO_RESUMEN_RAPIDO.md](ALGORITMO_RESUMEN_RAPIDO.md) → "Ejemplo Práctico"
 3. Test: Ruta 1-línea, 2-línea, larga, usuario lejano
 
 ### 📊 Data Scientists
-1. Lee: **ALGORITMO_RUTA_TURISTICA.md** → "Tipo de Algoritmo & Complejidad"
+1. Lee: [ALGORITMO_RUTA_TURISTICA.md](ALGORITMO_RUTA_TURISTICA.md) → "Tipo de Algoritmo & Complejidad"
 2. Entiende: Dijkstra DP, penalización transfer, forward-only expansion
 
 ---
@@ -235,10 +235,10 @@ if (plan != null) {
 
 ## 📞 Preguntas
 
-- **"¿Cómo funciona?"** → Ver `ALGORITMO_RUTA_TURISTICA.md`
-- **"¿Resumen?"** → Ver `ALGORITMO_RESUMEN_RAPIDO.md`
-- **"¿API?"** → Ver `API_CONTRATO_BACKEND.md`
-- **"¿Qué falta?"** → Ver `CHECKLIST_IMPLEMENTACION.md`
+- **"¿Cómo funciona?"** → Ver [ALGORITMO_RUTA_TURISTICA.md](ALGORITMO_RUTA_TURISTICA.md)
+- **"¿Resumen?"** → Ver [ALGORITMO_RESUMEN_RAPIDO.md](ALGORITMO_RESUMEN_RAPIDO.md)
+- **"¿API?"** → Ver [API_CONTRATO_BACKEND.md](../arquitectura-api/API_CONTRATO_BACKEND.md)
+- **"¿Qué falta?"** → Ver [CHECKLIST_IMPLEMENTACION.md](CHECKLIST_IMPLEMENTACION.md)
 
 ---
 

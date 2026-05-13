@@ -17,7 +17,7 @@ Documentar de forma detallada cómo se conecta la aplicación Flutter con el bac
 
 ### 6.1.2 Configuración base
 
-Archivo: [V2/almeriarutav02/lib/core/constants/app_constants.dart](../V2/almeriarutav02/lib/core/constants/app_constants.dart)
+Archivo: [V2/almeriarutav02/lib/core/constants/app_constants.dart](../../V2/almeriarutav02/lib/core/constants/app_constants.dart)
 
 ```dart
 class AppConstants {
@@ -32,7 +32,7 @@ Explicación breve:
 
 ## 6.2 Backend API (Flask + GTFS)
 
-Archivo principal: [backend/almeria_busmaps_api.py](../backend/almeria_busmaps_api.py)
+Archivo principal: [backend/almeria_busmaps_api.py](../../backend/almeria_busmaps_api.py)
 
 ### 6.2.1 Endpoints publicados
 
@@ -82,7 +82,7 @@ Explicación breve:
 
 ## 6.3 Capa API en Flutter
 
-Archivo: [V2/almeriarutav02/lib/shared/services/bus_api_service.dart](../V2/almeriarutav02/lib/shared/services/bus_api_service.dart)
+Archivo: [V2/almeriarutav02/lib/shared/services/bus_api_service.dart](../../V2/almeriarutav02/lib/shared/services/bus_api_service.dart)
 
 ### 6.3.1 Servicio centralizado
 
@@ -135,7 +135,7 @@ Explicación breve:
 
 ## 6.4 Integración con MVVM
 
-Ejemplo: [V2/almeriarutav02/lib/features/home/viewmodels/home_viewmodel.dart](../V2/almeriarutav02/lib/features/home/viewmodels/home_viewmodel.dart)
+Ejemplo: [V2/almeriarutav02/lib/features/home/viewmodels/home_viewmodel.dart](../../V2/almeriarutav02/lib/features/home/viewmodels/home_viewmodel.dart)
 
 ```dart
 Future<void> loadLines({bool forceRefresh = false}) async {
@@ -155,7 +155,7 @@ Explicación breve:
 
 ### 6.5.1 Routing peatonal (OSRM)
 
-Archivo: [V2/almeriarutav02/lib/features/map/viewmodels/map_viewmodel.dart](../V2/almeriarutav02/lib/features/map/viewmodels/map_viewmodel.dart)
+Archivo: [V2/almeriarutav02/lib/features/map/viewmodels/map_viewmodel.dart](../../V2/almeriarutav02/lib/features/map/viewmodels/map_viewmodel.dart)
 
 ```dart
 final url = Uri.parse(
@@ -184,22 +184,26 @@ En este repositorio no existe `pom.xml` (no es un proyecto Java/Maven). La gesti
 
 ### 6.6.2 Dependencias Flutter principales
 
-Archivo: [V2/almeriarutav02/pubspec.yaml](../V2/almeriarutav02/pubspec.yaml)
+Archivo: [V2/almeriarutav02/pubspec.yaml](../../V2/almeriarutav02/pubspec.yaml)
 
 - `provider`: gestión de estado MVVM.
 - `http`: cliente HTTP para API y servicios externos.
 - `flutter_map` + `latlong2`: visualización cartográfica.
 - `geolocator`: GPS y cálculo de distancia.
-- `location_picker_flutter_map`: selección de ubicación.
 - `qr_flutter`: generación de códigos QR.
 - `shared_preferences`: persistencia local (favoritos, ajustes).
 - `flutter_local_notifications`: notificaciones locales.
 - `timezone` y `flutter_timezone`: soporte de programación horaria.
-- `flutter_map_tile_caching`: optimización/caché de teselas del mapa.
+
+Dependencias declaradas pendientes de limpieza si no se reintroduce su uso:
+
+- `location_picker_flutter_map`: pertenecia al selector antiguo `map_view.dart`, que ya no forma parte del flujo activo.
+- `flutter_map_tile_caching`: no tiene uso activo detectado en `lib/`.
+- `cupertino_icons`: no tiene uso activo detectado en `lib/`.
 
 ### 6.6.3 Dependencias backend Python
 
-Según documentación operativa: [README.md](../README.md)
+Según documentación operativa: [README.md](../../README.md)
 
 ```bash
 pip install flask flask-cors pandas

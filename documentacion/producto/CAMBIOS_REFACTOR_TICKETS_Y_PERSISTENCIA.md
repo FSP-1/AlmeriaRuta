@@ -127,4 +127,5 @@ Resultado:
 ## Validación
 
 - `flutter analyze lib/features/tickets` -> sin issues.
-- `flutter test` -> 109/109 tests OK.
+- Validacion de esa fase: `flutter test` -> 109/109 tests OK.
+- Estado vigente de la suite completa: ver [8-Estrategia-y-cobertura-de-tests.md](../calidad/8-Estrategia-y-cobertura-de-tests.md).
