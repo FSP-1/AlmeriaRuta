@@ -203,6 +203,7 @@ class _OptimizedMapViewState extends State<OptimizedMapView> {
       ),
       body: Consumer2<MapViewModel, TourismViewModel>(
         builder: (context, mapViewModel, tourismViewModel, _) {
+          final disabledStopIds = context.watch<NoticesViewModel>().disabledStops.map((s) => s.stopId).toSet();
           final isTouristBusMode =
               mapViewModel.isTouristBusRouteOnlyMode && mapViewModel.activeRoute.isNotEmpty;
           final isWalkingMode =
@@ -217,6 +218,10 @@ class _OptimizedMapViewState extends State<OptimizedMapView> {
               : (mapViewModel.activeRoute.isNotEmpty && mapViewModel.targetStop != null
                   ? [mapViewModel.targetStop!]
                   : mapViewModel.filteredStops);
+
+            final markersWithDisabledState = markersToRender
+              .map((stop) => stop.copyWith(isDisabled: disabledStopIds.contains(stop.id)))
+              .toList();
 
           return Stack(
             children: [
@@ -242,8 +247,8 @@ class _OptimizedMapViewState extends State<OptimizedMapView> {
                       tourismViewModel: tourismViewModel,
                       isTouristBusRouteOnlyMode: isTouristBusMode,
                       isWalkingRouteMode: isWalkingMode,
-                        markersToRender: markersToRender,
-                        disabledStops: context.watch<NoticesViewModel>().disabledStops,
+                      markersToRender: markersWithDisabledState,
+                      disabledStops: context.watch<NoticesViewModel>().disabledStops,
                       onZoomChanged: (z) => setState(() => _currentZoom = z),
                       onStopTap: (stop) => _onStopTap(context, stop, mapViewModel),
                       onTouristBusStopTap: (stop) =>
@@ -290,21 +295,25 @@ class _OptimizedMapViewState extends State<OptimizedMapView> {
                       child: CircularProgressIndicator(color: AppTheme.primaryRed),
                     ),
                   );
+                  
+                  final nav = Navigator.of(context, rootNavigator: true);
 
-                  mapViewModel.refreshCurrentLocation().whenComplete(() {
-                    if (!mounted) return;
-                    final nav = Navigator.of(context, rootNavigator: true);
-                    if (nav.canPop()) {
-                      nav.pop();
-                    }
-                    setState(() => _isRefreshingLocation = false);
-                  }).then((_) {
-                    if (!mounted) return;
-                    MapFabActions.centerOnUser(
-                      mapController: _mapController,
-                      userLocation: mapViewModel.userLocation,
-                    );
-                  });
+                    mapViewModel.refreshCurrentLocation().whenComplete(() {
+                      if (!mounted) return;
+
+                      if (nav.canPop()) {
+                        nav.pop();
+                      }
+
+                      setState(() => _isRefreshingLocation = false);
+                    }).then((_) {
+                      if (!mounted) return;
+
+                      MapFabActions.centerOnUser(
+                        mapController: _mapController,
+                        userLocation: mapViewModel.userLocation,
+                      );
+                    });
                 },
                 onFavorites: () => MapFabActions.openFavorites(
                   context: context,

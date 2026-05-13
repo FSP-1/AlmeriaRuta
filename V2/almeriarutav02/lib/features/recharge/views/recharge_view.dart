@@ -4,6 +4,7 @@ import '../viewmodels/recharge_viewmodel.dart';
 import '../models/recharge_profile_model.dart';
 import '../models/transport_card_model.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../shared/widgets/visa_card_mock_dialog.dart';
 import 'widgets/recharge_widgets.dart';
 
 class RechargeView extends StatefulWidget {
@@ -23,6 +24,11 @@ class RechargeView extends StatefulWidget {
 class _RechargeViewState extends State<RechargeView> {
   bool _didShowInitialChooser = false;
   bool _hasChosenInitialCard = false;
+
+  String _paymentMethodLabel(String method) {
+    if (method == 'Visa') return 'Visa crédito';
+    return method;
+  }
 
   void _showInitialChooser(BuildContext context, RechargeViewModel vm) {
     if (_didShowInitialChooser) return;
@@ -254,7 +260,7 @@ class _RechargeViewState extends State<RechargeView> {
                             dense: true,
                             contentPadding: EdgeInsets.zero,
                             value: method,
-                            title: Text(method),
+                            title: Text(_paymentMethodLabel(method)),
                           );
                         }).toList(),
                       ),
@@ -275,6 +281,10 @@ class _RechargeViewState extends State<RechargeView> {
                     onPressed: () async {
                       final amount = double.tryParse(controller.text) ?? 0;
                       if (amount > 0) {
+                        if (selectedPaymentMethod == 'Visa') {
+                          final proceed = await VisaCardMockDialog.show(context);
+                          if (!proceed) return;
+                        }
                         vm.setSelectedPaymentMethod(selectedPaymentMethod);
                         await vm.rechargeCard(
                           card,
@@ -285,7 +295,9 @@ class _RechargeViewState extends State<RechargeView> {
                         Navigator.pop(context);
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
-                            content: Text('Saldo añadido con éxito ($selectedPaymentMethod)'),
+                            content: Text(
+                              'Saldo añadido con éxito (${_paymentMethodLabel(selectedPaymentMethod)})',
+                            ),
                             backgroundColor: Colors.green,
                           ),
                         );
@@ -332,7 +344,7 @@ class _RechargeViewState extends State<RechargeView> {
                           dense: true,
                           contentPadding: EdgeInsets.zero,
                           value: method,
-                          title: Text(method),
+                          title: Text(_paymentMethodLabel(method)),
                         );
                       }).toList(),
                     ),
@@ -351,6 +363,10 @@ class _RechargeViewState extends State<RechargeView> {
                   ),
                   child: const Text('Confirmar'),
                   onPressed: () async {
+                    if (selectedPaymentMethod == 'Visa') {
+                      final proceed = await VisaCardMockDialog.show(context);
+                      if (!proceed) return;
+                    }
                     vm.setSelectedPaymentMethod(selectedPaymentMethod);
                     await vm.rechargeCard(
                       card,
@@ -361,7 +377,9 @@ class _RechargeViewState extends State<RechargeView> {
                     Navigator.pop(context);
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                        content: Text('Tarjeta renovada con éxito ($selectedPaymentMethod)'),
+                        content: Text(
+                          'Tarjeta renovada con éxito (${_paymentMethodLabel(selectedPaymentMethod)})',
+                        ),
                         backgroundColor: Colors.green,
                       ),
                     );

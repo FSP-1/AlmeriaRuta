@@ -98,6 +98,18 @@ class LinesViewModel extends ChangeNotifier {
     return '$minutes min';
   }
 
+  Future<Map<String, int>> fetchStopArrivals(
+    String stopId, {
+    int limit = 10,
+    String? lineId,
+  }) {
+    return _apiService.getStopArrivals(
+      stopId,
+      limit: limit,
+      lineId: lineId,
+    );
+  }
+
   Future<List<LineModel>> getLinesPassingStop(StopModel stop, LineModel currentLine) async {
     final lineIds = _stopToLineIds[stop.id];
 

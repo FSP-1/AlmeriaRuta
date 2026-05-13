@@ -55,7 +55,7 @@ class ArrivalObserverService {
     await _observeOnce(settings);
 
     _observedSignature = _signature(settings);
-    _timer = Timer.periodic(const Duration(seconds: 45), (_) {
+    _timer = Timer.periodic(const Duration(seconds: 120), (_) {
       _observeOnce(settings);
     });
   }
@@ -83,8 +83,12 @@ class ArrivalObserverService {
         return;
       }
 
-      final arrivals = await _apiService.getLineArrivals(lineId);
-      final minutesToArrive = arrivals[stopId];
+      final arrivalsByLine = await _apiService.getStopArrivals(
+        stopId,
+        limit: 1,
+        lineId: lineId,
+      );
+      final minutesToArrive = arrivalsByLine[lineId];
       if (minutesToArrive == null) {
         return;
       }

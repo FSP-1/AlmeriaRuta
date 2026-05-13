@@ -32,6 +32,9 @@ class OperarioViewModel extends ChangeNotifier {
   String _stopSearchQuery = '';
   StopModel? _selectedStopForNotice;
 
+  String _disableStopSearchQuery = '';
+  StopModel? _selectedStopForDisable;
+
   // Form fields
   String _noticeTitle = '';
   String _noticeMessage = '';
@@ -63,8 +66,25 @@ class OperarioViewModel extends ChangeNotifier {
   String get stopSearchQuery => _stopSearchQuery;
   StopModel? get selectedStopForNotice => _selectedStopForNotice;
 
+  String get disableStopSearchQuery => _disableStopSearchQuery;
+  StopModel? get selectedStopForDisable => _selectedStopForDisable;
+
+  bool get isSelectedStopAlreadyDisabled {
+    final selected = _selectedStopForDisable;
+    if (selected == null) return false;
+    return _disabledStops.any((s) => s.stopId == selected.id);
+  }
+
   List<StopModel> get filteredStopsForSearch {
-    final q = _stopSearchQuery.trim().toLowerCase();
+    return _filterStopsByQuery(_stopSearchQuery);
+  }
+
+  List<StopModel> get filteredStopsForDisableSearch {
+    return _filterStopsByQuery(_disableStopSearchQuery);
+  }
+
+  List<StopModel> _filterStopsByQuery(String query) {
+    final q = query.trim().toLowerCase();
     if (q.isEmpty) {
       return _allStops.take(20).toList();
     }
@@ -176,9 +196,29 @@ class OperarioViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  void setDisableStopSearchQuery(String value) {
+    _disableStopSearchQuery = value;
+    notifyListeners();
+  }
+
   void selectStopForNotice(StopModel stop) {
     _selectedStopForNotice = stop;
     _noticeRelatedId = stop.id;
+    notifyListeners();
+  }
+
+  void selectStopForDisable(StopModel stop) {
+    _selectedStopForDisable = stop;
+    _stopId = stop.id;
+    _stopName = stop.name;
+    notifyListeners();
+  }
+
+  void clearDisableStopSelection() {
+    _selectedStopForDisable = null;
+    _disableStopSearchQuery = '';
+    _stopId = '';
+    _stopName = '';
     notifyListeners();
   }
 
@@ -196,6 +236,8 @@ class OperarioViewModel extends ChangeNotifier {
     _stopId = '';
     _stopName = '';
     _stopReason = '';
+    _disableStopSearchQuery = '';
+    _selectedStopForDisable = null;
     _error = null;
     _successMessage = null;
     notifyListeners();
@@ -277,14 +319,8 @@ class OperarioViewModel extends ChangeNotifier {
   bool validateStopForm() {
     _error = null;
     
-    if (_stopId.trim().isEmpty) {
-      _error = 'El ID de la parada es requerido';
-      notifyListeners();
-      return false;
-    }
-    
-    if (_stopName.trim().isEmpty) {
-      _error = 'El nombre de la parada es requerido';
+    if (_stopId.trim().isEmpty || _stopName.trim().isEmpty) {
+      _error = 'Selecciona una parada con el buscador';
       notifyListeners();
       return false;
     }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../viewmodels/operario_viewmodel.dart';
 import '../../../shared/services/line_models.dart';
+import '../../map/viewmodels/notices_viewmodel.dart';
 
 class OperarioPanelView extends StatefulWidget {
   const OperarioPanelView({super.key});
@@ -520,49 +521,80 @@ class _OperarioPanelViewState extends State<OperarioPanelView>
                 const SizedBox(height: 16),
               ],
 
-              // Stop ID field
               const Text(
-                'ID de la parada',
+                'Buscar parada por nombre o posición',
                 style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
               ),
               const SizedBox(height: 8),
               TextField(
-                onChanged: vm.setStopId,
+                onChanged: vm.setDisableStopSearchQuery,
                 enabled: !vm.loading,
                 decoration: InputDecoration(
-                  hintText: 'Ej: S123',
+                  hintText: 'Ej: Rambla, S123, 36.83821,-2.46210',
+                  prefixIcon: const Icon(Icons.search),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
                 ),
               ),
-              if (vm.error == 'El ID de la parada es requerido')
-                Padding(
-                  padding: const EdgeInsets.only(top: 8.0),
-                  child: Text(
-                    vm.error!,
-                    style: TextStyle(color: Colors.red.shade700, fontSize: 13),
-                  ),
+              const SizedBox(height: 8),
+              Container(
+                constraints: const BoxConstraints(maxHeight: 220),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: Colors.grey.shade300),
                 ),
-              const SizedBox(height: 16),
+                child: ListView.builder(
+                  itemCount: vm.filteredStopsForDisableSearch.length,
+                  itemBuilder: (context, i) {
+                    final stop = vm.filteredStopsForDisableSearch[i];
+                    final selected = vm.selectedStopForDisable?.id == stop.id;
+                    final alreadyDisabled = vm.disabledStops.any((s) => s.stopId == stop.id);
 
-              // Stop name field
-              const Text(
-                'Nombre de la parada',
-                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                onChanged: vm.setStopName,
-                enabled: !vm.loading,
-                decoration: InputDecoration(
-                  hintText: 'Ej: Plaza Mayor',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
+                    return ListTile(
+                      dense: true,
+                      leading: Icon(
+                        selected ? Icons.radio_button_checked : Icons.radio_button_off,
+                        color: selected ? const Color(0xFFF59E0B) : Colors.grey,
+                      ),
+                      title: Text(
+                        stop.name,
+                        style: alreadyDisabled
+                            ? TextStyle(color: Colors.grey.shade600)
+                            : null,
+                      ),
+                      subtitle: Text(
+                        'ID: ${stop.id} · ${stop.lat.toStringAsFixed(5)}, ${stop.lon.toStringAsFixed(5)}',
+                        style: alreadyDisabled
+                            ? TextStyle(color: Colors.grey.shade600)
+                            : null,
+                      ),
+                      onTap: vm.loading ? null : () => vm.selectStopForDisable(stop),
+                      trailing: alreadyDisabled
+                          ? Icon(Icons.block, size: 18, color: Colors.grey.shade600)
+                          : null,
+                    );
+                  },
                 ),
               ),
-              if (vm.error == 'El nombre de la parada es requerido')
+              if (vm.selectedStopForDisable != null) ...[
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'Seleccionada: ${vm.selectedStopForDisable!.name} (${vm.selectedStopForDisable!.id})',
+                        style: const TextStyle(fontWeight: FontWeight.w700),
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: vm.loading ? null : vm.clearDisableStopSelection,
+                      child: const Text('Quitar'),
+                    ),
+                  ],
+                ),
+              ],
+              if (vm.error == 'Selecciona una parada con el buscador')
                 Padding(
                   padding: const EdgeInsets.only(top: 8.0),
                   child: Text(
@@ -603,7 +635,7 @@ class _OperarioPanelViewState extends State<OperarioPanelView>
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(
-                  onPressed: vm.loading
+                  onPressed: (vm.loading || vm.isSelectedStopAlreadyDisabled)
                       ? null
                       : () async {
                           final ok = await vm.disableStop();
@@ -612,6 +644,7 @@ class _OperarioPanelViewState extends State<OperarioPanelView>
                             final msg = vm.error ?? 'Error al deshabilitar parada';
                             ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
                           } else {
+                            await context.read<NoticesViewModel>().loadNotices();
                             ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Parada deshabilitada')));
                           }
                         },
@@ -627,7 +660,9 @@ class _OperarioPanelViewState extends State<OperarioPanelView>
                         )
                       : const Icon(Icons.block),
                   label: Text(
-                    vm.loading ? 'Deshabilitando...' : 'Deshabilitar Parada',
+                    vm.loading
+                        ? 'Deshabilitando...'
+                        : (vm.isSelectedStopAlreadyDisabled ? 'Ya está deshabilitada' : 'Deshabilitar Parada'),
                   ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.orange.shade600,
@@ -691,6 +726,7 @@ class _OperarioPanelViewState extends State<OperarioPanelView>
                                     : () async {
                                         await vm.enableStop(stop.stopId);
                                         if (!context.mounted) return;
+                                        await context.read<NoticesViewModel>().loadNotices();
                                         if (vm.error != null) {
                                           ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(vm.error!)));
                                         } else if (vm.successMessage != null) {
@@ -801,12 +837,20 @@ class _OperarioPanelViewState extends State<OperarioPanelView>
             onPressed: vm.loading
                 ? null
                 : () async {
+                    final messenger = ScaffoldMessenger.of(context);
+
                     await vm.deactivateNotice(notice.id);
+
                     if (!context.mounted) return;
+
                     if (vm.error != null) {
-                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(vm.error!)));
+                      messenger.showSnackBar(
+                        SnackBar(content: Text(vm.error!)),
+                      );
                     } else if (vm.successMessage != null) {
-                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(vm.successMessage!)));
+                      messenger.showSnackBar(
+                        SnackBar(content: Text(vm.successMessage!)),
+                      );
                     }
                   },
             icon: const Icon(Icons.visibility_off_outlined),

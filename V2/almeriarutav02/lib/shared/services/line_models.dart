@@ -104,6 +104,7 @@ class StopModel {
   final String zone;
   final Set<String> lineIds;
   final bool isActive;
+  final bool isDisabled;
 
   StopModel({
     required this.id,
@@ -113,6 +114,7 @@ class StopModel {
     required this.zone,
     this.lineIds = const {},
     this.isActive = true,
+    this.isDisabled = false,
   });
 
   factory StopModel.fromJson(Map<String, dynamic> json) {
@@ -129,6 +131,7 @@ class StopModel {
       zone: json['zone'] ?? 'A',
       lineIds: lineIds,
       isActive: json['isActive'] ?? true,
+      isDisabled: json['isDisabled'] ?? false,
     );
   }
 
@@ -141,6 +144,7 @@ class StopModel {
       'zone': zone,
       'lineIds': lineIds.toList(),
       'isActive': isActive,
+      'isDisabled': isDisabled,
     };
   }
 
@@ -152,6 +156,7 @@ class StopModel {
     String? zone,
     Set<String>? lineIds,
     bool? isActive,
+    bool? isDisabled,
   }) {
     return StopModel(
       id: id ?? this.id,
@@ -161,6 +166,7 @@ class StopModel {
       zone: zone ?? this.zone,
       lineIds: lineIds ?? this.lineIds,
       isActive: isActive ?? this.isActive,
+      isDisabled: isDisabled ?? this.isDisabled,
     );
   }
 }

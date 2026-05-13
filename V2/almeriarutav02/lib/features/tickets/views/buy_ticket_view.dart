@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../shared/services/ticket_validation_flow_service.dart';
+import '../../../shared/widgets/visa_card_mock_dialog.dart';
 import '../../auth/viewmodels/auth_viewmodel.dart';
 import '../widgets/buy_ticket_widgets.dart';
 import '../services/ticket_purchase_flow_service.dart';
@@ -207,6 +208,13 @@ class _BuyTicketViewState extends State<BuyTicketView> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('No se puede comprar: $e')),
         );
+        return;
+      }
+    }
+
+    if (vm.paymentMethod == 'Visa') {
+      final proceed = await VisaCardMockDialog.show(context);
+      if (!proceed) {
         return;
       }
     }

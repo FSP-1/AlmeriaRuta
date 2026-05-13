@@ -93,7 +93,34 @@
 
 ---
 
-### 4. `GET /stops/<stopId>` (Deprecado)
+### 4. `GET /stops/<stopId>/arrivals`
+
+**Propósito**: Obtener tiempos de llegada para una parada (típicamente para notificación o vista de parada).
+
+**Ejemplo**: `GET /stops/478/arrivals?limit=5`
+
+**Respuesta**:
+
+```json
+[
+  { "lineId": "L2", "minutes": 5 },
+  { "lineId": "L18", "minutes": 12 }
+]
+```
+
+**Query params**:
+
+- `limit` (opcional): máximo de líneas a devolver (default 3)
+- `lineId` (opcional): si se indica, devuelve solo esa línea (si pasa por la parada)
+
+**Usado por**:
+
+- `NotificationsViewModel` (preview/selección)
+- `ArrivalObserverService` (optimizado: consulta solo la parada+lÍnea vigilada)
+
+---
+
+### 5. `GET /stops/<stopId>` (Deprecado)
 
 **Propósito**: ~~Obtener detalles para una parada específica~~
 
@@ -143,7 +170,6 @@
 
 **Integración**:
 
-- Cargado por: `MapViewModel._loadLineRouteVariants()` (actualmente deshabilitado)
 - Convertido a: `Map<String, List<List<String>>>` (lineId → lista de secuencias de ruta)
 - Usado por: `TouristBusRoutePlanner.selectLineSequence()`
 - Fallback: Si no disponible, planeador usa `line.stops` de endpoint `/lines`
@@ -212,7 +238,7 @@
                     ↓
         ┌───────────────────────────┐
         │ ArrivalObserverService    │
-        │ polling cada 45s          │
+        │ polling cada 120s         │
         └───────────────────────────┘
 ```
 

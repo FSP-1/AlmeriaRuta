@@ -12,6 +12,40 @@ CORS(app)
 # Store (lineId, stopId) -> {"initial_minutes": X, "assigned_at": timestamp}
 _arrival_times_cache = {}
 
+def _get_remaining_minutes(line_id: str, stop_id: str, now_ts=None) -> int:
+    """Retorna los minutos restantes para una (línea, parada) usando cache en memoria.
+
+    - O(1) por consulta.
+    - No realiza lecturas de disco.
+    """
+    if now_ts is None:
+        now_ts = time.time()
+
+    key = f"{line_id}:{stop_id}"
+
+    # Primera llamada: asignar tiempo aleatorio
+    if key not in _arrival_times_cache:
+        _arrival_times_cache[key] = {
+            "initial_minutes": random.randint(1, 20),
+            "assigned_at": now_ts,
+        }
+
+    cache_entry = _arrival_times_cache[key]
+    initial_minutes = cache_entry["initial_minutes"]
+    assigned_at = cache_entry["assigned_at"]
+
+    elapsed_seconds = now_ts - assigned_at
+    elapsed_minutes = int(elapsed_seconds // 60)
+
+    remaining = initial_minutes - elapsed_minutes
+
+    # Si llega a 0 o menos, reiniciar
+    if remaining <= 0:
+        _arrival_times_cache[key]["assigned_at"] = now_ts
+        remaining = initial_minutes
+
+    return int(remaining)
+
 def _clean_id(val):
     """Limpia los IDs para que el CSV y el JSON coincidan perfectamente (ej: 404.0 -> '404')"""
     if pd.isna(val): return ""
@@ -115,6 +149,17 @@ class PerfectBusClient:
 
         print(f" ¡Éxito! {len(self.lineas_data)} líneas generadas con 100% de precisión.")
 
+        # 4. Indexes para lookups O(1)
+        self.lines_by_id = {line["id"]: line for line in self.lineas_data}
+        self.stop_to_lines = {}
+        for line in self.lineas_data:
+            line_id = line["id"]
+            for stop in line.get("stops", []):
+                sid = stop.get("id")
+                if not sid:
+                    continue
+                self.stop_to_lines.setdefault(sid, set()).add(line_id)
+
 client = PerfectBusClient()
 
 # --- RUTAS DE LA API FLASK ---
@@ -125,51 +170,65 @@ def get_lines():
 
 @app.route('/lines/<line_id>/stops')
 def get_line_stops(line_id):
-    for line in client.lineas_data:
-        if line['id'] == line_id:
-            return jsonify(line.get('routes', line['stops']))
-    return jsonify([])
+    line = client.lines_by_id.get(line_id)
+    if not line:
+        return jsonify([])
+    return jsonify(line.get('routes', line['stops']))
 
 @app.route('/lines/<line_id>/arrivals')
 def get_line_arrivals(line_id):
     """Arrivals con tiempos fijos que cuentan hacia atrás y se reinician"""
     arrivals_list = []
-    for line in client.lineas_data:
-        if line['id'] == line_id:
-            for stop in line['stops']:
-                key = f"{line_id}:{stop['id']}"
-                
-                # Primera llamada: asignar tiempo aleatorio
-                if key not in _arrival_times_cache:
-                    _arrival_times_cache[key] = {
-                        "initial_minutes": random.randint(1, 20),
-                        "assigned_at": time.time()
-                    }
-                
-                cache_entry = _arrival_times_cache[key]
-                initial_minutes = cache_entry["initial_minutes"]
-                assigned_at = cache_entry["assigned_at"]
-                
-                # Calcular minutos transcurridos
-                elapsed_seconds = time.time() - assigned_at
-                elapsed_minutes = int(elapsed_seconds // 60)
-                
-                # Calcular minutos restantes
-                remaining = initial_minutes - elapsed_minutes
-                
-                # Si llega a 0 o menos, reiniciar
-                if remaining <= 0:
-                    _arrival_times_cache[key]["assigned_at"] = time.time()
-                    remaining = initial_minutes
-                
-                arrivals_list.append({
-                    "stopId": stop['id'],
-                    "minutes": remaining
-                })
-    
-    if not arrivals_list:
+    line = client.lines_by_id.get(line_id)
+    if not line:
         return jsonify({"arrivals": []}), 200
-    return jsonify({"arrivals": arrivals_list})
+
+    now_ts = time.time()
+    arrivals_list = []
+    for stop in line.get('stops', []):
+        sid = stop.get('id')
+        if not sid:
+            continue
+        remaining = _get_remaining_minutes(line_id=line_id, stop_id=sid, now_ts=now_ts)
+        arrivals_list.append({
+            "stopId": sid,
+            "minutes": remaining,
+        })
+
+    return jsonify({"arrivals": arrivals_list}), 200
+
+
+@app.route('/stops/<stop_id>/arrivals')
+def get_stop_arrivals(stop_id):
+    """Arrivals por parada.
+
+    Respuesta: lista de {lineId, minutes}.
+
+    Query params:
+    - limit: int (default 3)
+    - lineId: opcional; si viene, retorna solo esa línea (si pasa por la parada)
+    """
+    limit_raw = request.args.get('limit', '3')
+    limit = int(limit_raw) if str(limit_raw).isdigit() else 3
+    limit = max(1, min(limit, 50))
+
+    only_line_id = request.args.get('lineId')
+    now_ts = time.time()
+
+    lines_for_stop = client.stop_to_lines.get(stop_id, set())
+    if only_line_id:
+        if only_line_id in lines_for_stop:
+            minutes = _get_remaining_minutes(line_id=only_line_id, stop_id=stop_id, now_ts=now_ts)
+            return jsonify([{"lineId": only_line_id, "minutes": minutes}]), 200
+        return jsonify([]), 200
+
+    items = []
+    for line_id in lines_for_stop:
+        minutes = _get_remaining_minutes(line_id=line_id, stop_id=stop_id, now_ts=now_ts)
+        items.append({"lineId": line_id, "minutes": minutes})
+
+    items.sort(key=lambda x: x.get('minutes', 10**9))
+    return jsonify(items[:limit]), 200
 
 @app.route('/stops/<stop_id>')
 def get_stop_detail(stop_id):

@@ -228,7 +228,7 @@ class PaymentMethodsSection extends StatelessWidget {
               groupValue: paymentMethod,
               onChanged: onPaymentMethodChanged,
               icon: Icons.credit_card,
-              title: 'Visa',
+              title: 'Visa crédito',
             ),
           ],
         ),

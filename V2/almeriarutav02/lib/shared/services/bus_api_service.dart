@@ -124,9 +124,17 @@ Future<List<LineModel>> getLines({bool forceRefresh = false}) async {
     }
   }
 
-  Future<Map<String, int>> getStopArrivals(String stopId, {int limit = 3}) async {
+  Future<Map<String, int>> getStopArrivals(
+    String stopId, {
+    int limit = 3,
+    String? lineId,
+  }) async {
+    final query = lineId == null || lineId.isEmpty
+        ? 'limit=$limit'
+        : 'limit=$limit&lineId=$lineId';
+
     final response = await _getWithRetry(
-      Uri.parse('${AppConstants.apiBaseUrl}/stops/$stopId/arrivals?limit=$limit'),
+      Uri.parse('${AppConstants.apiBaseUrl}/stops/$stopId/arrivals?$query'),
     );
 
     if (response.statusCode != 200) {

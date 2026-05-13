@@ -24,6 +24,7 @@ class MapLayersBuilder {
     required Function(TouristPlace) onTouristMarkerTap,
     required VoidCallback onTouristPlaceMarkerTap,
   }) {
+    final disabledStopIds = disabledStops.map((s) => s.stopId).toSet();
     return [
       // Base tile layer
       TileLayer(
@@ -42,16 +43,12 @@ class MapLayersBuilder {
 
       // Stop markers and user location
       if (currentZoom >= 12 && !mapViewModel.isLoadingStops)
-        // Disabled stops layer (background, always visible)
-        if (disabledStops.isNotEmpty)
-          MarkerLayer(
-            markers: _buildDisabledMarkers(mapViewModel, disabledStops),
-          ),
         MarkerLayer(
           markers: _buildMarkers(
             mapViewModel: mapViewModel,
             isTouristBusRouteOnlyMode: isTouristBusRouteOnlyMode,
             markersToRender: markersToRender,
+            disabledStopIds: disabledStopIds,
             onStopMarkerTap: onStopMarkerTap,
             onTouristPlaceMarkerTap: onTouristPlaceMarkerTap,
           ),
@@ -181,6 +178,7 @@ class MapLayersBuilder {
     required MapViewModel mapViewModel,
     required bool isTouristBusRouteOnlyMode,
     required List<StopModel> markersToRender,
+    required Set<String> disabledStopIds,
     required Function(StopModel) onStopMarkerTap,
     required VoidCallback onTouristPlaceMarkerTap,
   }) {
@@ -196,23 +194,26 @@ class MapLayersBuilder {
     // Stop markers
     for (var index = 0; index < markersToRender.length; index++) {
       final stop = markersToRender[index];
+      final isDisabled = disabledStopIds.contains(stop.id);
       final isTouristRouteStop = isTouristBusRouteOnlyMode && hasTouristBusPlan;
       final isFirstRouteStop = isTouristRouteStop && index == 0;
       final isLastRouteStop = isTouristRouteStop && index == markersToRender.length - 1;
       final isTransferStop = isTouristRouteStop && transferStopIds.contains(stop.id);
       final isIntermediateRouteStop = isTouristRouteStop && !isFirstRouteStop && !isLastRouteStop && !isTransferStop;
 
-      final markerSize = isIntermediateRouteStop ? 12.0 : (isTransferStop ? 34.0 : 30.0);
-      final iconSize = isIntermediateRouteStop ? 8.0 : (isTransferStop ? 18.0 : 16.0);
-      final markerColor = isIntermediateRouteStop
-          ? Colors.blue.withValues(alpha: 0.75)
-          : (isFirstRouteStop
+        final markerSize = isIntermediateRouteStop ? 12.0 : (isTransferStop ? 34.0 : 30.0);
+        final iconSize = isIntermediateRouteStop ? 8.0 : (isTransferStop ? 18.0 : 16.0);
+        final markerColor = isDisabled
+          ? Colors.grey.withValues(alpha: 0.65)
+          : (isIntermediateRouteStop
+            ? Colors.blue.withValues(alpha: 0.75)
+            : (isFirstRouteStop
               ? Colors.deepOrange
-          : (isLastRouteStop
-            ? Colors.green
-            : (isTransferStop
-              ? Colors.deepPurple
-              : (stop.lineIds.length > 1 ? Colors.purple : AppTheme.primaryRed))));
+              : (isLastRouteStop
+                ? Colors.green
+                : (isTransferStop
+                  ? Colors.deepPurple
+                  : (stop.lineIds.length > 1 ? Colors.purple : AppTheme.primaryRed)))));
 
       markers.add(
         Marker(
@@ -220,7 +221,7 @@ class MapLayersBuilder {
           width: markerSize,
           height: markerSize,
           child: GestureDetector(
-            onTap: () => onStopMarkerTap(stop),
+            onTap: isDisabled ? null : () => onStopMarkerTap(stop),
             child: Container(
               decoration: BoxDecoration(
                 color: markerColor,
@@ -231,13 +232,15 @@ class MapLayersBuilder {
                 ),
               ),
               child: Icon(
-                isIntermediateRouteStop
-                    ? Icons.circle
-                    : (isFirstRouteStop
-                        ? Icons.fmd_good
-                        : (isLastRouteStop
-                            ? Icons.flag
-                            : (isTransferStop ? Icons.swap_calls : Icons.directions_bus))),
+                isDisabled
+                    ? Icons.location_off
+                    : (isIntermediateRouteStop
+                        ? Icons.circle
+                        : (isFirstRouteStop
+                            ? Icons.fmd_good
+                            : (isLastRouteStop
+                                ? Icons.flag
+                                : (isTransferStop ? Icons.swap_calls : Icons.directions_bus)))),
                 color: Colors.white,
                 size: iconSize,
               ),
@@ -299,33 +302,5 @@ class MapLayersBuilder {
     return markers;
   }
 
-  static List<Marker> _buildDisabledMarkers(
-      MapViewModel mapViewModel, List<DisabledStopModel> disabledStops) {
-    final markers = <Marker>[];
-    for (final ds in disabledStops) {
-      final matches = mapViewModel.stops.where((s) => s.id == ds.stopId).toList();
-      if (matches.isEmpty) continue;
-      final stop = matches.first;
-      markers.add(
-        Marker(
-          point: LatLng(stop.lat, stop.lon),
-          width: 28,
-          height: 28,
-            child: Container(
-            decoration: BoxDecoration(
-              color: Colors.grey.withValues(alpha: 0.14),
-              shape: BoxShape.circle,
-              border: Border.all(color: Colors.grey.shade600, width: 2),
-            ),
-            child: Icon(
-              Icons.location_off,
-              color: Colors.grey.shade700,
-              size: 14,
-            ),
-          ),
-        ),
-      );
-    }
-    return markers;
-  }
+  // Disabled stops are rendered via _buildMarkers (style + no tap).
 }

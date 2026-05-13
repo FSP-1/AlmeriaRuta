@@ -84,7 +84,11 @@ class _FakeBusApiService extends BusApiService {
   String? lastStopId;
 
   @override
-  Future<Map<String, int>> getStopArrivals(String stopId, {int limit = 3}) async {
+  Future<Map<String, int>> getStopArrivals(
+    String stopId, {
+    int limit = 3,
+    String? lineId,
+  }) async {
     lastStopId = stopId;
     return _arrivalsByLine;
   }

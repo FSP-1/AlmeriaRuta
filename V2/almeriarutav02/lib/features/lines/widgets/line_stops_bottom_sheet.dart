@@ -7,6 +7,7 @@ import '../../../shared/widgets/app_search_field.dart';
 import '../../map/models/favorite_model.dart';
 import '../../map/viewmodels/favorites_viewmodel.dart';
 import '../../map/viewmodels/map_viewmodel.dart';
+import '../../map/viewmodels/notices_viewmodel.dart';
 import '../../map/views/optimized_map_view.dart';
 import '../models/stop_popup_model.dart';
 import '../viewmodels/lines_viewmodel.dart';
@@ -349,6 +350,8 @@ class _LineStopsContentState extends State<_LineStopsContent> {
     required FavoritesViewModel favVM,
     required bool isLast,
   }) {
+    final disabledStopIds = context.watch<NoticesViewModel>().disabledStops.map((s) => s.stopId).toSet();
+    final isDisabled = disabledStopIds.contains(stop.id) || stop.isDisabled;
     final isStopFav = favVM.isFavorite(stop.id, FavoriteType.stop);
     final minutes = linesViewModel.getArrivalMinutes(currentLine.id, stop.id);
     final arrivalLabel = linesViewModel.formatArrivalLabel(minutes);
@@ -364,7 +367,7 @@ class _LineStopsContentState extends State<_LineStopsContent> {
     return Column(
       children: [
         InkWell(
-          onTap: () => _showStopActions(context, stop, currentLine, linesViewModel),
+          onTap: isDisabled ? null : () => _showStopActions(context, stop, currentLine, linesViewModel),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 12),
             child: Row(
@@ -374,12 +377,12 @@ class _LineStopsContentState extends State<_LineStopsContent> {
                   width: 40,
                   height: 40,
                   decoration: BoxDecoration(
-                    color: lineColor.withValues(alpha: 0.15),
+                    color: (isDisabled ? Colors.grey : lineColor).withValues(alpha: 0.15),
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
-                    Icons.location_on,
-                    color: lineColor,
+                    isDisabled ? Icons.location_off : Icons.location_on,
+                    color: isDisabled ? Colors.grey.shade700 : lineColor,
                     size: 22,
                   ),
                 ),
@@ -395,6 +398,18 @@ class _LineStopsContentState extends State<_LineStopsContent> {
                           fontSize: 15,
                         ),
                       ),
+                      if (isDisabled)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 4),
+                          child: Text(
+                            'Parada deshabilitada',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey.shade700,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
                       const SizedBox(height: 4),
                       Wrap(
                         spacing: 8,
@@ -437,7 +452,9 @@ class _LineStopsContentState extends State<_LineStopsContent> {
                     isStopFav ? Icons.star : Icons.star_border,
                     color: Colors.amber,
                   ),
-                  onPressed: () async {
+                  onPressed: isDisabled
+                      ? null
+                      : () async {
                     if (isStopFav) {
                       await favVM.remove(stop.id, FavoriteType.stop);
                     } else {
@@ -518,41 +535,107 @@ class _LineStopsContentState extends State<_LineStopsContent> {
                       child: CircularProgressIndicator(color: AppTheme.primaryRed),
                     )
                   else
-                    Column(
-                      children: passingLines.map((line) {
-                        linesViewModel.ensureLineArrivals(line.id);
-                        final minutes = linesViewModel.getArrivalMinutes(line.id, stop.id);
-                        final arrivalLabel = linesViewModel.formatArrivalLabel(minutes);
-                        final arrivalColor = minutes == null
-                            ? Colors.grey[700]
-                            : (minutes <= 3 ? Colors.red : Colors.green[800]);
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 8),
-                          child: Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                                decoration: BoxDecoration(
-                                  color: LineUiUtils.parseLineColor(line.color).withValues(alpha: 0.15),
-                                  borderRadius: BorderRadius.circular(999),
+                    Builder(
+                      builder: (context) {
+                        Map<String, int>? stopArrivals;
+                        bool isFetchingArrivals = false;
+
+                        return StatefulBuilder(
+                          builder: (context, setModalState) {
+                            final canFetch = !isFetchingArrivals;
+
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: FilledButton.icon(
+                                    style: FilledButton.styleFrom(
+                                      backgroundColor: AppTheme.primaryRed,
+                                      foregroundColor: Colors.white,
+                                    ),
+                                    onPressed: canFetch
+                                        ? () async {
+                                            setModalState(() {
+                                              isFetchingArrivals = true;
+                                            });
+                                           try {
+                                              final results = await linesViewModel.fetchStopArrivals(
+                                                stop.id,
+                                                limit: passingLines.length,
+                                              );
+
+                                              if (context.mounted) {
+                                                setModalState(() {
+                                                  stopArrivals = results;
+                                                });
+                                              }
+                                            } finally {
+                                              if (context.mounted) {
+                                                setModalState(() {
+                                                  isFetchingArrivals = false;
+                                                });
+                                              }
+                                            }
+                                        }
+                                        : null,
+                                    icon: isFetchingArrivals
+                                        ? const SizedBox(
+                                            width: 18,
+                                            height: 18,
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                              color: Colors.white,
+                                            ),
+                                          )
+                                        : const Icon(Icons.schedule),
+                                    label: Text(
+                                      stopArrivals == null ? 'Obtener tiempos' : 'Actualizar tiempos',
+                                    ),
+                                  ),
+                                ),         
+                                const SizedBox(height: 12),
+                                Column(
+                                  children: passingLines.map((line) {
+                                    final minutes = stopArrivals?[line.id];
+
+                                    final arrivalLabel =
+                                        linesViewModel.formatArrivalLabel(minutes);
+
+                                    final arrivalColor = minutes == null
+                                        ? Colors.grey[700]
+                                        : Colors.black;
+
+                                    return Padding(
+                                      padding: const EdgeInsets.only(bottom: 8),
+                                      child: Row(
+                                        children: [
+                                          Text(
+                                            line.name,
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.w700,
+                                            ),
+                                          ),
+
+                                          const SizedBox(width: 10),
+
+                                          Text(
+                                            arrivalLabel,
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              color: arrivalColor,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                  }).toList(),
                                 ),
-                                child: Text(
-                                  line.name,
-                                  style: const TextStyle(fontWeight: FontWeight.w700),
-                                ),
-                              ),
-                              const SizedBox(width: 10),
-                              Text(
-                                arrivalLabel,
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  color: arrivalColor,
-                                ),
-                              ),
-                            ],
-                          ),
+                              ],
+                            );
+                          },
                         );
-                      }).toList(),
+                      },
                     ),
                   const SizedBox(height: 16),
                   Row(
