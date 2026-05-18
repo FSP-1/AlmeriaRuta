@@ -16,6 +16,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../../shared/services/ticket_validation_flow_service.dart';
 import '../../operario/views/operario_panel_view.dart';
 import '../../operario/viewmodels/operario_viewmodel.dart';
+import '../../home/models/mobility_service_model.dart';
+import '../../coming_soon/views/coming_soon_mocks_data.dart';
+import '../../coming_soon/views/coming_soon_mocks_screen.dart';
 
 class MapSimpleMenuOverlay extends StatefulWidget {
   final bool isOpen;
@@ -37,6 +40,68 @@ class _MapSimpleMenuOverlayState extends State<MapSimpleMenuOverlay> {
   int _ticketCount = 0;
   String? _loadedToken;
   bool _countsInitialized = false;
+
+  static const List<MobilityServiceModel> _comingSoonServices = [
+    MobilityServiceModel(
+      id: 'zona_azul',
+      title: 'Zona Azul',
+      subtitle: null,
+      description: 'Informacion sobre estacionamiento regulado',
+      icon: Icons.local_parking,
+      color: Colors.blueAccent,
+      status: ServiceStatus.comingSoon,
+    ),
+    MobilityServiceModel(
+      id: 'parkings',
+      title: 'Parkings',
+      subtitle: null,
+      description: 'Localiza parkings publicos y plazas disponibles',
+      icon: Icons.garage,
+      color: Colors.purple,
+      status: ServiceStatus.comingSoon,
+    ),
+    MobilityServiceModel(
+      id: 'bikes',
+      title: 'Bicicletas',
+      subtitle: null,
+      description: 'Servicios de bicicletas publicas y carriles bici',
+      icon: Icons.pedal_bike,
+      color: Colors.teal,
+      status: ServiceStatus.comingSoon,
+    ),
+    MobilityServiceModel(
+      id: 'scooters',
+      title: 'Patinetes',
+      subtitle: null,
+      description: 'Patinetes electricos compartidos disponibles',
+      icon: Icons.electric_scooter,
+      color: Colors.indigo,
+      status: ServiceStatus.comingSoon,
+    ),
+    MobilityServiceModel(
+      id: 'accessibility',
+      title: 'Notificaciones Accesibilidad',
+      subtitle: null,
+      description: 'Info sobre paradas accesibles y zonas reservadas',
+      icon: Icons.accessible,
+      color: Colors.amber,
+      status: ServiceStatus.comingSoon,
+    ),
+  ];
+
+  void _openComingSoonMocks(BuildContext context, MobilityServiceModel service) {
+    final mocks = comingSoonMocksByService[service.id] ?? const [];
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ComingSoonMocksScreen(
+          title: service.title,
+          subtitle: comingSoonSubtitle,
+          mocks: mocks,
+        ),
+      ),
+    );
+  }
 
   @override
   void didChangeDependencies() {
@@ -341,6 +406,36 @@ class _MapSimpleMenuOverlayState extends State<MapSimpleMenuOverlay> {
                             const SnackBar(content: Text('Sesión cerrada')),
                           );
                         },
+                      ),
+                      const SizedBox(height: 8),
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(20, 8, 8, 4),
+                        child: Text(
+                          'Proximamente',
+                          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: const Color(0xFF475569),
+                              ),
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+                        child: Text(
+                          'Otros servicios de movilidad',
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: const Color(0xFF64748B),
+                              ),
+                        ),
+                      ),
+                      ..._comingSoonServices.map(
+                        (service) => _buildMenuItem(
+                          context: context,
+                          icon: service.icon,
+                          color: service.color,
+                          title: service.title,
+                          subtitle: service.description,
+                          onTap: () => _openComingSoonMocks(context, service),
+                        ),
                       ),
                       const SizedBox(height: 10),
                     ],
