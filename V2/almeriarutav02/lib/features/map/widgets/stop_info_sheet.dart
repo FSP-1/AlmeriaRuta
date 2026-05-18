@@ -11,6 +11,7 @@ class StopInfoSheet extends StatelessWidget {
   final StopModel stop;
   final LatLng? userLocation;
   final VoidCallback? onGetDirections;
+  final VoidCallback? onGetBusDirections;
   final VoidCallback? onFavoritesChanged;
 
   const StopInfoSheet({
@@ -18,6 +19,7 @@ class StopInfoSheet extends StatelessWidget {
     required this.stop,
     this.userLocation,
     this.onGetDirections,
+    this.onGetBusDirections,
     this.onFavoritesChanged,
   });
 
@@ -112,7 +114,17 @@ class StopInfoSheet extends StatelessWidget {
                   ElevatedButton.icon(
                     onPressed: onGetDirections,
                     icon: const Icon(Icons.directions),
-                    label: const Text('Cómo llegar'),
+                    label: const Text('Camino a pie'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppTheme.primaryRed,
+                      foregroundColor: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  ElevatedButton.icon(
+                    onPressed: onGetBusDirections,
+                    icon: const Icon(Icons.directions_bus),
+                    label: const Text('Cómo llegar (bus)'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppTheme.primaryRed,
                       foregroundColor: Colors.white,

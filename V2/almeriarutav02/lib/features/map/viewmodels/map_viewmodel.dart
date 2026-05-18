@@ -248,13 +248,13 @@ class MapViewModel extends ChangeNotifier {
 
   // ── Routing ───────────────────────────────────────────────────────────────
 
-  Future<List<LatLng>> getRoute(LatLng from, LatLng to) async {
-    final result = await getRouteResult(from, to);
+  Future<List<LatLng>> getRoute(LatLng from, LatLng to, {String profile = 'walking'}) async {
+    final result = await getRouteResult(from, to, profile: profile);
     return result.points;
   }
 
-  Future<RouteResult> getRouteResult(LatLng from, LatLng to) =>
-      _routing.getRoute(from, to);
+  Future<RouteResult> getRouteResult(LatLng from, LatLng to, {String profile = 'walking'}) =>
+      _routing.getRoute(from, to, profile: profile);
 
   void setRoute(StopModel stop, List<LatLng> route) {
     _targetStop = stop;
@@ -315,15 +315,30 @@ class MapViewModel extends ChangeNotifier {
     double maxWalkToBoardMeters = double.infinity,
     int limit = 8,
   }) {
-    return TouristBusRoutePlanner.findNearbyStops(
+    final raw = TouristBusRoutePlanner.findNearbyStops(
       place: place,
       allStops: _stops,
       allLines: _lines,
       userLocation: _userLocation,
       maxDistanceMeters: maxDistanceMeters,
       maxWalkToBoardMeters: maxWalkToBoardMeters,
-      limit: limit,
+      limit: limit * 3, // fetch extra so dedupe + top selection works
     );
+
+    // Deduplicate by stop.id: keep the option with smallest distanceToPlaceMeters
+    final Map<String, TouristNearbyStopOption> bestByStop = {};
+    for (final opt in raw) {
+      final id = opt.stop.id;
+      final existing = bestByStop[id];
+      if (existing == null || opt.distanceToPlaceMeters < existing.distanceToPlaceMeters) {
+        bestByStop[id] = opt;
+      }
+    }
+
+    final deduped = bestByStop.values.toList()
+      ..sort((a, b) => a.distanceToPlaceMeters.compareTo(b.distanceToPlaceMeters));
+
+    return deduped.take(limit).toList();
   }
 
   TouristBusRoutePlan? buildTouristBusRoutePlan(TouristPlace place, StopModel destinationStop) {

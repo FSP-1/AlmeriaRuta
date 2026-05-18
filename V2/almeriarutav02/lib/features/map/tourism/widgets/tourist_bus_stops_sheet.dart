@@ -36,36 +36,69 @@ Future<void> showTouristBusStopsSheet({
     return;
   }
 
-  final evaluatedStops = nearbyStops
+    final evaluatedStops = nearbyStops
       .map((option) => (option: option, plan: mapViewModel.buildTouristBusRoutePlan(place, option.stop)))
       .toList();
 
   // Prioritize actual best routes to the tourist point:
   // valid plan first, then shorter total time, fewer transfers, and closer stop to place.
-evaluatedStops.sort((a, b) {
-  final aPlan = a.plan;
-  final bPlan = b.plan;
+  int compareEvaluated(a, b) {
+    final aPlan = a.plan;
+    final bPlan = b.plan;
 
-  if (aPlan == null && bPlan != null) return 1;
-  if (aPlan != null && bPlan == null) return -1;
+    if (aPlan == null && bPlan != null) return 1;
+    if (aPlan != null && bPlan == null) return -1;
 
-  if (aPlan != null && bPlan != null) {
-    // 🔥 PRIORIDAD ABSOLUTA: directos
-    final aTransfers = aPlan.segments.length;
-    final bTransfers = bPlan.segments.length;
+    if (aPlan != null && bPlan != null) {
+      final aTransfers = aPlan.segments.length;
+      final bTransfers = bPlan.segments.length;
 
-    if (aTransfers != bTransfers) {
-      return aTransfers.compareTo(bTransfers);
+      if (aTransfers != bTransfers) {
+        return aTransfers.compareTo(bTransfers);
+      }
+
+      return _planPrecisionScore(aPlan).compareTo(_planPrecisionScore(bPlan));
     }
 
-    // luego score
-    return _planPrecisionScore(aPlan)
-        .compareTo(_planPrecisionScore(bPlan));
+    return a.option.distanceToPlaceMeters.compareTo(b.option.distanceToPlaceMeters);
   }
 
-  return a.option.distanceToPlaceMeters
-      .compareTo(b.option.distanceToPlaceMeters);
-});
+  evaluatedStops.sort(compareEvaluated);
+
+  // Deduplicate by stop id, keeping the best candidate per stop (prefer valid plan and lower duration)
+  final Map<String, dynamic> bestByStop = {};
+  for (final e in evaluatedStops) {
+    final id = e.option.stop.id;
+    if (!bestByStop.containsKey(id)) {
+      bestByStop[id] = e;
+      continue;
+    }
+    final existing = bestByStop[id];
+    final existingPlan = existing.plan;
+    final newPlan = e.plan;
+
+    if (existingPlan == null && newPlan != null) {
+      bestByStop[id] = e;
+      continue;
+    }
+    if (existingPlan != null && newPlan != null) {
+      if (newPlan.totalDurationMinutes < existingPlan.totalDurationMinutes) {
+        bestByStop[id] = e;
+      }
+      continue;
+    }
+    // both null -> keep the one closer to the place
+    if (existingPlan == null && newPlan == null) {
+      if (e.option.distanceToPlaceMeters < existing.option.distanceToPlaceMeters) {
+        bestByStop[id] = e;
+      }
+    }
+  }
+
+  final deduped = bestByStop.values.toList();
+  deduped.sort(compareEvaluated);
+  // Keep only top 4 candidate stops to simplify choices
+  final topStops = deduped.take(4).toList();
 
   await showModalBottomSheet<void>(
     context: context,
@@ -116,10 +149,10 @@ evaluatedStops.sort((a, b) {
               constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(context).height * 0.5),
               child: ListView.separated(
                 shrinkWrap: true,
-                itemCount: evaluatedStops.length,
+                itemCount: topStops.length,
                 separatorBuilder: (_, _) => const Divider(height: 1),
                 itemBuilder: (_, index) {
-                  final evaluated = evaluatedStops[index];
+                    final evaluated = topStops[index];
                   final option = evaluated.option;
                   final plan = evaluated.plan;
                   final linesText = option.servingLines.isEmpty
@@ -127,10 +160,7 @@ evaluatedStops.sort((a, b) {
                       : option.servingLines.map((l) => l.name).take(4).join(' · ');
 
                   final walkToBoard = plan?.walkToBoardMeters ?? 0;
-                  final busTimeText = plan != null
-                      ? '🚶 ${walkToBoard.round()} m · 🚌 ${plan.routeStops.length} paradas · ~${plan.totalDurationMinutes} min'
-                      : null;
-                  final saving = plan != null
+                    final saving = plan != null
                       ? (directWalkMeters - plan.totalDistanceMeters).round()
                       : 0;
                   final savingText = plan != null
@@ -148,13 +178,21 @@ evaluatedStops.sort((a, b) {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text('${option.distanceToPlaceMeters.round()} m del destino · $linesText'),
-                        if (busTimeText != null)
-                          Text(
-                            '$busTimeText  $savingText',
-                            style: TextStyle(
-                              color: Colors.green.shade700,
-                              fontWeight: FontWeight.w500,
-                            ),
+                        if (plan != null)
+                          Row(
+                            children: [
+                              Icon(Icons.directions_walk, color: Colors.orange, size: 16),
+                              const SizedBox(width: 6),
+                              Text('${walkToBoard.round()} m', style: const TextStyle(fontWeight: FontWeight.w600)),
+                              const SizedBox(width: 12),
+                              Icon(Icons.directions_bus, color: Colors.blue, size: 16),
+                              const SizedBox(width: 6),
+                              Text('${plan.routeStops.length} paradas', style: const TextStyle(fontWeight: FontWeight.w600)),
+                              const SizedBox(width: 12),
+                              Icon(Icons.schedule, color: Colors.green, size: 16),
+                              const SizedBox(width: 6),
+                              Text('~${plan.totalDurationMinutes} min', style: const TextStyle(fontWeight: FontWeight.w600)),
+                            ],
                           )
                         else
                           Text(

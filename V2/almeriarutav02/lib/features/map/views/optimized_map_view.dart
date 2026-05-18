@@ -15,6 +15,8 @@ import '../widgets/map_simple_menu_overlay.dart';
 import '../widgets/stop_info_sheet.dart';
 import '../widgets/tourist_bus_stop_info_sheet.dart';
 import '../tourism/viewmodels/tourism_viewmodel.dart';
+import '../tourism/models/tourist_place.dart';
+import '../tourism/widgets/tourist_bus_stops_sheet.dart';
 import 'map_fab_actions.dart';
 import 'map_initialization.dart';
 import 'map_onboarding_flow.dart';
@@ -84,6 +86,18 @@ class _OptimizedMapViewState extends State<OptimizedMapView> {
           _openDirections(vm, stop);
           Navigator.pop(ctx);
         },
+        onGetBusDirections: () {
+          // Reuse tourist bus flow: create a synthetic TouristPlace from the stop
+          final place = TouristPlace(
+            id: 'stop-${stop.id}',
+            name: stop.name,
+            location: LatLng(stop.lat, stop.lon),
+            description: 'Parada ${stop.name}',
+            category: TouristCategory.leisure,
+          );
+          Navigator.pop(ctx);
+          showTouristBusStopsSheet(context: context, place: place, mapViewModel: vm);
+        },
       ),
     );
   }
@@ -103,6 +117,16 @@ class _OptimizedMapViewState extends State<OptimizedMapView> {
     if (vm.userLocation == null) return;
     try {
       final route = await vm.getRoute(vm.userLocation!, LatLng(stop.lat, stop.lon));
+      vm.setRoute(stop, route);
+    } catch (_) {
+      vm.setRoute(stop, [vm.userLocation!, LatLng(stop.lat, stop.lon)]);
+    }
+  }
+
+  Future<void> _openDirectionsByProfile(MapViewModel vm, StopModel stop, String profile) async {
+    if (vm.userLocation == null) return;
+    try {
+      final route = await vm.getRoute(vm.userLocation!, LatLng(stop.lat, stop.lon), profile: profile);
       vm.setRoute(stop, route);
     } catch (_) {
       vm.setRoute(stop, [vm.userLocation!, LatLng(stop.lat, stop.lon)]);
