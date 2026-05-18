@@ -5,7 +5,9 @@ import '../../../shared/services/notices_api_service.dart';
 
 class NoticesViewModel extends ChangeNotifier {
   final NoticesApiService _api;
-  final String? _token;
+  String? _token;
+  bool _isOperario = false;
+  Duration _refreshInterval = const Duration(minutes: 10);
 
   NoticesViewModel({NoticesApiService? api, String? token})
       : _api = api ?? NoticesApiService(),
@@ -160,12 +162,33 @@ class NoticesViewModel extends ChangeNotifier {
     }
   }
 
-  void startAutoRefresh({Duration interval = const Duration(seconds: 120)}) {
+  void startAutoRefresh({Duration? interval}) {
     _refreshTimer?.cancel();
+    if (interval != null) {
+      _refreshInterval = interval;
+    }
     loadNotices(); // Load immediately
-    _refreshTimer = Timer.periodic(interval, (_) {
+    _refreshTimer = Timer.periodic(_refreshInterval, (_) {
       loadNotices();
     });
+  }
+
+  void updateAuth({required String? token, required bool isOperario}) {
+    final tokenChanged = _token != token;
+    final operarioChanged = _isOperario != isOperario;
+
+    _token = token;
+    _isOperario = isOperario;
+
+    final desiredInterval = isOperario
+        ? const Duration(minutes: 1)
+        : const Duration(minutes: 10);
+
+    final intervalChanged = desiredInterval != _refreshInterval;
+
+    if (tokenChanged || operarioChanged || intervalChanged || _refreshTimer == null) {
+      startAutoRefresh(interval: desiredInterval);
+    }
   }
 
   // Token is optional; operations call API with nullable token.

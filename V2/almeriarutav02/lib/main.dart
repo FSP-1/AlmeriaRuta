@@ -31,8 +31,16 @@ class AlmeriaRutaApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => AuthViewModel()),
         ChangeNotifierProvider(create: (_) => HomeViewModel()),
         ChangeNotifierProvider(create: (_) => MapViewModel()),
-        ChangeNotifierProvider(
-          create: (_) => NoticesViewModel()..startAutoRefresh(),
+        ChangeNotifierProxyProvider<AuthViewModel, NoticesViewModel>(
+          create: (_) => NoticesViewModel(),
+          update: (_, auth, notices) {
+            final model = notices ?? NoticesViewModel();
+            model.updateAuth(
+              token: auth.token,
+              isOperario: auth.user?.isOperario == true,
+            );
+            return model;
+          },
         ),
         ChangeNotifierProvider(create: (_) => TourismViewModel()..load()),
       ],
