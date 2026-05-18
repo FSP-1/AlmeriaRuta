@@ -53,10 +53,17 @@ bool isBusWorthIt(
       minDistanceSavedMeters;
 }
 
-/// Estimates bus ride time in minutes based on number of stops.
-/// Aproximación realista: ~2 min por parada
-int estimateBusRideMinutes(int stopCount) {
-  return math.max(2, (stopCount - 1) * 2);
+/// Estimates bus ride time in minutes based on distance and stops.
+/// Use a simple distance-based speed plus a small dwell time per stop.
+int estimateBusRideMinutes(double distanceMeters, int stopCount) {
+  const busSpeedMps = 4.5; // ~16.2 km/h urban average
+  const dwellSecondsPerStop = 30;
+
+  final travelMinutes = (distanceMeters / busSpeedMps) / 60;
+  final dwellMinutes = math.max(0, stopCount - 1) * (dwellSecondsPerStop / 60);
+  final total = (travelMinutes + dwellMinutes).round();
+
+  return math.max(3, total);
 }
 
 /// Calculates total distance covered by a sequence of bus stops.

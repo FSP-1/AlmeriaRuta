@@ -432,14 +432,20 @@ class MapViewModel extends ChangeNotifier {
 
   // ── Legacy ────────────────────────────────────────────────────────────────
 
-  void focusStopFromExternal(StopModel stop, {String? lineId}) {
+  void focusStopFromExternal(
+    StopModel stop, {
+    String? lineId,
+    bool setFilter = true,
+  }) {
     _targetStop = stop;
     _selectedTouristPlace = null;
     _activeRoute = [];
     _routeDistanceMeters = 0;
     _routeDurationMinutes = 0;
     _isRouteFallback = false;
-    _currentFilter = lineId == null ? const MapFilter.all() : MapFilter.line(lineId);
+    if (setFilter) {
+      _currentFilter = lineId == null ? const MapFilter.all() : MapFilter.line(lineId);
+    }
     notifyListeners();
   }
 

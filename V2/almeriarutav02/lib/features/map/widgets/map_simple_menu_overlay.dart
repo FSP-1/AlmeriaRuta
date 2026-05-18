@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'dart:convert';
 
 
 import '../../auth/viewmodels/auth_viewmodel.dart';
@@ -10,6 +11,9 @@ import '../../lines/views/lines_view.dart';
 import '../../notifications/views/notifications_view.dart';
 import '../../notifications/services/backend_notifications_api_service.dart';
 import '../../tickets/views/tickets_hub_view.dart';
+import '../../tickets/models/ticket_model.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../../../shared/services/ticket_validation_flow_service.dart';
 import '../../operario/views/operario_panel_view.dart';
 import '../../operario/viewmodels/operario_viewmodel.dart';
 
@@ -30,7 +34,9 @@ class MapSimpleMenuOverlay extends StatefulWidget {
 class _MapSimpleMenuOverlayState extends State<MapSimpleMenuOverlay> {
   final BackendNotificationsApiService _backendNotifications = BackendNotificationsApiService();
   int _unreadNotificationsCount = 0;
+  int _ticketCount = 0;
   String? _loadedToken;
+  bool _countsInitialized = false;
 
   @override
   void didChangeDependencies() {
@@ -50,7 +56,7 @@ class _MapSimpleMenuOverlayState extends State<MapSimpleMenuOverlay> {
     final auth = Provider.of<AuthViewModel>(context, listen: false);
     final token = auth.token;
 
-    if (!widget.isOpen || token == null) {
+    if (!widget.isOpen) {
       if (_unreadNotificationsCount != 0) {
         setState(() {
           _unreadNotificationsCount = 0;
@@ -67,18 +73,75 @@ class _MapSimpleMenuOverlayState extends State<MapSimpleMenuOverlay> {
     _loadedToken = token;
 
     try {
-      final notifications = await _backendNotifications.fetchNotifications(
-        token: token,
-        unreadOnly: true,
-      );
-      if (!mounted) return;
-      setState(() {
-        _unreadNotificationsCount = notifications.length;
-      });
+      if (token != null) {
+        final notifications = await _backendNotifications.fetchNotifications(
+          token: token,
+          unreadOnly: true,
+        );
+        if (!mounted) return;
+        setState(() {
+          _unreadNotificationsCount = notifications.length;
+        });
+      } else {
+        // Not authenticated: no remote notifications available
+        if (!mounted) return;
+        setState(() {
+          _unreadNotificationsCount = 0;
+        });
+      }
     } catch (_) {
       if (!mounted) return;
       setState(() {
         _unreadNotificationsCount = 0;
+      });
+    }
+    // Also sync tickets and cards once when panel opens
+    if (!_countsInitialized) {
+      _countsInitialized = true;
+      _syncTicketAndCardCounts();
+    }
+  }
+
+  Future<void> _syncTicketAndCardCounts() async {
+    try {
+      final auth = Provider.of<AuthViewModel>(context, listen: false);
+      final token = auth.token;
+
+      // Read local tickets directly from shared preferences (same source as TicketViewModel)
+      final prefs = await SharedPreferences.getInstance();
+      final rawTickets = prefs.getStringList('local_tickets') ?? const [];
+      final localTickets = <TicketModel>[];
+      for (final raw in rawTickets) {
+        try {
+          final data = jsonDecode(raw) as Map<String, dynamic>;
+          localTickets.add(TicketModel.fromJson(data));
+        } catch (_) {
+          // ignore malformed
+        }
+      }
+
+      final validation = TicketValidationFlowService();
+      final remote = await validation.fetchActiveRemoteTicketNotifications(
+        token: token,
+        isAuthenticated: auth.isAuthenticated,
+        isGuest: auth.isGuest,
+      );
+
+      final totalUnused = validation.totalUnusedTickets(
+        localTickets: localTickets,
+        remoteNotifications: remote,
+      );
+
+      // keep card count as a calming metric, but badge will show only tickets
+
+      if (!mounted) return;
+      setState(() {
+        _ticketCount = totalUnused;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _ticketCount = 0;
       });
     }
   }
@@ -172,6 +235,7 @@ class _MapSimpleMenuOverlayState extends State<MapSimpleMenuOverlay> {
                         icon: Icons.confirmation_number_outlined,
                         color: const Color(0xFF16A34A),
                         title: 'Billetes y tarjeta',
+                        badgeCount: _ticketCount,
                         onTap: () {
                           Navigator.push(
                             context,

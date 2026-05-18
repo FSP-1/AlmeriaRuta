@@ -311,6 +311,8 @@ class TouristBusRoutePlanner {
 
     final busDistance = calculateSegmentDistance(allStops);
 
+    final busRideMinutes = estimateBusRideMinutes(busDistance, allStops.length);
+
     return TouristBusRoutePlan(
       place: place,
       destinationStop: segments.last.destinationStop,
@@ -327,12 +329,12 @@ class TouristBusRoutePlanner {
       walkToBoardMinutes: estimateWalkingMinutes(walkToBoard),
       walkFromStopToPlaceMeters: walkToPlace,
       walkFromStopToPlaceMinutes: estimateWalkingMinutes(walkToPlace),
-      busRideMinutes: estimateBusRideMinutes(allStops.length),
+      busRideMinutes: busRideMinutes,
       totalDistanceMeters: walkToBoard + walkToPlace + busDistance,
       totalDurationMinutes:
           estimateWalkingMinutes(walkToBoard) +
           estimateWalkingMinutes(walkToPlace) +
-          estimateBusRideMinutes(allStops.length),
+          busRideMinutes,
     );
   }
 }

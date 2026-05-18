@@ -83,6 +83,24 @@ void main() {
       expect(vm.currentFilter.lineId, 'L1');
     });
 
+    test('focusStopFromExternal can skip filter change', () {
+      final vm = MapViewModel();
+      final stop = StopModel(
+        id: '100',
+        name: 'Parada',
+        lat: 36.84,
+        lon: -2.45,
+        zone: 'A',
+        lineIds: const {'L1'},
+      );
+
+      vm.setFilter(const MapFilter.favorites());
+      vm.focusStopFromExternal(stop, lineId: 'L1', setFilter: false);
+
+      expect(vm.targetStop?.id, '100');
+      expect(vm.currentFilter.mode, FilterMode.favorites);
+    });
+
     test('setRoute and clearRoute update route-related state', () {
       final vm = MapViewModel();
       final stop = StopModel(

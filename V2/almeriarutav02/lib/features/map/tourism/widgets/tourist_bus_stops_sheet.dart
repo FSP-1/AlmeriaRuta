@@ -207,6 +207,7 @@ Future<void> showTouristBusStopsSheet({
                       mapViewModel.focusStopFromExternal(
                         option.stop,
                         lineId: option.servingLines.isNotEmpty ? option.servingLines.first.id : null,
+                        setFilter: false,
                       );
                       Navigator.pop(sheetContext);
                       if (plan == null) return;
