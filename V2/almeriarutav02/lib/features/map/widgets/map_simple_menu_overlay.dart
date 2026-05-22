@@ -327,7 +327,7 @@ class _MapSimpleMenuOverlayState extends State<MapSimpleMenuOverlay> {
                           icon: Icons.admin_panel_settings_outlined,
                           color: const Color(0xFFDC2626),
                           title: 'Panel de Operario',
-                          subtitle: 'Gestionar avisos y paradas',
+                          subtitle: 'Gestionar avisos, paradas y solicitudes',
                           onTap: () {
                             Navigator.push(
                               context,
