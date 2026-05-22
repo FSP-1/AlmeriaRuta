@@ -5,6 +5,7 @@ import json
 import re
 import secrets
 from datetime import datetime, timezone
+from typing import Optional
 
 from itsdangerous import URLSafeTimedSerializer
 
@@ -375,6 +376,101 @@ class AuthService:
             else:
                 notification['payloadJson'] = None
         return {'notifications': notifications}, 200
+
+    def create_card_request(self, auth_data: dict, body: dict):
+        user_id = auth_data.get('uid')
+        if not user_id:
+            return {'error': 'Usuario no autenticado'}, 401
+
+        card_id = self._sanitize(body.get('cardId', ''))
+        payload = body.get('payload') or {}
+
+        if not card_id:
+            return {'error': 'CardId requerido'}, 400
+
+        payload_json = json.dumps(payload, ensure_ascii=False)
+        request_id = self.repo.create_card_request(user_id, card_id, payload_json)
+
+        # Notify operarios about the new request
+        for operario_id in self.repo.list_operario_user_ids():
+            self.repo.create_notification(
+                operario_id,
+                'Nueva solicitud de tarjeta',
+                f'Usuario {auth_data.get("username")} solicito {card_id}.',
+                json.dumps({'type': 'card_request', 'requestId': request_id}, ensure_ascii=False),
+            )
+
+        return {
+            'success': True,
+            'request': {
+                'id': request_id,
+                'status': 'pending',
+            },
+        }, 200
+
+    def list_my_card_requests(self, auth_data: dict):
+        user_id = auth_data.get('uid')
+        if not user_id:
+            return {'error': 'Usuario no autenticado'}, 401
+
+        rows = self.repo.list_card_requests_for_user(user_id)
+        return {'requests': self._hydrate_card_requests(rows)}, 200
+
+    def list_card_requests(self, status: Optional[str] = None):
+        rows = self.repo.list_card_requests(status=status)
+        return {'requests': self._hydrate_card_requests(rows)}, 200
+
+    def decide_card_request(self, auth_data: dict, request_id: int, body: dict):
+        reviewer_id = auth_data.get('uid')
+        status = str(body.get('status', '')).lower()
+        reason = self._sanitize(body.get('reason', '')) if body.get('reason') else None
+
+        if status not in {'approved', 'denied'}:
+            return {'error': 'Estado invalido'}, 400
+
+        updated = self.repo.update_card_request_status(request_id, status, reviewer_id, reason)
+        if updated == 0:
+            return {'error': 'Solicitud no encontrada'}, 404
+
+        # Fetch updated request to notify user
+        rows = self.repo.list_card_requests(status=None)
+        target = next((r for r in rows if r['id'] == request_id), None)
+        if target:
+            user_id = target['user_id']
+            title = 'Solicitud de tarjeta aprobada' if status == 'approved' else 'Solicitud de tarjeta denegada'
+            body_text = reason or 'Revisa los detalles en tu listado de solicitudes.'
+            self.repo.create_notification(
+                user_id,
+                title,
+                body_text,
+                json.dumps({'type': 'card_request', 'requestId': request_id, 'status': status}, ensure_ascii=False),
+            )
+
+        return {'success': True}, 200
+
+    @staticmethod
+    def _hydrate_card_requests(rows):
+        hydrated = []
+        for row in rows:
+            payload = None
+            raw_payload = row.get('payload_json')
+            if raw_payload:
+                try:
+                    payload = json.loads(raw_payload)
+                except Exception:
+                    payload = None
+            hydrated.append({
+                'id': row['id'],
+                'userId': row['user_id'],
+                'cardId': row['card_id'],
+                'payload': payload,
+                'status': row['status'],
+                'decisionReason': row.get('decision_reason'),
+                'reviewedBy': row.get('reviewed_by'),
+                'reviewedAt': row.get('reviewed_at').isoformat() if row.get('reviewed_at') else None,
+                'createdAt': row.get('created_at').isoformat() if row.get('created_at') else None,
+            })
+        return hydrated
 
     def mark_notification_read(self, user_id: int, notification_id: int):
         updated = self.repo.mark_notification_read(user_id, notification_id)

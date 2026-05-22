@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../viewmodels/recharge_viewmodel.dart';
-import '../models/recharge_profile_model.dart';
 import '../models/transport_card_model.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../shared/widgets/visa_card_mock_dialog.dart';
 import 'widgets/recharge_widgets.dart';
+import '../requests/views/card_request_list_view.dart';
 
 class RechargeView extends StatefulWidget {
   final String? token;
@@ -22,84 +23,79 @@ class RechargeView extends StatefulWidget {
 }
 
 class _RechargeViewState extends State<RechargeView> {
+  static const _dismissKey = 'recharge_dismissed_card_chooser';
+
   bool _didShowInitialChooser = false;
   bool _hasChosenInitialCard = false;
+  bool _dismissedInitialChooser = false;
+  bool _loadedChooserState = false;
 
   String _paymentMethodLabel(String method) {
     if (method == 'Visa') return 'Visa crédito';
     return method;
   }
 
+  @override
+  void initState() {
+    super.initState();
+    _loadDismissState();
+  }
+
+  Future<void> _loadDismissState() async {
+    final prefs = await SharedPreferences.getInstance();
+    final dismissed = prefs.getBool(_dismissKey) ?? false;
+    if (!mounted) return;
+    setState(() {
+      _dismissedInitialChooser = dismissed;
+      _loadedChooserState = true;
+    });
+  }
+
+  Future<void> _setDismissed(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_dismissKey, value);
+    if (!mounted) return;
+    setState(() {
+      _dismissedInitialChooser = value;
+    });
+  }
+
+  void _openCardRequestList(BuildContext context, RechargeViewModel vm, {bool markDismissOnReturn = false}) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => CardRequestListView(
+          token: widget.token,
+          onSelectSaldo: () {
+            final option = vm.cardOptions.firstWhere((o) => o.key == 'saldo_virtual');
+            vm.setSelectedCardOption(option);
+            _setDismissed(false);
+            setState(() {
+              _hasChosenInitialCard = true;
+            });
+            Navigator.pop(context);
+            final saldoCard = vm.myCards.firstWhere(
+              (card) => card.name == 'Tarjeta Saldo Virtual',
+            );
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (!mounted) return;
+              _showRechargeDialog(context, vm, saldoCard);
+            });
+          },
+        ),
+      ),
+    ).then((_) {
+      if (!mounted) return;
+      if (!_hasChosenInitialCard && markDismissOnReturn) {
+        _setDismissed(true);
+      }
+    });
+  }
+
   void _showInitialChooser(BuildContext context, RechargeViewModel vm) {
     if (_didShowInitialChooser) return;
     _didShowInitialChooser = true;
-
-    showModalBottomSheet<void>(
-      context: context,
-      showDragHandle: true,
-      isDismissible: false,
-      enableDrag: false,
-      builder: (sheetContext) {
-        final maxHeight = MediaQuery.of(sheetContext).size.height * 0.72;
-
-        return SafeArea(
-          child: ConstrainedBox(
-            constraints: BoxConstraints(maxHeight: maxHeight),
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    '¿Qué tarjeta quieres usar?',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'Puedes cambiarla después desde el menú superior derecho.',
-                    style: TextStyle(color: Colors.grey),
-                  ),
-                  const SizedBox(height: 12),
-                  Expanded(
-                    child: ListView(
-                      children: vm.cardOptions.map((RechargeCardOption option) {
-                        return ListTile(
-                          contentPadding: EdgeInsets.zero,
-                          leading: Icon(
-                            option.key == 'saldo_virtual'
-                                ? Icons.account_balance_wallet
-                                : Icons.credit_card,
-                          ),
-                          title: Text(option.title),
-                          subtitle: Text(option.description),
-                          onTap: () {
-                            vm.setSelectedCardOption(option);
-                            setState(() {
-                              _hasChosenInitialCard = true;
-                            });
-                            Navigator.pop(sheetContext);
-
-                            if (option.key == 'saldo_virtual') {
-                              final saldoCard = vm.myCards.firstWhere(
-                                (card) => card.name == 'Tarjeta Saldo Virtual',
-                              );
-                              WidgetsBinding.instance.addPostFrameCallback((_) {
-                                if (!mounted) return;
-                                _showRechargeDialog(context, vm, saldoCard);
-                              });
-                            }
-                          },
-                        );
-                      }).toList(),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
-    );
+    _openCardRequestList(context, vm, markDismissOnReturn: true);
   }
 
   @override
@@ -113,6 +109,17 @@ class _RechargeViewState extends State<RechargeView> {
           foregroundColor: Colors.white,
           actions: [
             Consumer<RechargeViewModel>(
+              builder: (context, vm, _) {
+                return IconButton(
+                  tooltip: 'Solicitar tarjeta',
+                  icon: const Icon(Icons.add_card_outlined),
+                  onPressed: () {
+                    _openCardRequestList(context, vm);
+                  },
+                );
+              },
+            ),
+            Consumer<RechargeViewModel>(
               builder: (_, vm, _) {
                 return CardOptionsMenuButton(
                   options: vm.cardOptions,
@@ -125,6 +132,9 @@ class _RechargeViewState extends State<RechargeView> {
         ),
         body: Consumer<RechargeViewModel>(
           builder: (_, vm, _) {
+            if (!_loadedChooserState) {
+              return const Center(child: CircularProgressIndicator());
+            }
             if (!vm.profileResolved) {
               return const Center(child: CircularProgressIndicator());
             }
@@ -136,14 +146,14 @@ class _RechargeViewState extends State<RechargeView> {
 
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 if (!mounted) return;
-                if (!vm.hasConfiguredCard) {
+                if (!vm.hasConfiguredCard && !_dismissedInitialChooser) {
                   _showInitialChooser(context, vm);
                 }
               });
             }
 
             if (!_hasChosenInitialCard) {
-              return const SizedBox.shrink();
+              return _buildNoCardSelected(context, vm);
             }
 
             final selectedCard = vm.myCards.firstWhere(
@@ -395,5 +405,43 @@ class _RechargeViewState extends State<RechargeView> {
 
   String _format(DateTime date) {
     return '${date.day}/${date.month}/${date.year}';
+  }
+
+  Widget _buildNoCardSelected(BuildContext context, RechargeViewModel vm) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.credit_card_off_outlined, size: 56, color: Colors.grey),
+            const SizedBox(height: 12),
+            const Text(
+              'Aun no has seleccionado una tarjeta',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              _dismissedInitialChooser
+                  ? 'Puedes solicitar una tarjeta cuando quieras.'
+                  : 'Elige una tarjeta para empezar a recargar o solicitar una nueva.',
+              style: const TextStyle(color: Colors.grey),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton.icon(
+              onPressed: () => _openCardRequestList(context, vm, markDismissOnReturn: true),
+              icon: const Icon(Icons.add_card_outlined),
+              label: const Text('Solicitar tarjeta'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.primaryRed,
+                foregroundColor: Colors.white,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

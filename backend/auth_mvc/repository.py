@@ -248,6 +248,66 @@ class AuthRepository:
                 if not has_saldo_card:
                     cur.execute("ALTER TABLE user_transport_profile ADD COLUMN has_saldo_card TINYINT(1) NOT NULL DEFAULT 0")
 
+                cur.execute(
+                    """
+                    CREATE TABLE IF NOT EXISTS card_requests (
+                        id BIGINT PRIMARY KEY AUTO_INCREMENT,
+                        user_id BIGINT NOT NULL,
+                        card_id VARCHAR(120) NOT NULL,
+                        payload_json LONGTEXT NOT NULL,
+                        status VARCHAR(20) NOT NULL DEFAULT 'pending',
+                        decision_reason VARCHAR(255) NULL,
+                        reviewed_by BIGINT NULL,
+                        reviewed_at TIMESTAMP NULL,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                        INDEX idx_card_requests_user (user_id),
+                        INDEX idx_card_requests_status (status),
+                        CONSTRAINT fk_card_requests_user FOREIGN KEY (user_id) REFERENCES users(id)
+                            ON DELETE CASCADE
+                    )
+                    """
+                )
+
+                cur.execute(
+                    """
+                    SELECT COUNT(*) AS column_count
+                    FROM information_schema.COLUMNS
+                    WHERE TABLE_SCHEMA = DATABASE()
+                      AND TABLE_NAME = 'card_requests'
+                      AND COLUMN_NAME = 'decision_reason'
+                    """
+                )
+                has_decision_reason = cur.fetchone()['column_count'] > 0
+                if not has_decision_reason:
+                    cur.execute("ALTER TABLE card_requests ADD COLUMN decision_reason VARCHAR(255) NULL")
+
+                cur.execute(
+                    """
+                    SELECT COUNT(*) AS column_count
+                    FROM information_schema.COLUMNS
+                    WHERE TABLE_SCHEMA = DATABASE()
+                      AND TABLE_NAME = 'card_requests'
+                      AND COLUMN_NAME = 'reviewed_by'
+                    """
+                )
+                has_reviewed_by = cur.fetchone()['column_count'] > 0
+                if not has_reviewed_by:
+                    cur.execute("ALTER TABLE card_requests ADD COLUMN reviewed_by BIGINT NULL")
+
+                cur.execute(
+                    """
+                    SELECT COUNT(*) AS column_count
+                    FROM information_schema.COLUMNS
+                    WHERE TABLE_SCHEMA = DATABASE()
+                      AND TABLE_NAME = 'card_requests'
+                      AND COLUMN_NAME = 'reviewed_at'
+                    """
+                )
+                has_reviewed_at = cur.fetchone()['column_count'] > 0
+                if not has_reviewed_at:
+                    cur.execute("ALTER TABLE card_requests ADD COLUMN reviewed_at TIMESTAMP NULL")
+
     def create_user(self, email, username, password_hash, recovery_pin_hash=None):
         with self._conn() as conn:
             with conn.cursor() as cur:
@@ -375,6 +435,57 @@ class AuthRepository:
                 params.append(limit)
                 cur.execute(sql, params)
                 return cur.fetchall()
+
+    def list_operario_user_ids(self):
+        with self._conn() as conn:
+            with conn.cursor() as cur:
+                cur.execute("SELECT id FROM users WHERE is_operario=1")
+                rows = cur.fetchall()
+                return [r['id'] for r in rows]
+
+    def create_card_request(self, user_id, card_id, payload_json):
+        with self._conn() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "INSERT INTO card_requests (user_id, card_id, payload_json) VALUES (%s, %s, %s)",
+                    (user_id, card_id, payload_json),
+                )
+                return cur.lastrowid
+
+    def list_card_requests_for_user(self, user_id, limit=50):
+        with self._conn() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "SELECT id, user_id, card_id, payload_json, status, decision_reason, reviewed_by, reviewed_at, created_at "
+                    "FROM card_requests WHERE user_id=%s ORDER BY created_at DESC, id DESC LIMIT %s",
+                    (user_id, limit),
+                )
+                return cur.fetchall()
+
+    def list_card_requests(self, status=None, limit=100):
+        with self._conn() as conn:
+            with conn.cursor() as cur:
+                sql = (
+                    "SELECT id, user_id, card_id, payload_json, status, decision_reason, reviewed_by, reviewed_at, created_at "
+                    "FROM card_requests"
+                )
+                params = []
+                if status:
+                    sql += " WHERE status=%s"
+                    params.append(status)
+                sql += " ORDER BY created_at DESC, id DESC LIMIT %s"
+                params.append(limit)
+                cur.execute(sql, params)
+                return cur.fetchall()
+
+    def update_card_request_status(self, request_id, status, reviewed_by, reason=None):
+        with self._conn() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "UPDATE card_requests SET status=%s, decision_reason=%s, reviewed_by=%s, reviewed_at=NOW() WHERE id=%s",
+                    (status, reason, reviewed_by, request_id),
+                )
+                return cur.rowcount
 
     def mark_notification_read(self, user_id, notification_id):
         with self._conn() as conn:

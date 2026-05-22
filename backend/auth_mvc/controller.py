@@ -201,6 +201,25 @@ def create_auth_blueprint(auth_service):
         except Exception as e:
             return jsonify({'error': f'No se pudo guardar el perfil de tarjeta: {e}'}), 500
 
+    @auth_bp.route('/auth/me/card-requests', methods=['POST'])
+    @auth_required(allow_guest=False)
+    def auth_create_card_request():
+        try:
+            body = request.get_json(silent=True) or {}
+            payload, status = auth_service.create_card_request(request.auth, body)
+            return jsonify(payload), status
+        except Exception as e:
+            return jsonify({'error': f'No se pudo crear la solicitud: {e}'}), 500
+
+    @auth_bp.route('/auth/me/card-requests', methods=['GET'])
+    @auth_required(allow_guest=False)
+    def auth_list_my_card_requests():
+        try:
+            payload, status = auth_service.list_my_card_requests(request.auth)
+            return jsonify(payload), status
+        except Exception as e:
+            return jsonify({'error': f'No se pudo cargar las solicitudes: {e}'}), 500
+
     # ============ OPERARIO ENDPOINTS ============
 
     @auth_bp.route('/operario/notices', methods=['GET'])
@@ -256,5 +275,25 @@ def create_auth_blueprint(auth_service):
             return jsonify(payload), status
         except Exception as e:
             return jsonify({'error': f'No se pudo habilitar la parada: {e}'}), 500
+
+    @auth_bp.route('/operario/card-requests', methods=['GET'])
+    @operario_required()
+    def operario_list_card_requests():
+        try:
+            status_filter = request.args.get('status')
+            payload, status = auth_service.list_card_requests(status=status_filter)
+            return jsonify(payload), status
+        except Exception as e:
+            return jsonify({'error': f'No se pudieron cargar las solicitudes: {e}'}), 500
+
+    @auth_bp.route('/operario/card-requests/<int:request_id>/decision', methods=['POST'])
+    @operario_required()
+    def operario_decide_card_request(request_id):
+        try:
+            body = request.get_json(silent=True) or {}
+            payload, status = auth_service.decide_card_request(request.auth, request_id, body)
+            return jsonify(payload), status
+        except Exception as e:
+            return jsonify({'error': f'No se pudo resolver la solicitud: {e}'}), 500
 
     return auth_bp
