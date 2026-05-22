@@ -437,6 +437,8 @@ class AuthService:
         target = next((r for r in rows if r['id'] == request_id), None)
         if target:
             user_id = target['user_id']
+            if status == 'approved':
+                self._apply_card_request_profile(user_id, target['card_id'])
             title = 'Solicitud de tarjeta aprobada' if status == 'approved' else 'Solicitud de tarjeta denegada'
             body_text = reason or 'Revisa los detalles en tu listado de solicitudes.'
             self.repo.create_notification(
@@ -447,6 +449,84 @@ class AuthService:
             )
 
         return {'success': True}, 200
+
+    def _apply_card_request_profile(self, user_id: int, card_id: str):
+        profile_map = {
+            'mensual_ordinaria': {
+                'card_key': 'mensual_ordinaria',
+                'card_label': 'Mensual Ordinaria',
+                'recharge_mode': 'mensual',
+                'age_group': 'general',
+                'travel_count': None,
+            },
+            'mensual_estudiante': {
+                'card_key': 'mensual_estudiante',
+                'card_label': 'Mensual Estudiante',
+                'recharge_mode': 'mensual',
+                'age_group': 'estudiante',
+                'travel_count': None,
+            },
+            'bonobus_universidad_10': {
+                'card_key': 'bonobus_universidad',
+                'card_label': 'Bonobús Universidad',
+                'recharge_mode': 'bonobus',
+                'age_group': 'estudiante',
+                'travel_count': 10,
+            },
+            'bonobus_ordinario_10': {
+                'card_key': 'bonobus_ordinario',
+                'card_label': 'Bonobús Ordinario',
+                'recharge_mode': 'bonobus',
+                'age_group': 'general',
+                'travel_count': 10,
+            },
+            'estudiante_10': {
+                'card_key': 'tarjeta_estudiante_10',
+                'card_label': 'Tarjeta Estudiante 10',
+                'recharge_mode': 'mensual',
+                'age_group': 'estudiante',
+                'travel_count': None,
+            },
+            'mayores_65': {
+                'card_key': 'tarjeta_mayor_65',
+                'card_label': 'Tarjeta +65',
+                'recharge_mode': 'gratis',
+                'age_group': '65+',
+                'travel_count': None,
+            },
+            'discapacidad_65': {
+                'card_key': 'tarjeta_discapacidad_65',
+                'card_label': 'Tarjeta Discapacidad 65%',
+                'recharge_mode': 'gratis',
+                'age_group': 'discapacidad',
+                'travel_count': None,
+            },
+            'infantil': {
+                'card_key': 'tarjeta_infantil',
+                'card_label': 'Tarjeta Infantil',
+                'recharge_mode': 'gratis',
+                'age_group': 'infantil',
+                'travel_count': None,
+            },
+        }
+
+        mapped = profile_map.get(card_id)
+        if not mapped:
+            return
+
+        existing = self.repo.get_transport_profile(user_id) or {}
+        self.repo.upsert_transport_profile(
+            user_id=user_id,
+            card_key=mapped['card_key'],
+            card_label=mapped['card_label'],
+            recharge_mode=mapped['recharge_mode'],
+            age_group=mapped['age_group'],
+            travel_count=mapped['travel_count'],
+            payment_method=existing.get('payment_method') or 'Saldo',
+            saldo_balance=float(existing.get('saldo_balance') or 0),
+            has_saldo_card=bool(existing.get('has_saldo_card') or 0),
+            card_state=existing.get('card_state') or 'active',
+        )
 
     @staticmethod
     def _hydrate_card_requests(rows):

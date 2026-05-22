@@ -3,12 +3,13 @@
 ## Qué hace esta parte en la app
 El frontend de operario está pensado para dar control operativo diario dentro de la misma app, sin depender de una consola externa. El objetivo no es solo crear avisos, sino también reaccionar rápido ante incidencias reales de servicio: obras, desvíos, cortes de calle o paradas fuera de servicio.
 
-En la práctica, el panel de operario permite dos bloques de trabajo:
+En la práctica, el panel de operario permite tres bloques de trabajo:
 1. Publicar y gestionar avisos para que el usuario final vea información actualizada.
 2. Deshabilitar y re-habilitar paradas cuando su estado operativo cambia.
+3. Revisar solicitudes de tarjeta y aprobarlas o denegarlas segun la documentacion recibida.
 
 ## Cómo está organizado en el frontend
-La vista principal está en [V2/almeriarutav02/lib/features/operario/views/operario_panel_view.dart](../../V2/almeriarutav02/lib/features/operario/views/operario_panel_view.dart) y se divide por pestañas para separar claramente avisos y paradas.
+La vista principal está en [V2/almeriarutav02/lib/features/operario/views/operario_panel_view.dart](../../V2/almeriarutav02/lib/features/operario/views/operario_panel_view.dart) y se divide por pestañas para separar claramente avisos, paradas y solicitudes de tarjeta.
 
 La lógica de negocio y estado está en [V2/almeriarutav02/lib/features/operario/viewmodels/operario_viewmodel.dart](../../V2/almeriarutav02/lib/features/operario/viewmodels/operario_viewmodel.dart). Ahí se controla qué campos están rellenos, qué validaciones se cumplen, cuándo hay carga en curso y cómo se refrescan los listados tras cada operación.
 
@@ -33,6 +34,29 @@ Este diseño cubre el ciclo completo de incidencia:
 3. Visualizar histórico activo de paradas deshabilitadas.
 4. Restaurar parada cuando vuelve a estar disponible.
 
+## Revisión de solicitudes de tarjeta
+La pestaña de solicitudes de tarjeta permite al operario revisar las peticiones enviadas desde la pantalla de recarga. Cada solicitud muestra el tipo de tarjeta, estado, nombre completo, DNI/NIE, email, telefono, direccion y motivo de decision si ya existe.
+
+El flujo operativo es:
+1. El operario abre el panel y entra en la pestaña de solicitudes.
+2. Puede filtrar por todas, pendientes, aprobadas o denegadas.
+3. Abre una solicitud para revisar datos personales y documentos marcados por el usuario.
+4. Si todo es correcto, pulsa Aprobar.
+5. Si falta documentacion o los datos no encajan, pulsa Denegar y escribe el motivo.
+6. Tras aprobar o denegar, el listado se recarga automaticamente para reflejar el nuevo estado.
+
+La recarga manual tambien esta disponible mediante el boton de refrescar de la barra de filtro. Este boton vuelve a consultar al backend manteniendo el filtro activo, por lo que el operario puede comprobar si han entrado nuevas solicitudes sin salir de la pantalla.
+
+## Reglas del formulario de solicitud de tarjeta
+Antes de que una solicitud llegue al operario, el frontend guia al usuario con reglas de escritura en los campos principales:
+1. Nombre completo: debe incluir nombre y apellidos, solo letras, espacios, guiones o apostrofes.
+2. DNI/NIE: admite formatos como `12345678Z` o `X1234567L`.
+3. Email: debe tener formato de correo valido; se envia en minusculas.
+4. Telefono: requiere 9 digitos sin espacios ni prefijo.
+5. Direccion: debe ser suficientemente completa e incluir numero de calle o portal.
+
+Estas reglas reducen solicitudes incompletas y facilitan que el operario pueda validar o rechazar con un motivo claro.
+
 ## Feedback y experiencia de uso
 El frontend muestra mensajes de estado en dos niveles:
 1. Mensaje visible en la propia pantalla (éxito o error).
@@ -48,5 +72,7 @@ Las paradas deshabilitadas no se quedan solo en el panel: también se reflejan v
 
 ## Archivos clave
 - [V2/almeriarutav02/lib/features/operario/views/operario_panel_view.dart](../../V2/almeriarutav02/lib/features/operario/views/operario_panel_view.dart)
+- [V2/almeriarutav02/lib/features/operario/views/widgets/operario_card_requests_tab.dart](../../V2/almeriarutav02/lib/features/operario/views/widgets/operario_card_requests_tab.dart)
 - [V2/almeriarutav02/lib/features/operario/viewmodels/operario_viewmodel.dart](../../V2/almeriarutav02/lib/features/operario/viewmodels/operario_viewmodel.dart)
 - [V2/almeriarutav02/lib/shared/services/notices_api_service.dart](../../V2/almeriarutav02/lib/shared/services/notices_api_service.dart)
+- [V2/almeriarutav02/lib/features/recharge/requests/views/card_request_stepper_view.dart](../../V2/almeriarutav02/lib/features/recharge/requests/views/card_request_stepper_view.dart)

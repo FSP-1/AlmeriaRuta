@@ -22,6 +22,12 @@ class _CardRequestStepperViewState extends State<CardRequestStepperView> {
   final _formKey = GlobalKey<FormState>();
   int _currentStep = 0;
   bool _submitting = false;
+  static final RegExp _nameRegex = RegExp(r"^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ' -]+$");
+  static final RegExp _dniNieRegex = RegExp(
+    r'^([0-9]{8}[A-Za-z]|[XYZxyz][0-9]{7}[A-Za-z])$',
+  );
+  static final RegExp _emailRegex = RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$');
+  static final RegExp _phoneRegex = RegExp(r'^[0-9]{9}$');
 
   final _fullName = TextEditingController();
   final _dni = TextEditingController();
@@ -47,7 +53,9 @@ class _CardRequestStepperViewState extends State<CardRequestStepperView> {
     final token = widget.token;
     if (token == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Debes iniciar sesion para solicitar tarjetas.')),
+        const SnackBar(
+          content: Text('Debes iniciar sesion para solicitar tarjetas.'),
+        ),
       );
       return;
     }
@@ -69,8 +77,8 @@ class _CardRequestStepperViewState extends State<CardRequestStepperView> {
     final submission = CardRequestSubmission(
       cardId: widget.info.id,
       fullName: _fullName.text.trim(),
-      dni: _dni.text.trim(),
-      email: _email.text.trim(),
+      dni: _dni.text.trim().toUpperCase(),
+      email: _email.text.trim().toLowerCase(),
       phone: _phone.text.trim(),
       address: _address.text.trim(),
       extraNotes: _notes.text.trim(),
@@ -138,7 +146,9 @@ class _CardRequestStepperViewState extends State<CardRequestStepperView> {
                   backgroundColor: const Color(0xFFB42318),
                   foregroundColor: Colors.white,
                 ),
-                child: Text(_currentStep < 4 ? 'Continuar' : 'Enviar solicitud'),
+                child: Text(
+                  _currentStep < 4 ? 'Continuar' : 'Enviar solicitud',
+                ),
               ),
               const SizedBox(width: 12),
               TextButton(
@@ -156,7 +166,10 @@ class _CardRequestStepperViewState extends State<CardRequestStepperView> {
           ),
           Step(
             title: const Text('Requisitos'),
-            content: _buildList(info.requirements, emptyText: 'Sin requisitos especiales.'),
+            content: _buildList(
+              info.requirements,
+              emptyText: 'Sin requisitos especiales.',
+            ),
             isActive: _currentStep >= 1,
           ),
           Step(
@@ -166,7 +179,10 @@ class _CardRequestStepperViewState extends State<CardRequestStepperView> {
           ),
           Step(
             title: const Text('Donde presentar'),
-            content: _buildList(info.whereToSubmit, emptyText: 'Consulta oficina SURBUS.'),
+            content: _buildList(
+              info.whereToSubmit,
+              emptyText: 'Consulta oficina SURBUS.',
+            ),
             isActive: _currentStep >= 3,
           ),
           Step(
@@ -183,7 +199,10 @@ class _CardRequestStepperViewState extends State<CardRequestStepperView> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(info.shortDescription, style: const TextStyle(fontWeight: FontWeight.w600)),
+        Text(
+          info.shortDescription,
+          style: const TextStyle(fontWeight: FontWeight.w600),
+        ),
         const SizedBox(height: 8),
         Text('Precio: ${info.priceLabel}'),
         Text('Tramitacion: ${info.acquisition}'),
@@ -203,47 +222,71 @@ class _CardRequestStepperViewState extends State<CardRequestStepperView> {
         children: [
           TextFormField(
             controller: _fullName,
-            decoration: const InputDecoration(labelText: 'Nombre completo'),
-            validator: (v) => (v == null || v.trim().isEmpty) ? 'Obligatorio' : null,
+            decoration: const InputDecoration(
+              labelText: 'Nombre completo',
+              helperText: 'Escribe nombre y apellidos, solo letras y espacios.',
+            ),
+            textCapitalization: TextCapitalization.words,
+            validator: _validateFullName,
           ),
           TextFormField(
             controller: _dni,
-            decoration: const InputDecoration(labelText: 'DNI'),
-            validator: (v) => (v == null || v.trim().isEmpty) ? 'Obligatorio' : null,
+            decoration: const InputDecoration(
+              labelText: 'DNI/NIE',
+              helperText: 'Formato: 12345678Z o X1234567L.',
+            ),
+            textCapitalization: TextCapitalization.characters,
+            validator: _validateDniNie,
           ),
           TextFormField(
             controller: _email,
-            decoration: const InputDecoration(labelText: 'Email'),
+            decoration: const InputDecoration(
+              labelText: 'Email',
+              helperText: 'Usa un correo valido para recibir la respuesta.',
+            ),
             keyboardType: TextInputType.emailAddress,
-            validator: (v) => (v == null || v.trim().isEmpty) ? 'Obligatorio' : null,
+            validator: _validateEmail,
           ),
           TextFormField(
             controller: _phone,
-            decoration: const InputDecoration(labelText: 'Telefono'),
+            decoration: const InputDecoration(
+              labelText: 'Telefono',
+              helperText: 'Introduce 9 digitos sin espacios ni prefijo.',
+            ),
             keyboardType: TextInputType.phone,
-            validator: (v) => (v == null || v.trim().isEmpty) ? 'Obligatorio' : null,
+            validator: _validatePhone,
           ),
           TextFormField(
             controller: _address,
-            decoration: const InputDecoration(labelText: 'Direccion'),
-            validator: (v) => (v == null || v.trim().isEmpty) ? 'Obligatorio' : null,
+            decoration: const InputDecoration(
+              labelText: 'Direccion',
+              helperText: 'Incluye calle, numero, piso/puerta y municipio.',
+            ),
+            textCapitalization: TextCapitalization.sentences,
+            validator: _validateAddress,
           ),
           TextFormField(
             controller: _notes,
-            decoration: const InputDecoration(labelText: 'Notas adicionales (opcional)'),
+            decoration: const InputDecoration(
+              labelText: 'Notas adicionales (opcional)',
+            ),
             maxLines: 3,
           ),
           const SizedBox(height: 12),
           CheckboxListTile(
             value: _acceptConditions,
-            onChanged: (value) => setState(() => _acceptConditions = value ?? false),
-            title: const Text('Acepto las condiciones de uso y normativa vigente'),
+            onChanged: (value) =>
+                setState(() => _acceptConditions = value ?? false),
+            title: const Text(
+              'Acepto las condiciones de uso y normativa vigente',
+            ),
             controlAffinity: ListTileControlAffinity.leading,
           ),
-          if (_submitting) const Padding(
-            padding: EdgeInsets.only(top: 12),
-            child: CircularProgressIndicator(),
-          ),
+          if (_submitting)
+            const Padding(
+              padding: EdgeInsets.only(top: 12),
+              child: CircularProgressIndicator(),
+            ),
         ],
       ),
     );
@@ -251,7 +294,10 @@ class _CardRequestStepperViewState extends State<CardRequestStepperView> {
 
   Widget _buildDocuments(CardRequestInfo info) {
     if (info.documents.isEmpty) {
-      return const Text('Sin documentos extra.', style: TextStyle(color: Colors.grey));
+      return const Text(
+        'Sin documentos extra.',
+        style: TextStyle(color: Colors.grey),
+      );
     }
 
     return Column(
@@ -275,6 +321,48 @@ class _CardRequestStepperViewState extends State<CardRequestStepperView> {
         ),
       ],
     );
+  }
+
+  String? _validateFullName(String? value) {
+    final text = value?.trim() ?? '';
+    if (text.isEmpty) return 'Obligatorio';
+    if (text.length < 5) return 'Escribe nombre y apellidos completos';
+    if (!text.contains(' ')) return 'Incluye al menos un apellido';
+    if (!_nameRegex.hasMatch(text)) {
+      return 'Usa solo letras, espacios, guiones o apostrofes';
+    }
+    return null;
+  }
+
+  String? _validateDniNie(String? value) {
+    final text = value?.trim().toUpperCase() ?? '';
+    if (text.isEmpty) return 'Obligatorio';
+    if (!_dniNieRegex.hasMatch(text)) return 'Introduce un DNI/NIE valido';
+    return null;
+  }
+
+  String? _validateEmail(String? value) {
+    final text = value?.trim().toLowerCase() ?? '';
+    if (text.isEmpty) return 'Obligatorio';
+    if (!_emailRegex.hasMatch(text)) return 'Introduce un email valido';
+    return null;
+  }
+
+  String? _validatePhone(String? value) {
+    final text = value?.trim() ?? '';
+    if (text.isEmpty) return 'Obligatorio';
+    if (!_phoneRegex.hasMatch(text)) return 'Introduce 9 digitos';
+    return null;
+  }
+
+  String? _validateAddress(String? value) {
+    final text = value?.trim() ?? '';
+    if (text.isEmpty) return 'Obligatorio';
+    if (text.length < 10) return 'Incluye una direccion mas completa';
+    if (!RegExp(r'\d').hasMatch(text)) {
+      return 'Incluye numero de calle o portal';
+    }
+    return null;
   }
 
   Widget _buildList(List<String> items, {required String emptyText}) {
