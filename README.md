@@ -1,6 +1,6 @@
 # AlmeriaRuta
 
-AlmeriaRuta es un proyecto de movilidad urbana para Almería compuesto por una aplicación móvil Flutter y un backend Flask. La app reúne mapa interactivo, líneas de autobús, turismo, tickets, recargas, validación y notificaciones locales; el backend aporta los datos de líneas, paradas y autenticación de usuarios.
+AlmeriaRuta es un proyecto de movilidad urbana para Almería compuesto por una aplicación móvil Flutter y un backend Flask. La app reúne mapa interactivo, líneas de autobús, turismo, tickets, recargas, validación, notificaciones y panel de operario; el backend aporta los datos de líneas, paradas, autenticación de usuarios y gestión operativa.
 
 ## Resumen del proyecto
 
@@ -9,7 +9,7 @@ El repositorio está organizado en dos capas principales:
 - `V2/almeriarutav02/`: cliente móvil Flutter.
 - `backend/`: APIs Flask para transporte y autenticación.
 
-La experiencia de usuario gira alrededor de un mapa principal con filtros de paradas, una capa turística, compra y validación de tickets, gestión de tarjeta de transporte y un sistema de notificaciones sin Firebase.
+La experiencia de usuario gira alrededor de un mapa principal con filtros de paradas, una capa turística, compra y validación de tickets, gestión de tarjeta de transporte, avisos operativos y un sistema de notificaciones sin Firebase.
 
 ## Qué incluye
 
@@ -49,6 +49,14 @@ La experiencia de usuario gira alrededor de un mapa principal con filtros de par
 - Registro e inicio de sesión contra backend propio.
 - Gestión de sesión, perfil y cierre de sesión.
 - Flujo de usuario registrado y no registrado con permisos distintos.
+
+### Operario
+
+- Panel interno para usuarios con rol operario.
+- Creación y desactivación de avisos generales, turísticos, de línea y de parada.
+- Deshabilitación y reactivación de paradas con motivo operativo.
+- Revisión de solicitudes de tarjeta, con aprobación o denegación motivada.
+- Sincronización de avisos con el banner del mapa y de paradas deshabilitadas con los marcadores.
 
 ### Servicios compartidos
 
@@ -112,17 +120,43 @@ Endpoints principales:
 
 - Archivo: [backend/almeria_auth_api.py](backend/almeria_auth_api.py)
 - Puerto por defecto: `5001`
-- Función: login, registro y sesión de usuarios con persistencia en MySQL.
+- Función: login, registro, sesión de usuarios, tickets, notificaciones, perfil de transporte y operaciones de operario con persistencia en MySQL.
 - Usa `auth_mvc/` como capa de controlador, servicio y repositorio.
+
+Endpoints principales:
+
+- `POST /api/auth/login`
+- `POST /api/auth/register`
+- `GET /api/auth/me`
+- `GET /api/operario/notices`
+- `POST /api/operario/notices`
+- `POST /api/operario/notices/<notice_id>/deactivate`
+- `GET /api/operario/stops/disabled`
+- `POST /api/operario/stops/<stop_id>/disable`
+- `POST /api/operario/stops/<stop_id>/enable`
+- `GET /api/operario/card-requests`
+- `POST /api/operario/card-requests/<request_id>/decision`
 
 ## Configuración de red
 
-La app Flutter usa estas URLs base por defecto:
+La app Flutter apunta por defecto a una máquina en la nube de Clouding. La configuración está centralizada en [V2/almeriarutav02/lib/core/constants/app_constants.dart](V2/almeriarutav02/lib/core/constants/app_constants.dart):
 
-- API de buses: `http://10.0.2.2:5000`
-- API de autenticación: `http://10.0.2.2:5001`
+```dart
+class AppConstants {
+  static const String appName = 'AlmeriaRuta V2';
+  static const String apiBaseUrl =
+      'https://c65277d8-ca60-4115-a023-14bb96542132.clouding.host';
+  static const String authApiBaseUrl =
+      'https://c65277d8-ca60-4115-a023-14bb96542132.clouding.host/api';
+}
+```
 
-Estas direcciones funcionan desde el emulador Android. En dispositivo físico debes apuntar a la IP local de tu equipo.
+Uso de cada URL:
+
+- `apiBaseUrl`: API pública de buses, líneas, paradas y llegadas.
+- `authApiBaseUrl`: API bajo `/api` para autenticación, perfil, tickets, notificaciones, recargas y operario.
+
+Para desarrollo local se pueden cambiar temporalmente esas constantes a `http://10.0.2.2:5000` y `http://10.0.2.2:5001` si se ejecutan los backends en la máquina del desarrollador y se prueba desde emulador Android. En dispositivo físico se usa la  URL pública de Clouding con su ip.
 
 ## Requisitos
 
@@ -191,6 +225,10 @@ Documentos técnicos recomendados:
 - [Contrato del backend](documentacion/arquitectura-api/API_CONTRATO_BACKEND.md)
 - [OSRM, geocodificación y dependencias](documentacion/arquitectura-api/API_EXTRA_OSRM_GEOCODIFICACION_Y_DEPENDENCIAS.md)
 - [Algoritmo de ruta turística](documentacion/mapa-turismo/ALGORITMO_RUTA_TURISTICA.md)
+
+## Licencia
+
+Este proyecto puede forquearse, usarse y modificarse para ampliarlo o mejorarlo, siempre que se mencione a **Franco Sergio Pereyra** como autor principal del proyecto original. Consulta [LICENSE](LICENSE) para ver las condiciones completas.
 
 ## Notas de desarrollo
 
