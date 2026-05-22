@@ -154,27 +154,49 @@ Los ViewModels de líneas implementan caching y deduplicación de llamadas al ba
 
 ### Descripción
 
-- Gestión de tarjetas virtuales y recarga/renovación de títulos.
+- Módulo para configurar, solicitar y recargar tarjetas de transporte desde la app, incluyendo tarjeta saldo virtual, bonobús, abonos mensuales y tarjetas bonificadas.
 
 ### Descripción ampliada
 
-- Gestiona instrumentos de pago/títulos (tarjeta virtual, perfiles de recarga). Las operaciones críticas (recarga, expiración) deben exponer confirmaciones claras y conservar un registro. Integrar notificaciones de saldo bajo y caducidad mejora la experiencia.
+- El módulo de recargas centraliza la relación del usuario con sus tarjetas de transporte. Desde esta pantalla se puede elegir una modalidad de tarjeta, consultar su estado, crear una tarjeta saldo virtual, solicitar tarjetas específicas y realizar recargas o renovaciones según las reglas de cada título.
+
+La primera entrada al módulo guía al usuario para seleccionar o solicitar una tarjeta. Si no tiene ninguna configurada, la app muestra el flujo de elección de tarjeta y permite abrir la solicitud correspondiente. Esta solicitud recoge datos personales y documentación marcada por el usuario, aplicando reglas de escritura antes del envío: nombre completo con apellidos, DNI/NIE válido, email válido, teléfono de 9 dígitos y dirección completa con número de calle o portal. Con esto se reducen errores antes de que la petición llegue al operario.
+
+Para tarjetas de saldo, la recarga es libre: el usuario introduce el importe, elige método de pago y confirma. Para abonos mensuales o tarjetas por modalidad, la app calcula el importe de renovación según la tarifa asociada y actualiza la caducidad cuando corresponde. Las tarjetas con fecha próxima de expiración muestran aviso para que el usuario pueda renovar antes de perder disponibilidad.
+
+El `RechargeViewModel` mantiene la selección de tarjeta, métodos de pago, saldo, caducidad, historial de recargas y perfil de transporte del usuario. Cuando el usuario está autenticado, el perfil se sincroniza con backend para conservar la configuración entre sesiones. La vista solo presenta acciones y estados; las reglas de recarga, importes y persistencia se concentran en el ViewModel y en los servicios del módulo.
+
+Las solicitudes de tarjeta se integran con el panel de operario. El usuario envía una petición desde recargas y el operario la revisa posteriormente, pudiendo aprobarla o denegarla con motivo. Tras cada decisión, el listado operativo se recarga para reflejar el nuevo estado.
 
 ### Subfuncionalidades clave
 
-- Listado de tarjetas y estado.
-- Proceso de recarga y comprobante.
-- Notificaciones de caducidad y saldo bajo.
+- Selección de tarjeta activa entre saldo virtual, bonobús, mensual ordinaria, mensual estudiante, estudiante 10, mayores de 65, discapacidad e infantil.
+- Solicitud de nuevas tarjetas con requisitos, documentación, condiciones y validaciones de datos personales.
+- Recarga libre de tarjeta saldo virtual con método de pago.
+- Renovación de abonos o tarjetas con importe calculado por tarifa.
+- Avisos de tarjeta caducada o próxima a caducar.
+- Persistencia del perfil de transporte, tarjeta elegida, saldo y método de pago.
+- Historial local de recargas realizadas.
+- Integración con operario para revisar solicitudes pendientes, aprobadas o denegadas.
 
 ### Responsabilidad de componentes
 
-- Recharge View: UI de recarga.
-- Recharge ViewModel / Service: reglas de recarga y persistencia.
+- Recharge View: presenta tarjetas, acciones de recarga, solicitud de tarjeta, avisos de caducidad y diálogos de confirmación.
+- Recharge ViewModel: gestiona selección de tarjeta, cálculo de importes, métodos de pago, caducidad, historial y sincronización del perfil.
+- RechargeApiService: consulta y guarda el perfil de transporte del usuario autenticado.
+- CardRequestListView / CardRequestStepperView: muestran catálogo de tarjetas solicitables y formulario paso a paso.
+- CardRequestService: envía solicitudes del usuario y permite al operario listarlas o resolverlas.
+- Panel de operario: revisa solicitudes de tarjeta y actualiza su estado.
 
 ### Capturas recomendadas
 
-- Listado de tarjetas.
-- Diálogo de recarga con comprobante.
+- Pantalla de recarga con tarjeta saldo virtual.
+- Menú de selección de tipo de tarjeta.
+- Aviso de caducidad de una tarjeta mensual.
+- Diálogo de recarga o renovación con método de pago.
+- Listado de tarjetas solicitables.
+- Formulario de solicitud de tarjeta con reglas de escritura visibles.
+- Pestaña de operario revisando solicitudes de tarjeta.
 
 ## 5.7 Búsqueda y favoritos
 

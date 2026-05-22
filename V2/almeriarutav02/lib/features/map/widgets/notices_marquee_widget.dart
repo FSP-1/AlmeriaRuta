@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../viewmodels/notices_viewmodel.dart';
@@ -7,42 +9,20 @@ import '../../../shared/services/notices_api_service.dart';
 class NoticesMarqueeWidget extends StatefulWidget {
   final VoidCallback? onTap;
 
-  const NoticesMarqueeWidget({
-    super.key,
-    this.onTap,
-  });
+  const NoticesMarqueeWidget({super.key, this.onTap});
 
   @override
   State<NoticesMarqueeWidget> createState() => _NoticesMarqueeWidgetState();
 }
 
-class _NoticesMarqueeWidgetState extends State<NoticesMarqueeWidget> with SingleTickerProviderStateMixin {
-  late AnimationController _animationController;
-
-  @override
-  void initState() {
-    super.initState();
-    _animationController = AnimationController(
-      duration: const Duration(seconds: 20),
-      vsync: this,
-    );
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    final noticesVM = context.watch<NoticesViewModel>();
-
-    if (noticesVM.hasNotices && !_animationController.isAnimating) {
-      _animationController.repeat();
-    } else if (!noticesVM.hasNotices && _animationController.isAnimating) {
-      _animationController.stop();
-    }
-  }
+class _NoticesMarqueeWidgetState extends State<NoticesMarqueeWidget> {
+  Timer? _rotationTimer;
+  int _currentIndex = 0;
+  int _lastItemCount = 0;
 
   @override
   void dispose() {
-    _animationController.dispose();
+    _rotationTimer?.cancel();
     super.dispose();
   }
 
@@ -51,57 +31,69 @@ class _NoticesMarqueeWidgetState extends State<NoticesMarqueeWidget> with Single
     return Consumer<NoticesViewModel>(
       builder: (context, noticesVM, _) {
         if (!noticesVM.hasNotices) {
+          _stopRotation();
           return const SizedBox.shrink();
         }
 
-        final noticesList = noticesVM.notices;
-        final stopsList = noticesVM.disabledStops;
+        final items = _buildBannerItems(
+          noticesVM.notices,
+          noticesVM.disabledStops,
+        );
+        if (items.isEmpty) {
+          _stopRotation();
+          return const SizedBox.shrink();
+        }
+        _syncRotation(items.length);
+        final item = items[_currentIndex];
 
         return GestureDetector(
           onTap: widget.onTap,
-          child: Container(
-            height: 50,
-            decoration: BoxDecoration(
-              color: Colors.amber.shade50,
-              border: Border(
-                bottom: BorderSide(color: Colors.amber.shade300, width: 2),
+          child: SizedBox(
+            width: double.infinity,
+            child: Container(
+              height: 50,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                color: item.color.withValues(alpha: 0.08),
+                border: Border(
+                  bottom: BorderSide(
+                    color: item.color.withValues(alpha: 0.45),
+                    width: 2,
+                  ),
+                ),
               ),
-            ),
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              physics: const NeverScrollableScrollPhysics(),
-              child: AnimatedBuilder(
-                animation: _animationController,
-                builder: (context, child) {
-                  final offset = _animationController.value * 500;
-                  return Transform.translate(
-                    offset: Offset(-offset, 0),
-                    child: Row(
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16.0,
-                            vertical: 8.0,
-                          ),
-                          child: _buildMarqueeContent(
-                            noticesList,
-                            stopsList,
-                          ),
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 260),
+                child: Row(
+                  key: ValueKey('${item.id}-$_currentIndex'),
+                  children: [
+                    Icon(item.icon, size: 18, color: item.color),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        item.text,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: item.color,
                         ),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16.0,
-                            vertical: 8.0,
-                          ),
-                          child: _buildMarqueeContent(
-                            noticesList,
-                            stopsList,
-                          ),
-                        ),
-                      ],
+                      ),
                     ),
-                  );
-                },
+                    if (items.length > 1) ...[
+                      const SizedBox(width: 10),
+                      Text(
+                        '${_currentIndex + 1}/${items.length}',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: item.color.withValues(alpha: 0.72),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
               ),
             ),
           ),
@@ -110,11 +102,42 @@ class _NoticesMarqueeWidgetState extends State<NoticesMarqueeWidget> with Single
     );
   }
 
-  Widget _buildMarqueeContent(
+  void _syncRotation(int itemCount) {
+    if (_lastItemCount != itemCount) {
+      _lastItemCount = itemCount;
+      if (_currentIndex >= itemCount) {
+        _currentIndex = 0;
+      }
+    }
+
+    if (itemCount <= 1) {
+      _stopRotation(resetIndex: true);
+      return;
+    }
+
+    if (_rotationTimer != null) return;
+
+    _rotationTimer = Timer.periodic(const Duration(seconds: 4), (_) {
+      if (!mounted) return;
+      setState(() {
+        _currentIndex = (_currentIndex + 1) % _lastItemCount;
+      });
+    });
+  }
+
+  void _stopRotation({bool resetIndex = false}) {
+    _rotationTimer?.cancel();
+    _rotationTimer = null;
+    if (resetIndex) {
+      _currentIndex = 0;
+    }
+  }
+
+  List<_NoticeBannerItem> _buildBannerItems(
     List<NoticeModel> notices,
     List<DisabledStopModel> stops,
   ) {
-    final textItems = <Widget>[];
+    final items = <_NoticeBannerItem>[];
 
     final orderedNotices = [...notices]
       ..sort((a, b) {
@@ -125,54 +148,30 @@ class _NoticesMarqueeWidgetState extends State<NoticesMarqueeWidget> with Single
 
     for (var notice in orderedNotices) {
       final color = _typeColor(notice.type);
-      textItems.add(
-        Row(
-          children: [
-            Icon(
-              _typeIcon(notice.type),
-              size: 14,
-              color: color,
-            ),
-            const SizedBox(width: 4),
-            Text(
-              notice.title.isEmpty ? notice.message : notice.title,
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: color,
-              ),
-            ),
-            const SizedBox(width: 16),
-          ],
+      final title = notice.title.trim();
+      final message = notice.message.trim();
+      items.add(
+        _NoticeBannerItem(
+          id: 'notice-${notice.id}',
+          icon: _typeIcon(notice.type),
+          color: color,
+          text: title.isEmpty ? message : '$title: $message',
         ),
       );
     }
 
     for (var stop in stops) {
-      textItems.add(
-        Row(
-          children: [
-            Icon(
-              Icons.block,
-              size: 14,
-              color: const Color(0xFFF59E0B),
-            ),
-            const SizedBox(width: 4),
-            Text(
-              'Parada ${stop.stopName} deshabilitada',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: const Color(0xFFF59E0B),
-              ),
-            ),
-            const SizedBox(width: 16),
-          ],
+      items.add(
+        _NoticeBannerItem(
+          id: 'stop-${stop.stopId}',
+          icon: Icons.block,
+          color: const Color(0xFFF59E0B),
+          text: 'Parada ${stop.stopName} deshabilitada: ${stop.reason}',
         ),
       );
     }
 
-    return Row(children: textItems);
+    return items;
   }
 
   int _typeOrder(String type) {
@@ -221,14 +220,25 @@ class _NoticesMarqueeWidgetState extends State<NoticesMarqueeWidget> with Single
   }
 }
 
+class _NoticeBannerItem {
+  final String id;
+  final IconData icon;
+  final Color color;
+  final String text;
+
+  const _NoticeBannerItem({
+    required this.id,
+    required this.icon,
+    required this.color,
+    required this.text,
+  });
+}
+
 // Widget para mostrar un BottomSheet con el resumen de avisos
 class NoticesSummarySheet extends StatelessWidget {
   final NoticesViewModel noticesVM;
 
-  const NoticesSummarySheet({
-    super.key,
-    required this.noticesVM,
-  });
+  const NoticesSummarySheet({super.key, required this.noticesVM});
 
   @override
   Widget build(BuildContext context) {
@@ -255,7 +265,10 @@ class NoticesSummarySheet extends StatelessWidget {
                     children: [
                       const Text(
                         'Avisos y Cambios',
-                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       IconButton(
                         icon: const Icon(Icons.close),
@@ -272,7 +285,10 @@ class NoticesSummarySheet extends StatelessWidget {
                       children: [
                         Row(
                           children: [
-                            Icon(Icons.info_outline, color: Colors.blue.shade600),
+                            Icon(
+                              Icons.info_outline,
+                              color: Colors.blue.shade600,
+                            ),
                             const SizedBox(width: 8),
                             const Text(
                               'Avisos',
@@ -293,14 +309,20 @@ class NoticesSummarySheet extends StatelessWidget {
                               decoration: BoxDecoration(
                                 color: color.withValues(alpha: 0.08),
                                 borderRadius: BorderRadius.circular(8),
-                                border: Border.all(color: color.withValues(alpha: 0.35)),
+                                border: Border.all(
+                                  color: color.withValues(alpha: 0.35),
+                                ),
                               ),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Row(
                                     children: [
-                                      Icon(_typeIcon(notice.type), size: 18, color: color),
+                                      Icon(
+                                        _typeIcon(notice.type),
+                                        size: 18,
+                                        color: color,
+                                      ),
                                       const SizedBox(width: 6),
                                       Expanded(
                                         child: Text(
@@ -405,7 +427,8 @@ class NoticesSummarySheet extends StatelessWidget {
                     ),
                   ),
                 ],
-                if (noticesVM.notices.isEmpty && noticesVM.disabledStops.isEmpty)
+                if (noticesVM.notices.isEmpty &&
+                    noticesVM.disabledStops.isEmpty)
                   Padding(
                     padding: const EdgeInsets.all(32.0),
                     child: Center(
