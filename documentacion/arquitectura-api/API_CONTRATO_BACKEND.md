@@ -2,6 +2,9 @@
 
 ## Endpoints
 
+
+## API de Bus
+
 ### 1. `GET /lines`
 
 **Propósito**: Obtener todas las líneas de autobús con paradas
@@ -120,15 +123,115 @@
 
 ---
 
-### 5. `GET /stops/<stopId>` (Deprecado)
+### 5. `GET /stops/<stopId>` 
 
-**Propósito**: ~~Obtener detalles para una parada específica~~
-
-**Estado**: Endpoint legado. El planeador ya no lo usa. `MapViewModel` carga todas las paradas vía `/lines`.
+**Propósito**: Obtener detalles para una parada específica
 
 ---
 
-## Variantes de Ruta JSON (No Activo Aún)
+## API de Autenticacion
+
+### 6. `POST /auth/register`
+
+**Propósito**: Registrar un usuario nuevo con email, username, password y PIN de recuperacion.
+
+**Usado por**: pantalla de registro y flujo de alta de usuario
+
+### 7. `POST /auth/login`
+
+**Propósito**: Iniciar sesion y devolver token JWT-like firmado junto con los datos de usuario.
+
+**Usado por**: `AuthViewModel`
+
+### 8. `POST /auth/guest`
+
+**Propósito**: Crear una sesion de invitado.
+
+**Usado por**: acceso rapido sin registro
+
+### 9. `GET /auth/me`
+
+**Propósito**: Obtener el perfil autenticado.
+
+### 10. `PATCH /auth/me`
+
+**Propósito**: Actualizar email y username del perfil.
+
+### 11. `POST /auth/me/password`
+
+**Propósito**: Cambiar la contraseña del usuario autenticado.
+
+### 12. `POST /auth/recover/password`
+
+**Propósito**: Recuperar la cuenta con email y PIN de recuperacion.
+
+### 13. `GET /auth/notifications`
+
+**Propósito**: Listar notificaciones del usuario, con filtro opcional `unreadOnly`.
+
+### 14. `POST /auth/notifications/<notification_id>/read`
+
+**Propósito**: Marcar una notificacion como leida.
+
+### 15. `DELETE /auth/notifications/<notification_id>`
+
+**Propósito**: Eliminar una notificacion.
+
+### 16. `GET /auth/me/transport-profile`
+
+**Propósito**: Obtener el perfil de tarjeta/transporte.
+
+### 17. `PUT /auth/me/transport-profile`
+
+**Propósito**: Actualizar el perfil de tarjeta/transporte.
+
+### 18. `POST /auth/me/card-requests`
+
+**Propósito**: Crear una solicitud de tarjeta.
+
+### 19. `GET /auth/me/card-requests`
+
+**Propósito**: Listar las solicitudes propias del usuario.
+
+### 20. `GET /operario/notices`
+
+**Propósito**: Listar avisos operativos visibles para el panel de operario.
+
+### 21. `POST /operario/notices`
+
+**Propósito**: Crear un aviso operario.
+
+### 22. `POST /operario/notices/<notice_id>/deactivate`
+
+**Propósito**: Desactivar un aviso.
+
+### 23. `GET /operario/stops/disabled`
+
+**Propósito**: Listar paradas deshabilitadas.
+
+### 24. `POST /operario/stops/<stop_id>/disable`
+
+**Propósito**: Deshabilitar una parada.
+
+### 25. `POST /operario/stops/<stop_id>/enable`
+
+**Propósito**: Habilitar una parada.
+
+### 26. `GET /operario/card-requests`
+
+**Propósito**: Listar solicitudes de tarjeta para operario.
+
+### 27. `POST /operario/card-requests/<request_id>/decision`
+
+**Propósito**: Aprobar o denegar una solicitud de tarjeta.
+
+**Usado por**: `AuthViewModel`, `NoticesViewModel`, `OperarioViewModel` y las pantallas asociadas
+
+**Implementacion**: [backend/almeria_auth_api.py](../../backend/almeria_auth_api.py), que arranca la API Flask en `0.0.0.0:5001`.
+
+---
+
+## Variantes de Ruta JSON 
 
 ### Archivo: `todas_las_lineas.json`
 
@@ -173,8 +276,6 @@
 - Convertido a: `Map<String, List<List<String>>>` (lineId → lista de secuencias de ruta)
 - Usado por: `TouristBusRoutePlanner.selectLineSequence()`
 - Fallback: Si no disponible, planeador usa `line.stops` de endpoint `/lines`
-
-**Estado**: ⏳ Pendiente integración segura (feature-flag o capa de validación)
 
 ---
 
@@ -281,7 +382,10 @@ Capturador en `BusApiService` → muestra snackbar en UI → usuario reintentar 
 
 ## Implementación Backend
 
-**Archivo**: `backend/almeria_busmaps_api.py`
+**Archivos**:
+
+- [backend/almeria_busmaps_api.py](../../backend/almeria_busmaps_api.py): API de rutas, lineas y llegadas, expuesta en `0.0.0.0:5000`.
+- [backend/almeria_auth_api.py](../../backend/almeria_auth_api.py): API de autenticacion, perfil, notificaciones y operario, expuesta en `0.0.0.0:5001`.
 
 **Clases Clave**:
 
@@ -299,6 +403,9 @@ Capturador en `BusApiService` → muestra snackbar en UI → usuario reintentar 
 ```bash
 python almeria_busmaps_api.py
 # Corre en http://0.0.0.0:5000
+
+python almeria_auth_api.py
+# Corre en http://0.0.0.0:5001
 ```
 
 ---
