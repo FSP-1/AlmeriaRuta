@@ -15,6 +15,25 @@ La lógica de negocio y estado está en [V2/almeriarutav02/lib/features/operario
 
 La comunicación HTTP se centraliza en [V2/almeriarutav02/lib/shared/services/notices_api_service.dart](../../V2/almeriarutav02/lib/shared/services/notices_api_service.dart), para que la vista y el viewmodel no tengan dependencias directas con el detalle de endpoints.
 
+## MVVM de Operario
+Este bloque resume el reparto real de responsabilidades dentro del modulo de operario. La idea es que la vista solo pinte y capture acciones, el viewmodel concentre estado y reglas, y los servicios y modelos se encarguen de la lectura y escritura de datos.
+
+### View
+- [V2/almeriarutav02/lib/features/operario/views/operario_panel_view.dart](../../V2/almeriarutav02/lib/features/operario/views/operario_panel_view.dart): contenedor principal del panel. Crea las pestañas y carga el viewmodel al entrar.
+- [V2/almeriarutav02/lib/features/operario/views/widgets/operario_notice_tab.dart](../../V2/almeriarutav02/lib/features/operario/views/widgets/operario_notice_tab.dart): pantalla para crear avisos y revisar el listado ordenado por prioridad de tipo.
+- [V2/almeriarutav02/lib/features/operario/views/widgets/operario_stops_tab.dart](../../V2/almeriarutav02/lib/features/operario/views/widgets/operario_stops_tab.dart): pestaña para buscar paradas, deshabilitarlas, habilitarlas y mostrar las que siguen bloqueadas.
+- [V2/almeriarutav02/lib/features/operario/views/widgets/operario_card_requests_tab.dart](../../V2/almeriarutav02/lib/features/operario/views/widgets/operario_card_requests_tab.dart): vista para revisar solicitudes de tarjeta, filtrarlas y aprobarlas o denegarlas.
+- [V2/almeriarutav02/lib/features/operario/views/widgets/operario_notice_card.dart](../../V2/almeriarutav02/lib/features/operario/views/widgets/operario_notice_card.dart): tarjeta reutilizable para pintar cada aviso con su accion de desactivacion.
+- [V2/almeriarutav02/lib/features/operario/views/widgets/operario_view_utils.dart](../../V2/almeriarutav02/lib/features/operario/views/widgets/operario_view_utils.dart): utilidades de presentacion como iconos, colores y formato de fecha.
+
+### ViewModel
+- [V2/almeriarutav02/lib/features/operario/viewmodels/operario_viewmodel.dart](../../V2/almeriarutav02/lib/features/operario/viewmodels/operario_viewmodel.dart): guarda el estado del panel, aplica validaciones, prepara los datos para cada tipo de aviso, gestiona paradas deshabilitadas y ejecuta las operaciones de crear, deshabilitar, habilitar y desactivar avisos.
+
+### Modelo y servicios
+- [V2/almeriarutav02/lib/shared/services/notices_api_service.dart](../../V2/almeriarutav02/lib/shared/services/notices_api_service.dart): cliente HTTP del modulo. Encapsula las llamadas al backend para avisos y paradas, y define el modelo de parada deshabilitada que consume el panel.
+- [V2/almeriarutav02/lib/shared/services/line_models.dart](../../V2/almeriarutav02/lib/shared/services/line_models.dart): modelos de dominio que usa operario para lineas, paradas y avisos.
+- [V2/almeriarutav02/lib/shared/services/bus_api_service.dart](../../V2/almeriarutav02/lib/shared/services/bus_api_service.dart): obtiene lineas y paradas para que el operario pueda seleccionar la linea afectada o buscar una parada concreta.
+
 ## Qué flujo sigue un operario dentro de la app
 Cuando entra un usuario con rol operario, abre el panel y puede crear avisos de cuatro tipos: GENERAL, TURISMO, LINEA y PARADA. Esta clasificación se usa para que la información se muestre con prioridad y contexto: primero mensajes globales, luego turismo, y por último avisos de afectación puntual por línea o parada.
 

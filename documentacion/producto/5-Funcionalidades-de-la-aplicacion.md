@@ -302,22 +302,3 @@ Incluye buenas prácticas: encapsular endpoints en servicios testables, centrali
 ### Capturas recomendadas
 
 - Diagrama simplificado del flujo app → viewmodel → servicio → backend.
-
-## 5.11 Plantilla de capturas y consejos de inclusión
-
-Para cada funcionalidad y subfuncionalidad incluya:
-
-- Nombre de la funcionalidad y la subfuncionalidad.
-- Captura (ruta/nombre de archivo) y breve comentario explicativo.
-- Contexto: dispositivo y resolución usada para la captura.
-
-Ejemplo de entrada:
-
-- Funcionalidad: Mapa interactivo
-  - Subfuncionalidad: Vista de filtros
-    - Captura: documentacion/screenshots/map_filters_panel.png
-    - Comentario: muestra filtros por distancia y línea aplicada; útil para validar que el filtrado coincide con las paradas mostradas.
-
----
-
-He ampliado la descripción de cada bloque para que el documento sea más útil como referencia de producto y guía para desarrolladores. Actualizo la lista TODO a continuación.
