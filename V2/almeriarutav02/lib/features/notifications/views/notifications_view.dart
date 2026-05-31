@@ -66,6 +66,8 @@ class _NotificationsViewBody extends StatelessWidget {
                           notifications: vm.remoteNotifications,
                           onOpenNotification: (notification) =>
                               _openNotification(context, vm, notification),
+                          onDeleteNotification: (notification) =>
+                              vm.deleteRemoteNotification(notification.id),
                         ),
 
                         const SizedBox(height: 16),

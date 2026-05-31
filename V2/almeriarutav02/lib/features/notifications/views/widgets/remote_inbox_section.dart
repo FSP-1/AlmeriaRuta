@@ -6,11 +6,13 @@ import '../../models/user_notification.dart';
 class RemoteInboxSection extends StatelessWidget {
   final List<UserNotification> notifications;
   final Future<void> Function(UserNotification notification) onOpenNotification;
+  final Future<void> Function(UserNotification notification) onDeleteNotification;
 
   const RemoteInboxSection({
     super.key,
     required this.notifications,
     required this.onOpenNotification,
+    required this.onDeleteNotification,
   });
 
   @override
@@ -41,12 +43,21 @@ class RemoteInboxSection extends StatelessWidget {
                   '${notification.body}\n${_formatRemoteDate(notification.createdAt)}',
                 ),
                 isThreeLine: true,
-                trailing: notification.isRead
-                    ? const SizedBox.shrink()
-                    : TextButton(
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (!notification.isRead)
+                      TextButton(
                         onPressed: () => onOpenNotification(notification),
                         child: const Text('Abrir'),
                       ),
+                    IconButton(
+                      tooltip: 'Eliminar notificación',
+                      onPressed: () => onDeleteNotification(notification),
+                      icon: const Icon(Icons.delete_outline),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
