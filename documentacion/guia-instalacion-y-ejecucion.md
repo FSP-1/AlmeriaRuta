@@ -73,6 +73,44 @@ Necesitas:
 
 Después de tener MySQL funcionando, arranca la API de autenticación para que cree las tablas y empiece a atender peticiones.
 
+Si quieres dejarlo automatizado en un servidor Linux, este es el bloque de instalación y configuración que recoge la idea del TFG:
+
+```bash
+#!/bin/bash
+set -x
+#----------------------------------------------------
+
+#----------------------------------------------------
+# Variables de configuración 
+#----------------------------------------------------
+
+MYSQL_ROOT_PASSWORD=root
+
+#----------------------------------------------------
+
+#----------------------------------------------------
+# Instalacíon de la pila LAMP
+#----------------------------------------------------
+# Actualizamos el sistema
+apt update
+apt upgrade -y
+
+
+# Instalamos MySQL Server
+apt install mysql-server -y
+
+# Cambiamos la contraseña del usuario root
+ mysql <<< "ALTER USER root@'localhost' IDENTIFIED WITH mysql_native_password BY '$MYSQL_ROOT_PASSWORD';"
+
+# Configuramos MySQL para aceptar conexiones desde cualquier interfaz de red
+sed -i "s/127.0.0.1/0.0.0.0/" /etc/mysql/mysql.conf.d/mysqld.cnf
+
+# Reiniciamos el servicio de MySQL
+systemctl restart mysql
+```
+
+Después de ejecutar ese bloque, ya puedes lanzar la API de autenticación contra MySQL.
+
 ## 2. Estructura del proyecto
 
 El repositorio está dividido en dos partes principales:

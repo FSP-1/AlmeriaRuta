@@ -148,11 +148,51 @@ sudo apt install certbot python3-certbot-nginx
 sudo certbot --nginx -d c65277d8-ca60-4115-a023-14bb96542132.clouding.host
 ```
 
-## 5. Automatización del arranque
+## 5. Preparación de MySQL
+
+La API de autenticación necesita MySQL para usuarios, tickets, notificaciones y operario. En el TFG se deja un script de instalación y configuración que resume la puesta en marcha básica en Linux:
+
+```bash
+#!/bin/bash
+set -x
+#----------------------------------------------------
+
+#----------------------------------------------------
+# Variables de configuración 
+#----------------------------------------------------
+
+MYSQL_ROOT_PASSWORD=root
+
+#----------------------------------------------------
+
+#----------------------------------------------------
+# Instalacíon de la pila LAMP
+#----------------------------------------------------
+# Actualizamos el sistema
+apt update
+apt upgrade -y
+
+
+# Instalamos MySQL Server
+apt install mysql-server -y
+
+# Cambiamos la contraseña del usuario root
+ mysql <<< "ALTER USER root@'localhost' IDENTIFIED WITH mysql_native_password BY '$MYSQL_ROOT_PASSWORD';"
+
+# Configuramos MySQL para aceptar conexiones desde cualquier interfaz de red
+sed -i "s/127.0.0.1/0.0.0.0/" /etc/mysql/mysql.conf.d/mysqld.cnf
+
+# Reiniciamos el servicio de MySQL
+systemctl restart mysql
+```
+
+Después de dejar MySQL listo, se puede arrancar la API de autenticación para que cree o use las tablas necesarias.
+
+## 6. Automatización del arranque
 
 Al principio las APIs se iniciaban manualmente, pero después se automatizó su arranque con `systemd` para que quedaran activas tras reiniciar la máquina virtual.
 
-### 5.1 Servicio para la API principal
+### 6.1 Servicio para la API principal
 
 ```ini
 [Unit]
@@ -171,7 +211,7 @@ Environment=PYTHONUNBUFFERED=1
 WantedBy=multi-user.target
 ```
 
-### 5.2 Servicio para la API de autenticación
+### 6.2 Servicio para la API de autenticación
 
 ```ini
 [Unit]
@@ -190,7 +230,7 @@ Environment=PYTHONUNBUFFERED=1
 WantedBy=multi-user.target
 ```
 
-### 5.3 Activación de servicios
+### 6.3 Activación de servicios
 
 ```bash
 sudo systemctl daemon-reload
@@ -200,7 +240,7 @@ sudo systemctl start almeria-busmaps
 sudo systemctl start almeriaruta-auth
 ```
 
-## 6. Flujo completo de despliegue
+## 7. Flujo completo de despliegue
 
 Resumen del flujo recomendado:
 
@@ -213,7 +253,7 @@ Resumen del flujo recomendado:
 7. Instalar y renovar certificados SSL con Let’s Encrypt.
 8. Actualizar `app_constants.dart` para apuntar al dominio público.
 
-## 7. Relación con la app Flutter
+## 8. Relación con la app Flutter
 
 La app Flutter no necesita conocer los puertos internos cuando trabaja contra producción.
 
@@ -224,7 +264,7 @@ Solo consume:
 
 Eso simplifica el despliegue y hace que la app tenga una única configuración de producción.
 
-## 8. Resumen corto
+## 9. Resumen corto
 
 - En local se usa `10.0.2.2:5000` y `10.0.2.2:5001`.
 - En producción se usa un dominio HTTPS con Nginx como reverse proxy.
